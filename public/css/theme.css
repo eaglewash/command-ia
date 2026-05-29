@@ -1,0 +1,640 @@
+/* ═══════════════════════════════════════════════════════════════
+   theme.css — Thème Forestier / Lagune  ·  Commande-IA
+   Chargé en DERNIER sur toutes les pages.
+   Écrase tout ce qui reste de l'ancienne palette (beige, lime, teal).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Variables Lagune ────────────────────────────────────────── */
+:root {
+  --forest:      #0E4B47;
+  --forest-dark: #0A3D3A;
+  --forest-deep: #083330;
+  --sable:       #EEF5F2;
+  --paper:       #F8FBF9;
+  --miel:        #F2C14E;
+  --terracotta:  #E36C5B;
+  --teal-light:  #7BBBB5;
+  --border:      #B8D0C8;
+  --border-soft: #CFE0D9;
+  --ink:         #0F2A28;
+  --ink-soft:    #253F3B;
+  --ink-mute:    #4D6260;
+  /* Anciens tokens (rémappe vers Lagune) */
+  --bg:          #EEF5F2;
+  --dark:        #0E4B47;
+  --dark-2:      #0A3D3A;
+  --muted:       #4D6260;
+  --teal:        #7BBBB5;
+  --teal-dark:   #0E4B47;
+  --teal-bg:     #DCF0ED;
+  --teal-bdr:    #B8D0C8;
+  --warn:        #C07A10;
+  --danger:      #C0392B;
+  --danger-bg:   #FCE8E5;
+  --danger-bdr:  #F5B8B0;
+}
+
+/* ══════════════════════════════════════════════════════
+   BODY & PAGE
+══════════════════════════════════════════════════════ */
+body {
+  background: #EEF5F2 !important;
+  color: #0F2A28 !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   TOPBAR
+══════════════════════════════════════════════════════ */
+.topbar,
+header.topbar,
+nav.topbar {
+  background: #0E4B47 !important;
+  border-bottom: none !important;
+  color: #fff !important;
+}
+
+/* Logo */
+.logo         { color: #fff !important; }
+.logo-text    { color: #fff !important; }
+.logo-icon,
+.logo > div:first-child,
+.bn-btn {
+  background: rgba(255,255,255,.14) !important;
+  border: 1px solid rgba(255,255,255,.2) !important;
+  color: #fff !important;
+}
+.logo-icon:hover { background: rgba(255,255,255,.24) !important; }
+
+/* Page badge */
+.page-badge,
+[class*="page-badge"] {
+  background: rgba(123,187,181,.18) !important;
+  color: #B8D0C8 !important;
+  border-color: rgba(123,187,181,.28) !important;
+}
+
+/* Badge live */
+.badge-live {
+  background: rgba(255,255,255,.1) !important;
+  color: #B8D0C8 !important;
+  border-color: rgba(123,187,181,.3) !important;
+}
+.live-dot { background: #7BBBB5 !important; }
+
+/* Stat blocks (topbar) */
+.topbar-stats {
+  background: rgba(255,255,255,.08) !important;
+}
+.stat-block {
+  background: rgba(255,255,255,.05) !important;
+}
+.stat-label { color: rgba(184,208,200,.7) !important; }
+.stat-value { color: #fff !important; }
+.stat-value.accent { color: #7BBBB5 !important; }
+.stat-value.warn   { color: #F2C14E !important; }
+.stat-value.danger { color: #E36C5B !important; }
+.stat-value.sm,
+.stat-value.small  { color: #B8D0C8 !important; }
+
+/* Topbar tabs */
+.topbar-right,
+.tabs-wrap {
+  background: rgba(0,0,0,.2) !important;
+}
+.tab,
+.topbar-tab {
+  color: rgba(184,208,200,.7) !important;
+  background: transparent !important;
+}
+.tab:hover,
+.topbar-tab:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,.08) !important;
+}
+.tab.active,
+.topbar-tab.active {
+  background: #fff !important;
+  color: #0F2A28 !important;
+}
+
+/* Topbar buttons */
+.top-btn {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.15) !important;
+  color: #B8D0C8 !important;
+}
+.top-btn:hover {
+  background: rgba(255,255,255,.18) !important;
+  color: #fff !important;
+}
+.top-btn.primary {
+  background: #0A3D3A !important;
+  border-color: #0A3D3A !important;
+  color: #fff !important;
+}
+.top-btn.primary:hover { background: #083330 !important; }
+
+/* Top icon buttons */
+.top-icon-btn {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.15) !important;
+}
+.top-icon-btn:hover  { background: rgba(255,255,255,.18) !important; }
+.top-icon-btn svg    { stroke: #B8D0C8 !important; fill: none !important; }
+
+/* Back / nav buttons in topbar */
+.back-btn,
+.nav-btn {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: #B8D0C8 !important;
+}
+.back-btn:hover,
+.nav-btn:hover { background: rgba(255,255,255,.15) !important; color: #fff !important; }
+
+/* Resto select */
+.resto-select {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.15) !important;
+  color: #fff !important;
+}
+.resto-select option { background: #0E4B47 !important; color: #fff !important; }
+
+/* ══════════════════════════════════════════════════════
+   TOOLBAR (filtres, recherche)
+══════════════════════════════════════════════════════ */
+.toolbar {
+  background: #fff !important;
+  border-bottom-color: #B8D0C8 !important;
+}
+.pill {
+  border-color: #B8D0C8 !important;
+  background: #fff !important;
+  color: #4D6260 !important;
+}
+.pill:hover {
+  border-color: #7BBBB5 !important;
+  background: #EEF5F2 !important;
+  color: #0F2A28 !important;
+}
+.pill.active {
+  background: #0E4B47 !important;
+  color: #B8D0C8 !important;
+  border-color: #0E4B47 !important;
+}
+.pill.active .pill-count { background: rgba(255,255,255,.2) !important; }
+
+.search-box { border-color: #B8D0C8 !important; }
+.search-box:focus-within { border-color: #0E4B47 !important; }
+.search-box input::placeholder { color: #B8D0C8 !important; }
+
+.tb-btn,
+.filter-btn {
+  border-color: #B8D0C8 !important;
+  color: #4D6260 !important;
+  background: #fff !important;
+}
+.tb-btn:hover,
+.filter-btn:hover {
+  border-color: #0E4B47 !important;
+  color: #0E4B47 !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   BUTTONS (primaires, secondaires, danger)
+══════════════════════════════════════════════════════ */
+/* Boutons verts / primaires */
+.btn-primary,
+.add-btn,
+.save-btn,
+[class*="btn-green"],
+[class*="btn-forest"] {
+  background: #0E4B47 !important;
+  color: #fff !important;
+  border-color: #0E4B47 !important;
+}
+.btn-primary:hover,
+.add-btn:hover,
+.save-btn:hover {
+  background: #0A3D3A !important;
+}
+
+/* Boutons secondaires */
+.btn-secondary,
+.cancel-btn,
+.export-btn,
+.restock-all-btn,
+[class*="btn-outline"] {
+  background: #fff !important;
+  color: #0E4B47 !important;
+  border-color: #B8D0C8 !important;
+}
+.btn-secondary:hover,
+.cancel-btn:hover,
+.export-btn:hover,
+.restock-all-btn:hover {
+  border-color: #0E4B47 !important;
+  background: #EEF5F2 !important;
+}
+
+/* Boutons danger */
+.btn-danger,
+.delete-btn,
+[class*="btn-red"] {
+  background: #E36C5B !important;
+  color: #fff !important;
+  border-color: #E36C5B !important;
+}
+.btn-danger:hover,
+.delete-btn:hover { background: #C0392B !important; }
+
+/* Bouton générique .btn */
+.btn {
+  background: #0E4B47 !important;
+  color: #fff !important;
+}
+.btn:hover { background: #0A3D3A !important; }
+
+/* ══════════════════════════════════════════════════════
+   CARDS & CONTAINERS
+══════════════════════════════════════════════════════ */
+.card,
+.stat-card,
+.arch-card,
+.cmd-card,
+.info-card,
+.feature-card,
+.report-card,
+[class*="-card"]:not(.cmd-card.urgent):not(.stat-card.alerte):not(.stat-card.rupture) {
+  background: #fff !important;
+  border-color: #B8D0C8 !important;
+}
+.card:hover,
+.stat-card:hover,
+.arch-card:hover { box-shadow: 0 4px 16px rgba(14,75,71,.08) !important; }
+
+/* Sections / blocs intérieurs */
+.section-block,
+.detail-block,
+.info-block,
+.panel-block {
+  border-color: #CFE0D9 !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   COMMANDES / ORDERS (index.html, kds.html)
+══════════════════════════════════════════════════════ */
+/* Stripes de statut */
+.card-stripe.new  { background: linear-gradient(90deg, #0E4B47, #7BBBB5) !important; }
+.card-stripe.enc  { background: linear-gradient(90deg, #0A3D3A, #0E4B47) !important; }
+.card-stripe.pret { background: linear-gradient(90deg, #F2C14E, #f0d080) !important; }
+
+/* Avatars */
+.cmd-avatar {
+  background: #DCF0ED !important;
+  border-color: #B8D0C8 !important;
+  color: #0E4B47 !important;
+}
+.cmd-avatar.urgent-av {
+  background: #FCE8E5 !important;
+  border-color: #F5B8B0 !important;
+  color: #C0392B !important;
+}
+
+/* Wait badges */
+.wait-badge.ok   { background: #DCF0ED !important; color: #0E4B47 !important; }
+.wait-badge.warn { background: #fef3c7 !important; color: #92400e !important; }
+.wait-badge.crit { background: #FCE8E5 !important; color: #C0392B !important; }
+
+/* Cmd badges */
+.cmd-badge.new   { background: #DCF0ED !important; color: #0E4B47 !important; border-color: #B8D0C8 !important; }
+.cmd-badge.ready { background: #fef3c7 !important; color: #92400e !important; border-color: #fcd34d !important; }
+
+/* Tags */
+.cmd-tag.modif { background: #fef3c7 !important; color: #92400e !important; border-color: #fcd34d !important; }
+
+/* Panel header */
+.panel-title  { color: #4D6260 !important; }
+.panel-count  {
+  background: #DCF0ED !important;
+  color: #0E4B47 !important;
+  border-color: #B8D0C8 !important;
+}
+
+/* Prep bar */
+.prep-bar      { background: #CFE0D9 !important; }
+.prep-bar-fill { background: linear-gradient(90deg, #0E4B47, #7BBBB5) !important; }
+
+/* Detail panel */
+.detail-header-bar {
+  background: linear-gradient(135deg, #0E4B47, #0A3D3A) !important;
+}
+.detail-section-title { color: #4D6260 !important; }
+.detail-key           { color: #4D6260 !important; }
+.chrono-big           { color: #0F2A28 !important; }
+.chrono-big.waiting   { color: #B8D0C8 !important; }
+.chrono-active {
+  background: #DCF0ED !important;
+  color: #0E4B47 !important;
+}
+.chrono-dot { background: #7BBBB5 !important; }
+
+/* Timeline */
+.tl-dot        { background: #B8D0C8 !important; }
+.tl-dot.active { background: #0E4B47 !important; box-shadow: 0 0 0 3px #DCF0ED !important; }
+.tl-line       { background: #CFE0D9 !important; }
+
+/* Detail action buttons */
+.detail-action-btn.primary   { background: #0E4B47 !important; }
+.detail-action-btn.primary:hover { background: #0A3D3A !important; }
+.detail-action-btn.secondary {
+  background: #EEF5F2 !important;
+  border-color: #B8D0C8 !important;
+  color: #4D6260 !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   KDS (kds.html)
+══════════════════════════════════════════════════════ */
+.kds-wrap  { border-top-color: #B8D0C8 !important; }
+.kds-col   { border-right-color: #B8D0C8 !important; }
+.col-head  {
+  background: #F8FBF9 !important;
+  border-bottom-color: #B8D0C8 !important;
+}
+.col-title { color: #4D6260 !important; }
+.col-body  { background: #EEF5F2 !important; }
+
+.col-dot.new  { background: #E36C5B !important; box-shadow: 0 0 0 3px rgba(227,108,91,.15) !important; }
+.col-dot.enc  { background: #F2C14E !important; box-shadow: 0 0 0 3px rgba(242,193,78,.15) !important; }
+.col-dot.pret { background: #7BBBB5 !important; box-shadow: 0 0 0 3px rgba(123,187,181,.15) !important; }
+.col-badge.green {
+  background: #DCF0ED !important;
+  color: #0E4B47 !important;
+  border-color: #B8D0C8 !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   ARCHIVES
+══════════════════════════════════════════════════════ */
+.arch-stat-label { color: #4D6260 !important; }
+.arch-card.done  { border-left-color: #0E4B47 !important; }
+.arch-card-badge.done {
+  background: #DCF0ED !important;
+  color: #0E4B47 !important;
+  border-color: #B8D0C8 !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   SIDEBAR (stocks, analytics, etc.)
+══════════════════════════════════════════════════════ */
+.sidebar,
+.side-nav,
+[class*="sidebar"] {
+  background: #fff !important;
+  border-color: #B8D0C8 !important;
+}
+.sidebar-item,
+.side-item,
+.nav-item {
+  color: #0F2A28 !important;
+}
+.sidebar-item:hover,
+.side-item:hover,
+.nav-item:hover {
+  background: #EEF5F2 !important;
+  color: #0E4B47 !important;
+}
+.sidebar-item.active,
+.side-item.active,
+.nav-item.active {
+  background: #DCF0ED !important;
+  color: #0E4B47 !important;
+  border-left-color: #0E4B47 !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   TABLES
+══════════════════════════════════════════════════════ */
+table { border-color: #B8D0C8 !important; }
+thead th {
+  background: #F8FBF9 !important;
+  color: #4D6260 !important;
+  border-color: #B8D0C8 !important;
+}
+tbody tr:nth-child(even) { background: #F8FBF9 !important; }
+tbody tr:hover { background: #EEF5F2 !important; }
+td, th { border-color: #CFE0D9 !important; }
+
+/* ══════════════════════════════════════════════════════
+   BADGES / STATUTS
+══════════════════════════════════════════════════════ */
+.badge,
+.status-badge,
+[class*="-badge"] {
+  font-weight: 700 !important;
+}
+.badge-success,
+.status-ok,
+.badge-green { background: #DCF0ED !important; color: #0E4B47 !important; border-color: #B8D0C8 !important; }
+
+.badge-warning,
+.status-warn,
+.badge-yellow { background: #fef3c7 !important; color: #92400e !important; border-color: #fcd34d !important; }
+
+.badge-danger,
+.status-error,
+.badge-red { background: #FCE8E5 !important; color: #C0392B !important; border-color: #F5B8B0 !important; }
+
+.badge-info,
+.badge-blue { background: #dbeafe !important; color: #1d4ed8 !important; border-color: #93c5fd !important; }
+
+/* ══════════════════════════════════════════════════════
+   FORMULAIRES
+══════════════════════════════════════════════════════ */
+input,
+textarea,
+select {
+  border-color: #B8D0C8 !important;
+  background: #fff !important;
+  color: #0F2A28 !important;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #0E4B47 !important;
+  outline-color: #7BBBB5 !important;
+  box-shadow: 0 0 0 3px rgba(123,187,181,.2) !important;
+}
+input::placeholder,
+textarea::placeholder { color: #B8D0C8 !important; }
+
+label { color: #0F2A28 !important; }
+
+/* ══════════════════════════════════════════════════════
+   MODALES
+══════════════════════════════════════════════════════ */
+.modal,
+.modal-overlay,
+[class*="modal"] {
+  --modal-bg: #fff;
+}
+.modal-content,
+.modal-box,
+.modal-panel {
+  background: #fff !important;
+  border-color: #B8D0C8 !important;
+}
+.modal-header,
+.modal-title { color: #0F2A28 !important; }
+.modal-footer { border-top-color: #CFE0D9 !important; }
+
+/* ══════════════════════════════════════════════════════
+   SNACKBAR / TOASTS
+══════════════════════════════════════════════════════ */
+.snackbar,
+.toast,
+.notification {
+  background: #0E4B47 !important;
+  color: #fff !important;
+}
+.snackbar.error,
+.toast.error { background: #C0392B !important; }
+.snackbar.warn,
+.toast.warn  { background: #C07A10 !important; }
+
+/* ══════════════════════════════════════════════════════
+   LINKS
+══════════════════════════════════════════════════════ */
+a:not([class]) { color: #0E4B47 !important; }
+a:not([class]):hover { color: #0A3D3A !important; }
+
+/* ══════════════════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #B8D0C8 !important; border-radius: 4px; }
+
+/* ══════════════════════════════════════════════════════
+   FOCUS
+══════════════════════════════════════════════════════ */
+:focus-visible {
+  outline: 2px solid #7BBBB5 !important;
+  outline-offset: 2px !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   SECTIONS SPÉCIFIQUES PAR PAGE
+══════════════════════════════════════════════════════ */
+
+/* ─── Plan de salle ─── */
+.sp-header,
+.sp-toolbar { background: #fff !important; border-color: #B8D0C8 !important; }
+.sp-legend-dot.s-free     { background: #0E4B47 !important; }
+.sp-legend-dot.s-occ      { background: #E36C5B !important; }
+.sp-legend-dot.s-res      { background: #F2C14E !important; }
+.sp-legend-dot.s-clean    { background: #8B5CF6 !important; }
+.tbl-block                { border-color: #B8D0C8 !important; }
+.tbl-block.status-free    { background: #DCF0ED !important; border-color: #0E4B47 !important; }
+.tbl-block.status-occupied { border-color: #E36C5B !important; }
+.tbl-block.status-reserved { border-color: #F2C14E !important; }
+
+/* ─── Analytics ─── */
+.chart-card,
+.analytics-card {
+  background: #fff !important;
+  border-color: #B8D0C8 !important;
+}
+
+/* ─── Admin ─── */
+.admin-section,
+.perm-role-header {
+  background: #F8FBF9 !important;
+  border-color: #B8D0C8 !important;
+}
+.perm-toggle-on  { background: #0E4B47 !important; }
+.perm-toggle-off { background: #B8D0C8 !important; }
+
+/* ─── CRM ─── */
+.crm-card,
+.client-card {
+  background: #fff !important;
+  border-color: #B8D0C8 !important;
+}
+.crm-badge.gold   { background: #fef3c7 !important; color: #92400e !important; }
+.crm-badge.silver { background: #EEF5F2 !important; color: #4D6260 !important; }
+
+/* ─── Planning ─── */
+.planning-slot { border-color: #B8D0C8 !important; }
+.planning-slot.active { background: #DCF0ED !important; border-color: #0E4B47 !important; }
+.shift-block { background: #0E4B47 !important; color: #fff !important; }
+
+/* ─── Stocks ─── */
+.stock-row.alerte  { background: #fef3c7 !important; }
+.stock-row.rupture { background: #FCE8E5 !important; }
+.stock-level-bar   { background: #CFE0D9 !important; }
+.stock-level-fill  { background: #0E4B47 !important; }
+.stock-level-fill.warn { background: #F2C14E !important; }
+.stock-level-fill.crit { background: #E36C5B !important; }
+
+/* ─── Réservations ─── */
+.resa-card          { background: #fff !important; border-color: #B8D0C8 !important; }
+.resa-badge.confirmed { background: #DCF0ED !important; color: #0E4B47 !important; }
+.resa-badge.pending   { background: #fef3c7 !important; color: #92400e !important; }
+.resa-badge.cancelled { background: #FCE8E5 !important; color: #C0392B !important; }
+
+/* ══════════════════════════════════════════════════════
+   SUPPRESSION DES ANCIENS THÈMES
+   (écrase tout résidu de l'ancienne palette beige/lime)
+══════════════════════════════════════════════════════ */
+
+/* Anciens fonds beige / gris-vert */
+[style*="background:#f0f2ed"]   { background: #EEF5F2 !important; }
+[style*="background:#f4f4ec"]   { background: #F8FBF9 !important; }
+[style*="background:#f0f0e8"]   { background: #EEF5F2 !important; }
+[style*="background:#e8eae4"]   { background: #CFE0D9 !important; }
+[style*="background:#d8d8cc"]   { background: #B8D0C8 !important; }
+[style*="background:#e8f5dc"]   { background: #DCF0ED !important; }
+
+/* Anciens verts lime */
+[style*="background:#1a3a1a"]   { background: #0E4B47 !important; }
+[style*="background:#3B6D11"]   { background: #0E4B47 !important; }
+[style*="background:#4a8a1a"]   { background: #0E4B47 !important; }
+[style*="background:#2d6a0a"]   { background: #0E4B47 !important; }
+[style*="background:#a8e07a"]   { background: #7BBBB5 !important; }
+[style*="background:#9ab89a"]   { background: #B8D0C8 !important; }
+
+/* Anciens teal Tailwind */
+[style*="background:#10b981"]   { background: #7BBBB5 !important; }
+[style*="background:#059669"]   { background: #0E4B47 !important; }
+[style*="background:#d1fae5"]   { background: #DCF0ED !important; }
+
+/* Anciens textes lime/vert */
+[style*="color:#3B6D11"]        { color: #0E4B47 !important; }
+[style*="color:#2d6a0a"]        { color: #0E4B47 !important; }
+[style*="color:#7aaa7a"]        { color: #4D6260 !important; }
+[style*="color:#a8e07a"]        { color: #7BBBB5 !important; }
+[style*="color:#9ab89a"]        { color: #B8D0C8 !important; }
+[style*="color:#10b981"]        { color: #0E4B47 !important; }
+[style*="color:#059669"]        { color: #0E4B47 !important; }
+
+/* Anciens fonds sombres beige */
+[style*="background:#1a1a1a"]   { background: #0E4B47 !important; }
+[style*="background:#2a2a2a"]   { background: #0A3D3A !important; }
+[style*="background:#333"]      { background: #0A3D3A !important; }
+
+/* Gradient anciens */
+[style*="linear-gradient(135deg, #1a1a1a"] { background: linear-gradient(135deg, #0E4B47, #0A3D3A) !important; }
+
+/* ══════════════════════════════════════════════════════
+   CACHER LES ANCIENS MENUS BURGER INLINE
+══════════════════════════════════════════════════════ */
+#burger-menu,
+.burger-menu { display: none !important; }
+
+/* ══════════════════════════════════════════════════════
+   NOUVEAU MENU BURGER (burger-menu.js)
+══════════════════════════════════════════════════════ */
+.bn-menu { font-family: 'Inter', system-ui, sans-serif !important; }

@@ -1,0 +1,498 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rapports – Commande-IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:100vh}
+.topbar{background:#0E4B47;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.tl{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:1.1rem}
+.logo-icon{width:32px;height:32px;background:#0E4B47;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.page-badge{background:rgba(255,255,255,.12);color:#c8e6c9;font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:20px;white-space:nowrap}
+.tr{display:flex;align-items:center;gap:10px}
+.back-btn{background:rgba(255,255,255,.1);color:#fff;text-decoration:none;padding:7px 16px;border-radius:8px;font-size:.85rem;font-weight:500;transition:background .2s}
+.back-btn:hover{background:rgba(255,255,255,.2)}
+.btn{border:none;border-radius:8px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:#0E4B47;color:#fff}.btn-primary:hover{background:#2d5509}
+.btn-secondary{background:#fff;color:#1a2e1a;border:1.5px solid #B8D0C8}.btn-secondary:hover{background:#f5f9f2}
+select.topbar-select{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 10px;font-family:'Inter',sans-serif;font-size:.82rem;max-width:200px}
+select.topbar-select option{background:#0E4B47}
+.period-tabs{display:flex;gap:2px;background:rgba(255,255,255,.08);border-radius:8px;padding:3px}
+.ptab{padding:5px 12px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;color:rgba(255,255,255,.6);transition:all .2s;border:none;background:transparent;font-family:'Inter',sans-serif}
+.ptab.active{background:rgba(255,255,255,.18);color:#fff}
+
+.main{padding:24px;max-width:1200px;margin:0 auto}
+.loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px}
+.spinner{width:36px;height:36px;border:3px solid #B8D0C8;border-top-color:#0E4B47;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-state p{color:#6b7280;font-size:.9rem}
+.empty-state{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;padding:60px;text-align:center}
+.empty-icon{font-size:2.8rem;opacity:.3;margin-bottom:10px}
+.empty-title{font-size:1rem;font-weight:700;margin-bottom:6px}
+.empty-sub{font-size:.85rem;color:#6b7280;max-width:360px;margin:0 auto;line-height:1.5}
+
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.card{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;overflow:hidden;margin-bottom:16px}
+.card-head{padding:14px 18px;border-bottom:1.5px solid #B8D0C8;display:flex;align-items:center;justify-content:space-between}
+.card-head h2{font-size:.93rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-body{padding:16px}
+.chart-h{position:relative;height:200px}
+
+/* KPI row */
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:10px;border:1.5px solid #B8D0C8;padding:14px 16px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--c)}
+.kv{font-size:1.6rem;font-weight:800;line-height:1;margin-top:4px}
+.kl{font-size:.72rem;color:#6b7280;margin-top:4px}
+
+/* Summary table */
+.st{width:100%;border-collapse:collapse}
+.st th{background:#f5f9f2;padding:9px 12px;text-align:left;font-size:.75rem;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:.4px}
+.st td{padding:10px 12px;border-bottom:1px solid #EEF5F2;font-size:.85rem}
+.st tr:last-child td{border-bottom:none}
+
+/* Report cards */
+.report-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.report-card{border:1.5px solid #B8D0C8;border-radius:10px;padding:14px;transition:border-color .2s;cursor:pointer}
+.report-card:hover{border-color:#0E4B47;background:#f9fdf6}
+.rc-icon{font-size:1.6rem;margin-bottom:8px}
+.rc-title{font-size:.88rem;font-weight:700;color:#1a2e1a;margin-bottom:4px}
+.rc-desc{font-size:.75rem;color:#6b7280;line-height:1.4}
+.rc-action{margin-top:10px}
+.rc-btn{background:#f5f9f2;color:#0E4B47;border:1px solid #B8D0C8;border-radius:6px;padding:5px 10px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:background .2s}
+.rc-btn:hover{background:#dcfce7}
+
+/* Dates list */
+.dates-list{display:flex;flex-direction:column;gap:6px}
+.date-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#f5f9f2;border-radius:7px;cursor:pointer;transition:background .2s;border:1.5px solid transparent}
+.date-item:hover,.date-item.selected{background:#EEF5F2;border-color:#0E4B47}
+.date-label{font-size:.85rem;font-weight:600}
+.date-sub{font-size:.72rem;color:#6b7280}
+.date-detail-panel{background:#f8fdf5;border:1.5px solid #c8e8a8;border-radius:9px;padding:14px;margin-top:6px;display:none}
+.date-detail-panel.open{display:block}
+.order-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #B8D0C8;font-size:.82rem}
+.order-row:last-child{border-bottom:none}
+.order-name{flex:1;font-weight:600;color:#1a2e1a}
+.order-meta{color:#6b7280;font-size:.75rem}
+.order-total{font-weight:700;color:#0E4B47}
+.order-state{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:5px}
+.state-done{background:#DCF0ED;color:#0E4B47}
+.state-refused{background:#fef0f0;color:#b03030}
+
+/* Heures de pointe */
+.hour-bars{display:flex;align-items:flex-end;gap:3px;height:60px;padding-top:4px}
+.hour-bar{flex:1;background:#0E4B47;border-radius:2px 2px 0 0;min-width:4px;transition:height .3s;position:relative;cursor:default}
+.hour-bar:hover::after{content:attr(data-tip);position:absolute;bottom:105%;left:50%;transform:translateX(-50%);background:#0E4B47;color:#fff;padding:2px 6px;border-radius:4px;font-size:.65rem;white-space:nowrap;z-index:5}
+.hour-lbl{display:flex;justify-content:space-between;font-size:.6rem;color:#9ca3af;margin-top:3px}
+
+.print-report{display:none}
+@media print{body>*{display:none!important}.print-report{display:block!important}}
+
+.snackbar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0E4B47;color:#fff;padding:11px 22px;border-radius:10px;font-size:.85rem;font-weight:600;z-index:2000;transition:transform .3s}
+.snackbar.show{transform:translateX(-50%) translateY(0)}
+
+  </style>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="tl">
+    <div class="logo">
+      <div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+      Commande-IA
+    </div>
+    <span class="page-badge"><span data-icon="clipboard"></span> Rapports</span>
+    <select class="topbar-select" id="resto-select" style="display:none" onchange="onRestaurantChange()"></select>
+    <div class="period-tabs">
+      <button class="ptab" onclick="setPeriod(7,this)">7j</button>
+      <button class="ptab active" onclick="setPeriod(30,this)">30j</button>
+      <button class="ptab" onclick="setPeriod(90,this)">90j</button>
+    </div>
+  </div>
+  <div class="tr">
+    <button class="btn btn-secondary" onclick="exportCSV()" id="btn-export" style="display:none">📥 Export CSV</button>
+    <a href="/index.html" class="back-btn">← Dashboard</a>
+  </div>
+</div>
+
+<div class="main" id="main-content">
+  <div class="loading-state"><div class="spinner"></div><p>Chargement des rapports...</p></div>
+</div>
+<div class="snackbar" id="snackbar"></div>
+
+<script src="/permissions.js"></script>
+<script src="/icons.js"></script>
+<script>
+window.addEventListener('load', () => { try { window.ICONS && window.ICONS.replaceEmojisGlobal && window.ICONS.replaceEmojisGlobal(); } catch(e) {} });
+if (typeof requireAuth === 'function') requireAuth();
+const ORIGIN = window.location.origin;
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (!user.email) window.location.href = '/login.html';
+const isAdmin = user.role === 'Admin';
+let currentRestaurantId = user.restaurantId || null;
+let currentDays = 30;
+let analyticsData = null;
+let datesData = [];
+let charts = {};
+
+async function init() {
+  if (isAdmin) {
+    const sel = document.getElementById('resto-select');
+    sel.style.display = 'block';
+    try {
+      const r = await fetch(ORIGIN + '/admin/restaurants');
+      const restos = await r.json();
+      if (!restos.length) { renderEmpty('Aucun restaurant enregistré.'); return; }
+      sel.innerHTML = restos.map(r => `<option value="${r.id}">${r.nom || r.email}</option>`).join('');
+      currentRestaurantId = restos[0].id;
+    } catch { renderEmpty('Erreur de chargement.'); return; }
+  }
+  if (currentRestaurantId) loadData();
+  else renderEmpty('Aucun restaurant associé à ce compte.');
+}
+
+function onRestaurantChange() {
+  currentRestaurantId = document.getElementById('resto-select').value;
+  loadData();
+}
+
+function setPeriod(d, btn) {
+  currentDays = d;
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (currentRestaurantId) loadData();
+}
+
+async function loadData() {
+  document.getElementById('main-content').innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Chargement des données...</p></div>';
+  destroyCharts();
+  try {
+    const [aRes, dRes] = await Promise.all([
+      fetch(`${ORIGIN}/analytics?restaurantId=${encodeURIComponent(currentRestaurantId)}&days=${currentDays}`),
+      fetch(`${ORIGIN}/archives/dates?restaurantId=${encodeURIComponent(currentRestaurantId)}`)
+    ]);
+    analyticsData = aRes.ok ? await aRes.json() : null;
+    datesData = dRes.ok ? await dRes.json() : [];
+    if (!analyticsData || analyticsData.totalOrders === 0) {
+      renderEmpty('Aucune commande sur cette période. Passez des commandes pour générer des rapports.');
+      return;
+    }
+    document.getElementById('btn-export').style.display = 'flex';
+    renderReports();
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px"><p style="color:#dc2626">Erreur : ${e.message}</p><button class="btn btn-secondary" style="margin-top:8px" onclick="loadData()">↻ Réessayer</button></div>`;
+  }
+}
+
+function destroyCharts() { Object.values(charts).forEach(c => c?.destroy()); charts = {}; }
+
+function renderEmpty(msg) {
+  document.getElementById('main-content').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon"><span data-icon="clipboard"></span></div>
+      <div class="empty-title">Aucun rapport disponible</div>
+      <div class="empty-sub">${msg}</div>
+    </div>`;
+}
+
+function renderReports() {
+  const d = analyticsData;
+  const days = Object.entries(d.revenueByDay || {});
+  const labels = days.map(([date]) => { const p = date.split('-'); return p[2]+'/'+p[1]; });
+  const caVals = days.map(([,v]) => v);
+  const ordersVals = Object.values(d.ordersByDay || {});
+  const catData = d.revenueByCategory || {};
+  const catLabels = Object.keys(catData).filter(k => catData[k] > 0);
+  const catVals = catLabels.map(k => catData[k]);
+  const tauxRefus = (d.totalOrders + (d.refusedOrders||0)) > 0
+    ? ((d.refusedOrders||0) / (d.totalOrders + (d.refusedOrders||0)) * 100).toFixed(1) : 0;
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="kpi-row">
+      <div class="kpi" style="--c:#0E4B47"><div class="kv">€${d.totalRevenue?.toFixed(2)||0}</div><div class="kl">CA sur ${currentDays} jours</div></div>
+      <div class="kpi" style="--c:#1d4ed8"><div class="kv">${d.totalOrders}</div><div class="kl">Commandes traitées</div></div>
+      <div class="kpi" style="--c:#7c3aed"><div class="kv">€${d.avgOrderValue?.toFixed(2)||0}</div><div class="kl">Panier moyen</div></div>
+    </div>
+
+    <div class="rgrid">
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="wallet"></span> CA journalier</h2></div>
+        <div class="card-body"><div class="chart-h"><canvas id="ca-chart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="plate"></span> Répartition par catégorie</h2></div>
+        <div class="card-body"><div class="chart-h"><canvas id="cat-chart"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="rgrid">
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="clipboard"></span> Récapitulatif</h2></div>
+        <div class="card-body" style="padding:0">
+          <table class="st">
+            <tbody>
+              <tr><td>Commandes traitées</td><td><strong>${d.totalOrders}</strong></td></tr>
+              <tr><td>Commandes refusées</td><td><strong style="color:${(d.refusedOrders||0)>0?'#dc2626':'#0E4B47'}">${d.refusedOrders||0} (${tauxRefus}%)</strong></td></tr>
+              <tr><td>Chiffre d'affaires</td><td><strong>€${d.totalRevenue?.toFixed(2)}</strong></td></tr>
+              <tr><td>Panier moyen</td><td><strong>€${d.avgOrderValue?.toFixed(2)}</strong></td></tr>
+              <tr><td>Sur place</td><td><strong>${Object.values(d.surPlaceByDay||{}).reduce((a,b)=>a+b,0)} cmd</strong></td></tr>
+              <tr><td>Période analysée</td><td><strong>${currentDays} jours</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="trophy"></span> Top produits</h2></div>
+        <div class="card-body" style="padding:8px 16px">
+          ${d.topProducts?.length ? d.topProducts.slice(0,6).map((p,i) => `
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #EEF5F2">
+              <span style="font-size:.72rem;font-weight:800;color:#9ca3af;min-width:18px">${i+1}</span>
+              <span style="flex:1;font-size:.85rem;font-weight:600">${p.nom}</span>
+              <span style="font-size:.8rem;color:#6b7280">${p.qty} ventes</span>
+              <span style="font-size:.8rem;font-weight:700">€${p.revenue?.toFixed(0)}</span>
+            </div>`).join('') : '<p style="color:#6b7280;font-size:.85rem;padding:8px 0">Aucune donnée produit.</p>'}
+        </div>
+      </div>
+    </div>
+
+    <div class="rgrid">
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="clock"></span> Heures de pointe</h2><span style="font-size:.75rem;color:#6b7280">Commandes par heure</span></div>
+        <div class="card-body">
+          ${renderPeakHours(d)}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="calendar"></span> Jours de la semaine</h2><span style="font-size:.75rem;color:#6b7280">CA moyen</span></div>
+        <div class="card-body">
+          ${renderDayOfWeekChart(d)}
+        </div>
+      </div>
+    </div>
+
+    ${datesData.length ? `
+    <div class="card">
+      <div class="card-head"><h2><span data-icon="calendar"></span> Historique par journée</h2><span style="font-size:.75rem;color:#6b7280">${datesData.length} jour(s) enregistré(s)</span></div>
+      <div class="card-body">
+        <div class="dates-list" id="dates-list">
+          ${datesData.slice().reverse().slice(0,15).map(date => `
+          <div>
+            <div class="date-item" id="ditem-${date}" onclick="loadDateDetail('${date}')">
+              <div>
+                <div class="date-label">${new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+                <div class="date-sub">CA : ${(analyticsData.revenueByDay[date]||0).toFixed(2)}€ · ${analyticsData.ordersByDay[date]||0} cmd</div>
+              </div>
+              <span style="font-size:.72rem;color:#6b7280">▾ Détail</span>
+            </div>
+            <div class="date-detail-panel" id="ddetail-${date}">
+              <div style="text-align:center;font-size:.8rem;color:#6b7280;padding:8px 0">Chargement...</div>
+            </div>
+          </div>`).join('')}
+          ${datesData.length > 15 ? `<p style="font-size:.8rem;color:#6b7280;text-align:center;padding:8px">+${datesData.length-15} jours supplémentaires — changez la période pour voir plus</p>` : ''}
+        </div>
+      </div>
+    </div>` : ''}
+
+    <div class="card">
+      <div class="card-head"><h2>📤 Générer un rapport</h2></div>
+      <div class="card-body">
+        <div class="report-cards">
+          <div class="report-card"><div class="rc-icon"><span data-icon="print"></span></div><div class="rc-title">Imprimer le rapport</div><div class="rc-desc">Génère une version imprimable du résumé actuel avec tous les graphiques</div><div class="rc-action"><button class="rc-btn" onclick="printReport()">Imprimer</button></div></div>
+          <div class="report-card"><div class="rc-icon"><span data-icon="wallet"></span></div><div class="rc-title">Export CA journalier</div><div class="rc-desc">Données brutes CA et commandes en CSV, prêtes pour Excel ou comptable</div><div class="rc-action"><button class="rc-btn" onclick="exportCSV()">Export CSV</button></div></div>
+          <div class="report-card"><div class="rc-icon"><span data-icon="trophy"></span></div><div class="rc-title">Export top produits</div><div class="rc-desc">Liste des produits les plus vendus avec quantités et chiffre d'affaires</div><div class="rc-action"><button class="rc-btn" onclick="exportProductsCSV()">Export CSV</button></div></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const chartOpts = { responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:9},maxTicksLimit:12}},y:{grid:{color:'#EEF5F2'},ticks:{font:{family:'Inter',size:9}}}} };
+  charts.ca = new Chart(document.getElementById('ca-chart'), {
+    type:'bar',
+    data:{ labels, datasets:[{ data:caVals, backgroundColor:'#0E4B4744', borderColor:'#0E4B47', borderWidth:1.5, borderRadius:4 }] },
+    options:{...chartOpts,scales:{...chartOpts.scales,y:{...chartOpts.scales.y,ticks:{...chartOpts.scales.y.ticks,callback:v=>'€'+v}}}}
+  });
+  if (catLabels.length) {
+    charts.cat = new Chart(document.getElementById('cat-chart'), {
+      type:'doughnut',
+      data:{ labels:catLabels, datasets:[{ data:catVals, backgroundColor:['#0E4B47','#1d4ed8','#d97706','#7c3aed','#dc2626'], borderWidth:0 }] },
+      options:{ responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{font:{family:'Inter',size:10},boxWidth:8,padding:6}}} }
+    });
+  }
+}
+
+function renderPeakHours(d) {
+  const byHour = Array(24).fill(0);
+  // Utiliser surPlaceByDay comme proxy ou générer depuis ordersByDay
+  const totalOrders = Object.values(d.ordersByDay || {}).reduce((s, v) => s + v, 0);
+  if (!totalOrders) return '<p style="color:#6b7280;font-size:.82rem;text-align:center;padding:12px">Données insuffisantes</p>';
+  // Distribution approximative basée sur les patterns restaurant
+  const weights = [0,0,0,0,0,0,0,0.5,1,2,2.5,4,5,4,3,2,2,2.5,4,5,4,3,2,1];
+  const totalW = weights.reduce((a,b)=>a+b,0);
+  weights.forEach((w,h) => { byHour[h] = Math.round((w/totalW) * totalOrders); });
+  const maxH = Math.max(...byHour, 1);
+  return `<div class="hour-bars">${byHour.map((v,h) => `<div class="hour-bar" style="height:${Math.round(v/maxH*100)}%" data-tip="${h}h : ${v} cmd"></div>`).join('')}</div>
+    <div class="hour-lbl"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>23h</span></div>
+    <p style="font-size:.72rem;color:#9ca3af;margin-top:8px;text-align:center">Estimation basée sur les patterns habituels — données réelles à venir</p>`;
+}
+
+function renderDayOfWeekChart(d) {
+  const dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const caByDow = Array(7).fill(0), countByDow = Array(7).fill(0);
+  Object.entries(d.revenueByDay || {}).forEach(([date, ca]) => {
+    const dow = (new Date(date+'T12:00:00').getDay() + 6) % 7; // 0=Lun
+    caByDow[dow] += ca;
+    countByDow[dow]++;
+  });
+  const avgByDow = caByDow.map((ca, i) => countByDow[i] > 0 ? ca / countByDow[i] : 0);
+  const maxAvg = Math.max(...avgByDow, 1);
+  return `<div style="display:flex;align-items:flex-end;gap:6px;height:60px;padding-top:4px">
+    ${avgByDow.map((v,i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+      <div style="width:100%;background:#0E4B47;border-radius:3px 3px 0 0;height:${Math.round(v/maxAvg*52)+4}px" title="${dayNames[i]}: €${v.toFixed(0)} moy"></div>
+      <div style="font-size:.65rem;color:#6b7280;font-weight:600">${dayNames[i]}</div>
+    </div>`).join('')}
+  </div>
+  <p style="font-size:.72rem;color:#9ca3af;margin-top:4px;text-align:center">Moyenne CA par jour de la semaine sur la période</p>`;
+}
+
+let openDateDetail = null;
+async function loadDateDetail(date) {
+  const item = document.getElementById('ditem-'+date);
+  const panel = document.getElementById('ddetail-'+date);
+  if (!item || !panel) return;
+
+  if (openDateDetail && openDateDetail !== date) {
+    const prevPanel = document.getElementById('ddetail-'+openDateDetail);
+    const prevItem = document.getElementById('ditem-'+openDateDetail);
+    if (prevPanel) prevPanel.classList.remove('open');
+    if (prevItem) prevItem.classList.remove('selected');
+  }
+
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); item.classList.remove('selected');
+    openDateDetail = null; return;
+  }
+
+  item.classList.add('selected');
+  panel.classList.add('open');
+  openDateDetail = date;
+
+  if (panel.dataset.loaded) return;
+  panel.dataset.loaded = '1';
+
+  try {
+    const r = await fetch(`${ORIGIN}/archives?restaurantId=${encodeURIComponent(currentRestaurantId)}&date=${date}`);
+    const orders = r.ok ? await r.json() : [];
+    const done = orders.filter(o => o.state === 'done');
+    const refused = orders.filter(o => o.state === 'refused');
+    const ca = done.reduce((s, o) => s + (o.total || 0), 0);
+
+    panel.innerHTML = `
+      <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="background:#DCF0ED;border-radius:7px;padding:8px 14px;font-size:.82rem"><strong style="color:#0E4B47">${done.length}</strong> <span style="color:#6b7280">traitées</span></div>
+        <div style="background:#fef0f0;border-radius:7px;padding:8px 14px;font-size:.82rem"><strong style="color:#c03030">${refused.length}</strong> <span style="color:#6b7280">refusées</span></div>
+        <div style="background:#f8fdf5;border-radius:7px;padding:8px 14px;font-size:.82rem"><strong style="color:#0E4B47">€${ca.toFixed(2)}</strong> <span style="color:#6b7280">CA</span></div>
+      </div>
+      ${done.length ? `<div style="max-height:200px;overflow-y:auto">
+        ${done.slice(0,20).map(o => `<div class="order-row">
+          <span class="order-name">${o.clientNom || o.name || 'Client'}</span>
+          ${o.panierRaw?.length ? `<span class="order-meta">${o.panierRaw.map(p=>`${p.quantite||1}<span data-icon="x"></span>${p.nom}`).join(', ').slice(0,60)}</span>` : ''}
+          <span class="order-total">€${(o.total||0).toFixed(2)}</span>
+        </div>`).join('')}
+        ${done.length > 20 ? `<p style="font-size:.75rem;color:#6b7280;padding:4px 0">+${done.length-20} autres commandes</p>` : ''}
+      </div>` : '<p style="font-size:.8rem;color:#6b7280">Aucune commande traitée ce jour.</p>'}`;
+  } catch { panel.innerHTML = '<p style="font-size:.8rem;color:#c03030">Erreur de chargement.</p>'; }
+}
+
+function exportCSV() {
+  if (!analyticsData) return;
+  const rows = [['Date','CA (€)','Nb commandes','Sur place']];
+  Object.entries(analyticsData.revenueByDay||{}).forEach(([d,ca]) => {
+    rows.push([d, ca.toFixed(2), analyticsData.ordersByDay?.[d]||0, analyticsData.surPlaceByDay?.[d]||0]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `rapport-CA-${currentDays}j.csv`;
+  a.click();
+  showSnack('📥 Export CSV téléchargé');
+}
+
+function exportProductsCSV() {
+  if (!analyticsData?.topProducts?.length) { showSnack('Aucun produit à exporter'); return; }
+  const rows = [['Produit','Quantité vendue','CA (€)']];
+  analyticsData.topProducts.forEach(p => rows.push([p.nom, p.qty, p.revenue?.toFixed(2)||0]));
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `top-produits-${currentDays}j.csv`;
+  a.click();
+  showSnack('📥 Export produits téléchargé');
+}
+
+function printReport() {
+  if (!analyticsData) { showSnack('Aucune donnée à imprimer'); return; }
+  const d = analyticsData;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Rapport Commande-IA</title>
+    <style>body{font-family:'Helvetica Neue',sans-serif;padding:32px;color:#111;max-width:800px;margin:0 auto}
+    h1{font-size:20px;color:#0E4B47;margin-bottom:4px}
+    .sub{color:#666;font-size:12px;margin-bottom:24px}
+    .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px}
+    .kpi{border:1.5px solid #B8D0C8;border-radius:8px;padding:12px}
+    .kv{font-size:22px;font-weight:800;color:#0E4B47}
+    .kl{font-size:11px;color:#6b7280;margin-top:2px}
+    table{width:100%;border-collapse:collapse;margin-bottom:20px}
+    th{background:#f5f5f5;padding:8px;text-align:left;font-size:12px}
+    td{padding:8px;border-bottom:1px solid #eee;font-size:12px}
+    .footer{font-size:10px;color:#999;margin-top:32px;border-top:1px solid #eee;padding-top:12px}
+    </style>
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head><body>
+    <h1>Rapport — Commande-IA</h1>
+    <div class="sub">Période : ${currentDays} derniers jours · Généré le ${new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})}</div>
+    <div class="grid">
+      <div class="kpi"><div class="kv">€${d.totalRevenue?.toFixed(2)||0}</div><div class="kl">Chiffre d'affaires</div></div>
+      <div class="kpi"><div class="kv">${d.totalOrders}</div><div class="kl">Commandes traitées</div></div>
+      <div class="kpi"><div class="kv">€${d.avgOrderValue?.toFixed(2)||0}</div><div class="kl">Panier moyen</div></div>
+    </div>
+    <h2 style="font-size:14px;margin-bottom:8px">Récapitulatif</h2>
+    <table>
+      <tr><th>Indicateur</th><th>Valeur</th></tr>
+      <tr><td>Commandes traitées</td><td>${d.totalOrders}</td></tr>
+      <tr><td>Commandes refusées</td><td>${d.refusedOrders||0}</td></tr>
+      <tr><td>Taux de refus</td><td>${((d.refusedOrders||0)/((d.totalOrders+(d.refusedOrders||0))||1)*100).toFixed(1)}%</td></tr>
+      <tr><td>CA total</td><td>€${d.totalRevenue?.toFixed(2)}</td></tr>
+      <tr><td>Panier moyen</td><td>€${d.avgOrderValue?.toFixed(2)}</td></tr>
+    </table>
+    ${d.topProducts?.length ? `<h2 style="font-size:14px;margin-bottom:8px">Top produits</h2>
+    <table><tr><th>#</th><th>Produit</th><th>Ventes</th><th>CA</th></tr>
+    ${d.topProducts.slice(0,10).map((p,i)=>`<tr><td>${i+1}</td><td>${p.nom}</td><td>${p.qty}</td><td>€${p.revenue?.toFixed(2)||0}</td></tr>`).join('')}
+    </table>` : ''}
+    <div class="footer">Rapport généré par Commande-IA · ${window.location.origin}</div>
+  <script src=/burger-menu.js></script>
+</body></html>`);
+  win.document.close();
+  win.print();
+}
+
+function showSnack(msg) {
+  const s = document.getElementById('snackbar');
+  s.textContent = msg; s.classList.add('show');
+  setTimeout(() => s.classList.remove('show'), 3200);
+}
+
+init();
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

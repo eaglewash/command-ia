@@ -1,0 +1,289 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Multi-Sites – Commande-IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:100vh}
+.topbar{background:#0E4B47;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.tl{display:flex;align-items:center;gap:14px}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:1.1rem}
+.logo-icon{width:32px;height:32px;background:#0E4B47;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.page-badge{background:rgba(255,255,255,.12);color:#c8e6c9;font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:20px}
+.tr{display:flex;align-items:center;gap:10px}
+.back-btn{background:rgba(255,255,255,.1);color:#fff;text-decoration:none;padding:7px 16px;border-radius:8px;font-size:.85rem;font-weight:500;transition:background .2s}
+.back-btn:hover{background:rgba(255,255,255,.2)}
+.btn{border:none;border-radius:8px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:#0E4B47;color:#fff}.btn-primary:hover{background:#2d5509}
+.btn-secondary{background:#fff;color:#1a2e1a;border:1.5px solid #B8D0C8}.btn-secondary:hover{background:#f5f9f2}
+
+.main{padding:24px;max-width:1300px;margin:0 auto}
+.spinner-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px}
+.spinner{width:36px;height:36px;border:3px solid #B8D0C8;border-top-color:#0E4B47;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-wrap p{color:#6b7280;font-size:.9rem}
+
+/* Access denied */
+.access-denied{background:#fff;border-radius:12px;border:1.5px solid #fca5a5;padding:40px;text-align:center;margin-top:40px}
+.ad-icon{font-size:3rem;margin-bottom:12px}
+.ad-title{font-size:1.1rem;font-weight:800;color:#dc2626;margin-bottom:8px}
+.ad-sub{font-size:.88rem;color:#6b7280;max-width:380px;margin:0 auto;line-height:1.5}
+
+/* Empty state */
+.empty-state{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;padding:60px;text-align:center}
+.empty-icon{font-size:3rem;opacity:.3;margin-bottom:12px}
+.empty-title{font-size:1rem;font-weight:700;margin-bottom:8px}
+.empty-sub{font-size:.85rem;color:#6b7280;max-width:360px;margin:0 auto;line-height:1.5}
+
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;padding:16px 18px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--c)}
+.kv{font-size:1.8rem;font-weight:800;line-height:1;margin-top:4px}
+.kl{font-size:.73rem;color:#6b7280;margin-top:4px;font-weight:500}
+.ks{font-size:.72rem;font-weight:600;margin-top:5px}
+.ks.up{color:#16a34a}.ks.neu{color:#6b7280}
+
+/* Restaurant grid */
+.restos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.resto-card{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;padding:18px;transition:all .2s;cursor:pointer;position:relative}
+.resto-card:hover{border-color:#0E4B47;box-shadow:0 4px 16px rgba(0,0,0,.07);transform:translateY(-1px)}
+.rc-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.rc-avatar{width:42px;height:42px;border-radius:10px;background:var(--ac);display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:800;color:#fff;flex-shrink:0}
+.rc-name{font-size:.95rem;font-weight:800;color:#1a2e1a;line-height:1.2;margin-bottom:2px}
+.rc-email{font-size:.75rem;color:#6b7280}
+.rc-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.rc-stat{background:#f5f9f2;border-radius:7px;padding:8px 10px;text-align:center}
+.rc-stat-v{font-size:1.1rem;font-weight:800;color:#1a2e1a}
+.rc-stat-l{font-size:.68rem;color:#6b7280;margin-top:2px}
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:8px;font-size:.72rem;font-weight:700}
+.s-Actif{background:#dcfce7;color:#166534}
+.s-Suspendu{background:#fee2e2;color:#dc2626}
+.s-Inactif{background:#f3f4f6;color:#9ca3af}
+.s-Trial{background:#fef3c7;color:#d97706}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.abonnement-badge{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:5px;background:#dbeafe;color:#1d4ed8}
+.onboarding-pill{font-size:.68rem;font-weight:600;color:#6b7280}
+
+/* Table vue */
+.card{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;overflow:hidden;margin-bottom:16px}
+.card-head{padding:14px 18px;border-bottom:1.5px solid #B8D0C8;display:flex;align-items:center;justify-content:space-between}
+.card-head h2{font-size:.93rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.rt{width:100%;border-collapse:collapse}
+.rt th{background:#f5f9f2;padding:9px 14px;text-align:left;font-size:.75rem;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.rt td{padding:11px 14px;border-bottom:1.5px solid #EEF5F2;font-size:.85rem;vertical-align:middle}
+.rt tr:last-child td{border-bottom:none}
+.rt tr:hover td{background:#fafcf9}
+
+.view-btns{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:7px;padding:3px}
+.vbtn{padding:4px 10px;border-radius:5px;font-size:.75rem;font-weight:600;cursor:pointer;color:rgba(255,255,255,.55);transition:all .2s;border:none;background:transparent;font-family:'Inter',sans-serif}
+.vbtn.active{background:rgba(255,255,255,.18);color:#fff}
+
+.detail-drawer{position:fixed;right:0;top:56px;bottom:0;width:360px;background:#fff;border-left:1.5px solid #B8D0C8;z-index:50;transform:translateX(100%);transition:transform .3s;overflow-y:auto;box-shadow:-8px 0 24px rgba(0,0,0,.1)}
+.detail-drawer.open{transform:translateX(0)}
+.dd-head{padding:18px;border-bottom:1.5px solid #B8D0C8;display:flex;align-items:center;justify-content:space-between}
+.dd-title{font-size:.95rem;font-weight:800;color:#1a2e1a}
+.dd-close{background:none;border:none;font-size:1.2rem;cursor:pointer;color:#6b7280;padding:4px}
+.dd-body{padding:18px}
+.dd-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #EEF5F2;font-size:.85rem}
+.dd-row:last-child{border-bottom:none}
+.dd-lbl{color:#4b5563;font-weight:500}
+.dd-val{font-weight:600;color:#1a2e1a;text-align:right;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+
+  </style>
+<script src="/icons.js"></script>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="tl">
+    <div class="logo">
+      <div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      Commande-IA
+    </div>
+    <span class="page-badge"><span data-icon="building"></span> Multi-Sites</span>
+  </div>
+  <div class="tr">
+    <div class="view-btns" id="view-btns" style="display:none">
+      <button class="vbtn active" onclick="setView('cards',this)" id="vb-cards">⊞ Cartes</button>
+      <button class="vbtn" onclick="setView('table',this)" id="vb-table">☰ Tableau</button>
+    </div>
+    <a href="/index.html" class="back-btn">← Dashboard</a>
+  </div>
+</div>
+
+<div class="main" id="main-content">
+  <div class="spinner-wrap"><div class="spinner"></div><p>Chargement...</p></div>
+</div>
+
+<div class="detail-drawer" id="detail-drawer">
+  <div class="dd-head">
+    <div class="dd-title" id="dd-title">Détails</div>
+    <button class="dd-close" onclick="closeDrawer()"><span data-icon="x"></span></button>
+  </div>
+  <div class="dd-body" id="dd-body"></div>
+</div>
+
+<script>
+const ORIGIN = window.location.origin;
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (!user.email) window.location.href = '/login.html';
+
+// Multi-sites = Admin ONLY
+if (user.role !== 'Admin') {
+  document.getElementById('main-content').innerHTML = `
+    <div class="access-denied">
+      <div class="ad-icon"><span data-icon="lock"></span></div>
+      <div class="ad-title">Accès réservé</div>
+      <div class="ad-sub">La vue multi-sites est réservée à l'administrateur de la plateforme. Si vous êtes gérant d'un restaurant, accédez directement à votre espace depuis le tableau de bord.</div>
+      <a href="/index.html" class="btn btn-secondary" style="margin-top:16px">← Retour au dashboard</a>
+    </div>`;
+} else {
+  loadRestos();
+}
+
+let restaurants = [];
+let platformStats = {};
+let currentView = 'cards';
+const ACCENT_COLORS = ['#0E4B47','#1d4ed8','#7c3aed','#d97706','#dc2626','#0891b2','#be185d','#166534'];
+
+async function loadRestos() {
+  try {
+    const [restosRes, statsRes] = await Promise.all([
+      fetch(ORIGIN + '/admin/restaurants'),
+      fetch(ORIGIN + '/admin/stats').catch(() => null)
+    ]);
+    restaurants = restosRes.ok ? await restosRes.json() : [];
+    platformStats = statsRes?.ok ? await statsRes.json() : {};
+    renderPage();
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px"><p style="color:#dc2626">Erreur : ${e.message}</p><button class="btn btn-secondary" style="margin-top:8px" onclick="loadRestos()">↻ Réessayer</button></div>`;
+  }
+}
+
+function renderPage() {
+  if (!restaurants.length) {
+    document.getElementById('main-content').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><span data-icon="building"></span></div>
+        <div class="empty-title">Aucun restaurant enregistré</div>
+        <div class="empty-sub">Ajoutez votre premier restaurant depuis l'interface d'administration.</div>
+        <a href="/admin.html" class="btn btn-primary" style="margin-top:12px">→ Espace Admin</a>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('view-btns').style.display = 'flex';
+  const actifs = restaurants.filter(r => r.statut === 'Actif').length;
+  const caByResto = platformStats.caByRestaurant || {};
+  const totalCA = Object.values(caByResto).reduce((a,b) => a+b, 0);
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi" style="--c:#0E4B47"><div class="kv">${restaurants.length}</div><div class="kl">Restaurants enregistrés</div><div class="ks neu">${actifs} actifs · ${restaurants.length-actifs} inactifs</div></div>
+      <div class="kpi" style="--c:#1d4ed8"><div class="kv">€${totalCA.toFixed(0)}</div><div class="kl">CA total archivé</div><div class="ks neu">Toutes périodes</div></div>
+      <div class="kpi" style="--c:#d97706"><div class="kv">${platformStats.totalAllTime||0}</div><div class="kl">Commandes traitées</div><div class="ks neu">Toutes plateformes</div></div>
+      <div class="kpi" style="--c:#7c3aed"><div class="kv">${platformStats.totalToday||0}</div><div class="kl">Commandes aujourd'hui</div><div class="ks up">En cours</div></div>
+    </div>
+    <div id="view-container"></div>`;
+
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  const container = document.getElementById('view-container');
+  if (!container) return;
+  if (currentView === 'cards') renderCards(container);
+  else renderTable(container);
+}
+
+function renderCards(container) {
+  const caByResto = platformStats.caByRestaurant || {};
+  container.innerHTML = `<div class="restos-grid">${restaurants.map((r,i) => {
+    const ca = caByResto[r.id] || 0;
+    const initials = (r.nom||r.email||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const color = ACCENT_COLORS[i % ACCENT_COLORS.length];
+    return `<div class="resto-card" style="--ac:${color}" onclick="openDrawer(${i})">
+      <div class="rc-head">
+        <div>
+          <div class="rc-name">${r.nom || '(sans nom)'}</div>
+          <div class="rc-email">${r.email || ''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="status-badge s-${r.statut||'Inactif'}"><span class="dot"></span>${r.statut||'Inconnu'}</span>
+          ${r.abonnement?`<span class="abonnement-badge">${r.abonnement}</span>`:''}
+        </div>
+      </div>
+      <div class="rc-avatar">${initials}</div>
+      <div class="rc-stats">
+        <div class="rc-stat"><div class="rc-stat-v">€${ca.toFixed(0)}</div><div class="rc-stat-l">CA total</div></div>
+        <div class="rc-stat"><div class="rc-stat-v">${r.onboarding||'—'}</div><div class="rc-stat-l">Onboarding</div></div>
+      </div>
+      ${r.adresse?`<div style="font-size:.72rem;color:#9ca3af;margin-top:8px"><span data-icon="map_pin"></span> ${r.adresse}</div>`:''}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderTable(container) {
+  const caByResto = platformStats.caByRestaurant || {};
+  container.innerHTML = `<div class="card">
+    <div class="card-head"><h2><span data-icon="clipboard"></span> Tous les restaurants</h2><span style="font-size:.75rem;color:#6b7280">${restaurants.length} au total</span></div>
+    <div style="overflow-x:auto">
+      <table class="rt">
+        <thead><tr><th>Restaurant</th><th>Email</th><th>Statut</th><th>Abonnement</th><th>Onboarding</th><th>CA total</th></tr></thead>
+        <tbody>${restaurants.map((r,i) => `
+          <tr style="cursor:pointer" onclick="openDrawer(${i})">
+            <td><strong>${r.nom||'(sans nom)'}</strong></td>
+            <td style="color:#6b7280">${r.email||'—'}</td>
+            <td><span class="status-badge s-${r.statut||'Inactif'}"><span class="dot"></span>${r.statut||'—'}</span></td>
+            <td>${r.abonnement||'—'}</td>
+            <td><span style="font-size:.78rem;color:#6b7280">${r.onboarding||'—'}</span></td>
+            <td><strong>€${(caByResto[r.id]||0).toFixed(0)}</strong></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function setView(v, btn) {
+  currentView = v;
+  document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCurrentView();
+}
+
+function openDrawer(idx) {
+  const r = restaurants[idx];
+  document.getElementById('dd-title').textContent = r.nom || r.email;
+  document.getElementById('dd-body').innerHTML = [
+    ['Email', r.email||'—'],
+    ['Téléphone', r.telephone||'—'],
+    ['Statut', r.statut||'—'],
+    ['Abonnement', r.abonnement||'—'],
+    ['Onboarding', r.onboarding||'—'],
+    ['Menu complété', r.menuComplete?'<span data-icon="check_circle"></span> Oui':'<span data-icon="x"></span> Non'],
+    ['Adresse', r.adresse||'—'],
+    ['Twilio', r.twilio||'Non configuré'],
+    ['Notes', r.notes||'—'],
+    ['CA total', `€${(platformStats.caByRestaurant?.[r.id]||0).toFixed(2)}`],
+  ].map(([l,v]) => `<div class="dd-row"><span class="dd-lbl">${l}</span><span class="dd-val">${v}</span></div>`).join('');
+  document.getElementById('detail-drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('detail-drawer').classList.remove('open');
+}
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src="/permissions.js"></script>
+<script>if (typeof requireAuth === 'function') requireAuth();</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

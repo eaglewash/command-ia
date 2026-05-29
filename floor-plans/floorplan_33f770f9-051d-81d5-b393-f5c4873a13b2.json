@@ -1,0 +1,32 @@
+{
+  "rooms": [
+    {
+      "id": "rm-1779807717674",
+      "name": "Salle principale",
+      "items": [
+        {
+          "id": "mpmrki8x4qnb",
+          "name": "table 4",
+          "icon": "<span data-icon=\"building\"></span>",
+          "shape": "square",
+          "w": 117,
+          "h": 121,
+          "x": 246,
+          "y": 357.5,
+          "bg": "#DCF0ED",
+          "status": "reserved",
+          "capacity": 2,
+          "rotation": 0,
+          "notes": "",
+          "isDecor": false,
+          "reservationId": "r1779806795248",
+          "client": "dupont",
+          "arrivalTime": "19:30",
+          "guests": 0
+        }
+      ]
+    }
+  ],
+  "updatedAt": "2026-05-26T15:03:19.790Z",
+  "updatedBy": "quentin"
+}

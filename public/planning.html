@@ -1,0 +1,2329 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planning équipes – Commande-IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:100vh}
+.topbar{background:#0E4B47;padding:0 18px;min-height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);flex-wrap:wrap;gap:8px}
+.tl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 0}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:1.1rem}
+.logo-icon{width:32px;height:32px;background:#0E4B47;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.page-badge{background:rgba(255,255,255,.12);color:#c8e6c9;font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:20px;white-space:nowrap}
+.tr{display:flex;align-items:center;gap:8px;padding:8px 0;flex-wrap:wrap}
+.back-btn{background:rgba(255,255,255,.1);color:#fff;text-decoration:none;padding:7px 14px;border-radius:8px;font-size:.82rem;font-weight:500;transition:background .2s}
+.back-btn:hover{background:rgba(255,255,255,.2)}
+.btn{border:none;border-radius:8px;padding:7px 12px;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-primary{background:#0E4B47;color:#fff}.btn-primary:hover{background:#2d5509}
+.btn-secondary{background:#fff;color:#1a2e1a;border:1.5px solid #B8D0C8}.btn-secondary:hover{background:#f5f9f2}
+.btn-ghost{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}.btn-ghost:hover{background:rgba(255,255,255,.2)}
+.btn-danger{background:#dc2626;color:#fff}.btn-danger:hover{background:#b91c1c}
+.btn-warn{background:#f59e0b;color:#fff}.btn-warn:hover{background:#d97706}
+.btn-sm{padding:5px 9px;font-size:.74rem}
+select.topbar-select,input.topbar-input{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 10px;font-family:'Inter',sans-serif;font-size:.82rem;max-width:200px}
+select.topbar-select option{background:#0E4B47}
+input.topbar-input::placeholder{color:rgba(255,255,255,.5)}
+
+.week-nav{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:8px;padding:4px 8px}
+.week-nav button{background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;padding:2px 6px;border-radius:4px;transition:background .2s}
+.week-nav button:hover{background:rgba(255,255,255,.15)}
+.week-lbl{color:#fff;font-size:.82rem;font-weight:600;white-space:nowrap;cursor:pointer}
+.week-lbl:hover{text-decoration:underline}
+
+.toolbar{background:#fff;border-bottom:1.5px solid #B8D0C8;padding:10px 18px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;position:sticky;top:56px;z-index:90}
+.toolbar-group{display:flex;gap:6px;align-items:center;padding-right:10px;border-right:1.5px solid #EEF5F2}
+.toolbar-group:last-child{border-right:none}
+.tb-label{font-size:.7rem;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:.5px;margin-right:4px}
+.tb-input{padding:5px 9px;border:1.5px solid #B8D0C8;border-radius:7px;font-size:.78rem;font-family:inherit;outline:none;transition:border-color .2s}
+.tb-input:focus{border-color:#0E4B47}
+.view-toggle{display:flex;gap:0;border:1.5px solid #B8D0C8;border-radius:8px;overflow:hidden}
+.view-toggle button{background:#fff;border:none;padding:6px 11px;font-size:.74rem;font-weight:700;color:#6b7280;cursor:pointer;border-right:1.5px solid #B8D0C8;font-family:inherit}
+.view-toggle button:last-child{border-right:none}
+.view-toggle button.active{background:#0E4B47;color:#fff}
+.view-toggle button:hover:not(.active){background:#f5f9f2}
+
+.main{padding:18px;max-width:1500px;margin:0 auto}
+.loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px}
+.spinner{width:36px;height:36px;border:3px solid #B8D0C8;border-top-color:#0E4B47;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-state p{color:#6b7280;font-size:.9rem;font-weight:500}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;background:#fff;border-radius:12px;border:1.5px solid #B8D0C8}
+.empty-icon{font-size:2.8rem;opacity:.35}
+.empty-title{font-size:1rem;font-weight:700}
+.empty-sub{font-size:.85rem;color:#6b7280;text-align:center;max-width:360px;line-height:1.5}
+
+/* Layout */
+.pgrid{display:grid;grid-template-columns:240px 1fr;gap:16px}
+@media(max-width:900px){.pgrid{grid-template-columns:1fr}}
+
+/* Staff sidebar */
+.staff-card{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;overflow:hidden}
+.staff-head{padding:12px 14px;border-bottom:1.5px solid #B8D0C8;font-size:.88rem;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+.staff-count{background:#B8D0C8;color:#0E4B47;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:10px}
+.staff-search{padding:10px 12px;border-bottom:1.5px solid #EEF5F2}
+.staff-search input{width:100%;padding:6px 10px;border:1.5px solid #B8D0C8;border-radius:7px;font-size:.78rem;font-family:inherit;outline:none}
+.staff-search input:focus{border-color:#0E4B47}
+.staff-list{padding:6px;max-height:55vh;overflow-y:auto}
+.staff-item{display:flex;align-items:center;gap:10px;padding:7px 9px;border-radius:8px;cursor:grab;transition:background .2s;border:1.5px solid transparent}
+.staff-item:hover{background:#f5f9f2}
+.staff-item.selected{background:#EEF5F2;border-color:#B8D0C8}
+.staff-item.dragging{opacity:.4}
+.staff-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;color:#fff;flex-shrink:0}
+.staff-info{flex:1;min-width:0}
+.staff-name{font-size:.82rem;font-weight:600;color:#1a2e1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.staff-role{font-size:.7rem;color:#6b7280;margin-top:1px;display:flex;align-items:center;gap:4px}
+.role-badge{font-size:.65rem;font-weight:700;padding:1px 5px;border-radius:5px}
+.rb-Manager{background:#dbeafe;color:#1d4ed8}
+.rb-Serveur{background:#dcfce7;color:#166534}
+.rb-Cuisinier{background:#fef3c7;color:#92400e}
+.rb-Barman{background:#f3e8ff;color:#7c3aed}
+.rb-Admin{background:#fee2e2;color:#dc2626}
+.rb-Autre{background:#f3f4f6;color:#6b7280}
+.staff-hours{font-size:.7rem;font-weight:700;color:#0E4B47;background:#DCF0ED;padding:2px 6px;border-radius:5px;margin-left:auto}
+.staff-hours.over{background:#fef0f0;color:#dc2626}
+.statut-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sd-Actif{background:#0E4B47}
+.sd-Inactif{background:#d1d5db}
+.sd-Suspendu{background:#dc2626}
+
+/* Calendar grid */
+.cal-card{background:#fff;border-radius:14px;border:1.5px solid #B8D0C8;overflow:hidden;box-shadow:0 1px 3px rgba(14,75,71,.04)}
+.cal-head{padding:14px 18px;border-bottom:1.5px solid #B8D0C8;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:linear-gradient(180deg,#fafcf9 0%,#fff 100%)}
+.cal-head h2{font-size:.95rem;font-weight:800;color:#1a2e1a;letter-spacing:-.2px}
+.cal-info{font-size:.72rem;color:#6b7280}
+.cal-grid{overflow-x:auto}
+.cal-table{width:100%;border-collapse:separate;border-spacing:0;min-width:780px}
+.cal-table th{background:#f5f9f2;padding:10px 6px;text-align:center;font-size:.7rem;font-weight:700;color:#4b5563;border-bottom:1.5px solid #B8D0C8;position:relative}
+.cal-table th:first-child{text-align:left;padding-left:14px;min-width:170px;position:sticky;left:0;background:#f5f9f2;z-index:2;border-right:1.5px solid #B8D0C8}
+.cal-table th .day-num{font-size:1rem;font-weight:800;color:#1a2e1a;display:block;line-height:1.1}
+.cal-table th .day-name{font-size:.62rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.6px;margin-top:2px;display:block}
+.cal-table th .day-month{font-size:.58rem;font-weight:600;color:#4D6260;text-transform:uppercase;letter-spacing:.5px;margin-top:1px;display:block}
+.cal-table th.today{background:linear-gradient(180deg,#dcfce7 0%,#DCF0ED 100%);color:#166534}
+.cal-table th.today .day-num{color:#15803d}
+.cal-table th.today::after{content:'';position:absolute;bottom:-2px;left:20%;right:20%;height:3px;background:#0E4B47;border-radius:2px 2px 0 0}
+.cal-table th.weekend{background:#f8fafc;color:#475569}
+.cal-table th.past{opacity:.55}
+.cal-table td{padding:5px;border-bottom:1px solid #EEF5F2;vertical-align:top;text-align:center;min-width:96px;transition:background .15s}
+.cal-table td:first-child{text-align:left;padding:10px 12px;position:sticky;left:0;background:#fff;z-index:1;border-right:1.5px solid #EEF5F2}
+.cal-table td.today-col{background:#EEF5F2}
+.cal-table td.past-col{background:#fafafa;opacity:.65}
+.cal-table tr:last-child td{border-bottom:none}
+.cal-table tr:hover td{background:#fafcf9}
+.cal-table tr:hover td:first-child{background:#fafcf9}
+.cal-table tr:hover td.today-col{background:#e7f9ed}
+.emp-cell{display:flex;align-items:center;gap:8px}
+.emp-avatar-sm{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:700;color:#fff;flex-shrink:0}
+.emp-name-sm{font-size:.82rem;font-weight:600;color:#1a2e1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+.emp-role-sm{font-size:.68rem;color:#6b7280}
+.emp-hours-sm{font-size:.68rem;font-weight:700;color:#0E4B47;margin-top:2px}
+.emp-hours-sm.over{color:#dc2626}
+
+.shift-cell{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;cursor:pointer;min-height:48px;border-radius:8px;transition:background .15s;padding:4px;gap:3px;position:relative}
+.shift-cell:hover{background:#f0f7ee}
+.shift-cell.drag-over{background:#dcfce7;outline:2px dashed #0E4B47}
+.shift-block{border-radius:7px;padding:5px 7px;font-size:.7rem;font-weight:700;white-space:nowrap;cursor:grab;user-select:none;display:flex;align-items:center;gap:4px;justify-content:center;min-height:28px;text-align:center;transition:transform .1s, box-shadow .15s;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.shift-block:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.shift-block:active{cursor:grabbing}
+.shift-block.dragging{opacity:.4;transform:scale(.95)}
+.shift-time{font-size:.62rem;font-weight:600;opacity:.85}
+.shift-pos{font-size:.6rem;background:rgba(255,255,255,.6);padding:1px 4px;border-radius:3px;color:inherit;margin-left:auto}
+.shift-note-icon{font-size:.7rem}
+.shift-matin{background:#dbeafe;color:#1d4ed8}
+.shift-soir{background:#f3e8ff;color:#7c3aed}
+.shift-journee{background:#dcfce7;color:#166534}
+.shift-custom{background:#fef3c7;color:#92400e}
+.shift-repos{background:#f3f4f6;color:#9ca3af}
+.shift-vacances{background:#fce7f3;color:#be185d}
+.shift-maladie{background:#fee2e2;color:#dc2626}
+.shift-formation{background:#e0e7ff;color:#4338ca}
+.shift-autre{background:#f1f5f9;color:#475569}
+.shift-add{color:#d1d5db;font-size:1.1rem;display:flex;align-items:center;justify-content:center;flex:1}
+
+/* Position colors */
+.pos-cuisine{border-left:3px solid #f59e0b}
+.pos-salle{border-left:3px solid #7BBBB5}
+.pos-bar{border-left:3px solid #8b5cf6}
+.pos-caisse{border-left:3px solid #06b6d4}
+.pos-livraison{border-left:3px solid #ef4444}
+.pos-manager{border-left:3px solid #1d4ed8}
+
+/* Stats / Info panels */
+.info-card{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;padding:14px;margin-top:14px}
+.info-head{font-size:.85rem;font-weight:700;color:#1a2e1a;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.info-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #EEF5F2;font-size:.82rem}
+.info-row:last-child{border-bottom:none}
+.info-lbl{color:#4b5563}
+.info-val{font-weight:600;color:#1a2e1a}
+.alert-warn{background:#fef3c7;border-radius:7px;padding:8px 10px;font-size:.75rem;color:#92400e;display:flex;gap:6px;align-items:flex-start;margin-top:8px}
+.alert-error{background:#fee2e2;border-radius:7px;padding:8px 10px;font-size:.75rem;color:#dc2626;display:flex;gap:6px;align-items:flex-start;margin-top:8px}
+
+/* Colors for avatars */
+.c0{background:#0E4B47}.c1{background:#1d4ed8}.c2{background:#7c3aed}.c3{background:#d97706}.c4{background:#dc2626}.c5{background:#0891b2}.c6{background:#be185d}.c7{background:#166534}
+
+/* Modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .2s;padding:16px}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:#fff;border-radius:14px;padding:0;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;transform:translateY(16px);transition:transform .2s;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal.lg{width:640px}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-header{padding:16px 20px;border-bottom:1.5px solid #EEF5F2;display:flex;align-items:center;justify-content:space-between}
+.modal-header h3{font-size:1rem;font-weight:800;color:#1a2e1a}
+.modal-close{background:#EEF5F2;border:none;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:16px;color:#6b7280}
+.modal-close:hover{background:#e5e7eb}
+.modal-body{padding:18px 20px}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1.5px solid #EEF5F2;background:#fafcf9}
+
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:.78rem;font-weight:700;color:#4b5563;margin-bottom:5px}
+.form-input,.form-select,.form-textarea{width:100%;padding:8px 10px;border:1.5px solid #B8D0C8;border-radius:7px;font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:#0E4B47}
+.form-textarea{resize:vertical;min-height:60px}
+.form-row{display:flex;gap:10px}
+.form-row .form-group{flex:1}
+
+.modal-tabs{display:flex;border-bottom:1.5px solid #EEF5F2;background:#fafcf9}
+.modal-tab{flex:1;padding:10px;border:none;background:none;cursor:pointer;font-size:.8rem;font-weight:700;color:#6b7280;border-bottom:2.5px solid transparent;font-family:inherit}
+.modal-tab.active{color:#0E4B47;border-bottom-color:#0E4B47;background:#fff}
+.modal-tab-content{display:none}
+.modal-tab-content.active{display:block}
+
+.shift-types-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
+@media(max-width:520px){.shift-types-grid{grid-template-columns:repeat(2,1fr)}}
+.shift-type-opt{border:1.5px solid #B8D0C8;border-radius:8px;padding:10px 6px;cursor:pointer;text-align:center;transition:all .2s;font-size:.78rem;font-weight:600}
+.shift-type-opt:hover{border-color:#0E4B47;background:#f5f9f2}
+.shift-type-opt.sel{border-color:#0E4B47;background:#EEF5F2;color:#0E4B47}
+.shift-type-opt small{display:block;font-weight:400;color:#6b7280;font-size:.68rem;margin-top:2px}
+
+.position-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+@media(max-width:520px){.position-grid{grid-template-columns:repeat(2,1fr)}}
+.position-opt{border:1.5px solid #B8D0C8;border-radius:7px;padding:7px 4px;cursor:pointer;text-align:center;transition:all .2s;font-size:.74rem;font-weight:600}
+.position-opt:hover{border-color:#0E4B47}
+.position-opt.sel{border-color:#0E4B47;background:#EEF5F2;color:#0E4B47}
+
+.shift-list{margin-top:8px;padding-top:8px;border-top:1.5px solid #EEF5F2}
+.shift-list-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#f5f9f2;border-radius:7px;margin-bottom:5px;font-size:.8rem}
+.shift-list-item .remove{margin-left:auto;background:none;border:none;color:#dc2626;cursor:pointer;font-size:1rem;padding:0 4px}
+
+/* Context menu */
+.ctx-menu{position:fixed;background:#fff;border:1.5px solid #B8D0C8;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:4px;z-index:1500;min-width:180px;font-size:.82rem}
+.ctx-item{padding:8px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px;color:#1a2e1a;font-weight:500}
+.ctx-item:hover{background:#f5f9f2}
+.ctx-item.danger{color:#dc2626}
+.ctx-item.danger:hover{background:#fef2f2}
+.ctx-sep{height:1px;background:#EEF5F2;margin:4px 6px}
+
+.snackbar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0E4B47;color:#fff;padding:11px 22px;border-radius:10px;font-size:.85rem;font-weight:600;z-index:2000;transition:transform .3s;max-width:90vw}
+.snackbar.show{transform:translateX(-50%) translateY(0)}
+.snackbar.error{background:#dc2626}
+.snackbar.warn{background:#f59e0b}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* Stats panel */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.stat-tile{background:#f8fdf5;border-radius:9px;padding:10px;text-align:center}
+.stat-tile.warn{background:#fef3c7}
+.stat-tile.danger{background:#fef2f2}
+.stat-num{font-size:1.3rem;font-weight:800;color:#0E4B47}
+.stat-tile.warn .stat-num{color:#92400e}
+.stat-tile.danger .stat-num{color:#dc2626}
+.stat-lbl{font-size:.66rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+
+/* Day view */
+.day-view{background:#fff;border-radius:14px;border:1.5px solid #B8D0C8;overflow:hidden;box-shadow:0 1px 3px rgba(14,75,71,.04)}
+.day-head{padding:14px 18px;border-bottom:1.5px solid #B8D0C8;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:linear-gradient(180deg,#fafcf9 0%,#fff 100%)}
+.day-emp-row{display:grid;grid-template-columns:200px 1fr;border-bottom:1px solid #EEF5F2;min-height:54px;transition:background .12s}
+.day-emp-row:hover{background:#fafcf9}
+.day-emp-row:last-child{border-bottom:none}
+.day-emp-info{padding:10px 14px;display:flex;align-items:center;gap:8px;background:#fafcf9;border-right:1.5px solid #EEF5F2}
+.day-shifts-row{padding:8px;display:flex;flex-wrap:wrap;gap:5px;align-items:flex-start}
+.day-shift-block{padding:6px 10px;border-radius:7px;font-size:.78rem;font-weight:600;cursor:grab;display:flex;align-items:center;gap:5px}
+.today-badge{display:inline-block;background:#0E4B47;color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.5px;margin-left:6px}
+.archive-banner{background:linear-gradient(90deg,#f0f9eb,#fafcf9);border-left:3px solid #0E4B47;border-radius:0 8px 8px 0;padding:8px 12px;font-size:.74rem;color:#2d5509;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+
+/* Print styles */
+@media print {
+  .topbar,.toolbar,.no-print,.staff-card .staff-search,.shift-add{display:none !important}
+  .pgrid{grid-template-columns:1fr !important}
+  body{background:#fff}
+  .main{padding:0;max-width:100%}
+  .cal-card,.staff-card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid}
+}
+
+/* Mobile */
+@media (max-width:600px){
+  .toolbar-group{border-right:none;padding-right:0}
+  .toolbar{flex-direction:row}
+  .main{padding:10px}
+  .cal-table th:first-child,.cal-table td:first-child{min-width:120px}
+}
+
+/* Legend */
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:.7rem;color:#6b7280}
+.legend-dot{width:10px;height:10px;border-radius:3px}
+
+  </style>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="tl">
+    <div class="logo">
+      <div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      Commande-IA
+    </div>
+    <span class="page-badge"><span data-icon="calendar"></span> Planning équipes</span>
+    <select class="topbar-select" id="resto-select" style="display:none" onchange="onRestaurantChange()"></select>
+    <div class="week-nav">
+      <button onclick="changeWeek(-1)" title="Semaine précédente">‹</button>
+      <span class="week-lbl" id="week-lbl" onclick="goToCurrentWeek()" title="Cliquez pour revenir à cette semaine">—</span>
+      <button onclick="changeWeek(1)" title="Semaine suivante">›</button>
+    </div>
+  </div>
+  <div class="tr">
+    <a href="/index.html" class="back-btn">← Dashboard</a>
+  </div>
+</div>
+
+<div class="toolbar no-print" id="toolbar" style="display:none">
+  <div class="toolbar-group">
+    <span class="tb-label">Vue</span>
+    <div class="view-toggle">
+      <button id="view-week" class="active" onclick="setView('week')"><span data-icon="calendar"></span> Semaine</button>
+      <button id="view-day" onclick="setView('day')"><span data-icon="calendar"></span> Jour</button>
+      <button id="view-list" onclick="setView('list')"><span data-icon="clipboard"></span> Liste</button>
+    </div>
+  </div>
+  <div class="toolbar-group">
+    <span class="tb-label">Filtre</span>
+    <select class="tb-input" id="filter-role" onchange="renderAll()">
+      <option value="">Tous les rôles</option>
+    </select>
+    <select class="tb-input" id="filter-position" onchange="renderAll()">
+      <option value="">Tous les postes</option>
+      <option value="cuisine">Cuisine</option>
+      <option value="salle">Salle</option>
+      <option value="bar">Bar</option>
+      <option value="caisse">Caisse</option>
+      <option value="livraison">Livraison</option>
+      <option value="manager">Manager</option>
+    </select>
+  </div>
+  <div class="toolbar-group" id="actions-group" style="display:none">
+    <span class="tb-label">Actions</span>
+    <button class="btn btn-primary btn-sm" data-perm="create_shift" onclick="openQuickAddModal()" title="Ajouter rapidement un créneau"><span data-icon="plus"></span> Nouveau créneau</button>
+    <button class="btn btn-secondary btn-sm" data-perm="modify_shift" onclick="copyPreviousWeek()" title="Copier le planning de la semaine précédente"><span data-icon="clipboard"></span> Copier semaine</button>
+    <button class="btn btn-secondary btn-sm" data-perm="use_templates" onclick="openTemplatesModal()" title="Templates de planning"><span data-icon="file_text"></span> Templates</button>
+    <button class="btn btn-secondary btn-sm" data-perm="manage_absences" onclick="openAbsenceModal()" title="Ajouter une absence (congés, maladie...)"><span data-icon="sun"></span> Absence</button>
+    <button class="btn btn-warn btn-sm" data-perm="delete_shift" onclick="clearWeekConfirm()" title="Effacer toute la semaine"><span data-icon="trash"></span> Vider semaine</button>
+  </div>
+  <div class="toolbar-group" id="panneaux-group" style="display:none;background:linear-gradient(90deg,#f0f9eb,#fff);border-radius:8px;padding:4px 10px">
+    <span class="tb-label" style="color:#0E4B47"><span data-icon="box"></span> Panneaux</span>
+    <button class="btn btn-primary btn-sm" onclick="openCreatePanelModal()" title="Créer un panneau de planning à transmettre"><span data-icon="box"></span> Créer panneau</button>
+    <button class="btn btn-secondary btn-sm" onclick="openImportPanelModal()" title="Insérer un panneau pour des employés">📥 Insérer panneau</button>
+  </div>
+  <div class="toolbar-group" data-perm="export" data-perm-mode="hide">
+    <span class="tb-label">Export</span>
+    <button class="btn btn-secondary btn-sm" onclick="window.print()" title="Imprimer"><span data-icon="print"></span></button>
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV()" title="Exporter CSV"><span data-icon="chart_bar"></span> CSV</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportPDF()" title="Exporter PDF"><span data-icon="file_text"></span> PDF</button>
+  </div>
+</div>
+
+<div class="main" id="main-content">
+  <div class="loading-state"><div class="spinner"></div><p>Chargement de l'équipe...</p></div>
+</div>
+
+<!-- Modal édition créneau -->
+<div class="modal-overlay" id="shift-modal" onclick="if(event.target===this)closeShiftModal()">
+  <div class="modal lg">
+    <div class="modal-header">
+      <h3 id="modal-title">Modifier le créneau</h3>
+      <button class="modal-close" onclick="closeShiftModal()"><span data-icon="x"></span></button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="custom" onclick="switchTab('custom')"><span data-icon="clock"></span> Heures</button>
+      <button class="modal-tab" data-tab="quick" onclick="switchTab('quick')"><span data-icon="zap"></span> Préréglages</button>
+      <button class="modal-tab" data-tab="absence" onclick="switchTab('absence')"><span data-icon="sun"></span> Absence</button>
+    </div>
+    <div class="modal-body">
+      <!-- Onglet Rapide (préréglages) -->
+      <div class="modal-tab-content" id="tab-quick">
+        <div class="form-label">Choisir un préréglage (les heures s'affichent dans l'onglet <span data-icon="clock"></span> Heures pour modification)</div>
+        <div class="shift-types-grid">
+          <div class="shift-type-opt" onclick="selectQuickShift('matin','09:00','15:00')" id="qopt-matin"><span data-icon="sunrise"></span> Matin<small>09h – 15h</small></div>
+          <div class="shift-type-opt" onclick="selectQuickShift('soir','15:00','23:00')" id="qopt-soir"><span data-icon="sunset"></span> Soir<small>15h – 23h</small></div>
+          <div class="shift-type-opt" onclick="selectQuickShift('journee','09:00','17:00')" id="qopt-journee"><span data-icon="sun"></span> Journée<small>09h – 17h</small></div>
+          <div class="shift-type-opt" onclick="selectQuickShift('repos')" id="qopt-repos"><span data-icon="circle_dot"></span> Repos<small>Jour off</small></div>
+        </div>
+      </div>
+      <!-- Onglet Personnalisé (heures par défaut) -->
+      <div class="modal-tab-content active" id="tab-custom">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Heure début</label>
+            <input type="time" class="form-input" id="custom-start" value="09:00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Heure fin</label>
+            <input type="time" class="form-input" id="custom-end" value="17:00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Poste / zone</label>
+          <div class="position-grid">
+            <div class="position-opt" data-pos="" onclick="selectPos('')">— Aucun —</div>
+            <div class="position-opt" data-pos="cuisine" onclick="selectPos('cuisine')"><span data-icon="chef_hat"></span> Cuisine</div>
+            <div class="position-opt" data-pos="salle" onclick="selectPos('salle')"><span data-icon="plate"></span> Salle</div>
+            <div class="position-opt" data-pos="bar" onclick="selectPos('bar')"><span data-icon="cocktail"></span> Bar</div>
+            <div class="position-opt" data-pos="caisse" onclick="selectPos('caisse')"><span data-icon="credit_card"></span> Caisse</div>
+            <div class="position-opt" data-pos="livraison" onclick="selectPos('livraison')"><span data-icon="bike"></span> Livraison</div>
+            <div class="position-opt" data-pos="manager" onclick="selectPos('manager')"><span data-icon="briefcase"></span> Manager</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes (optionnel)</label>
+          <textarea class="form-textarea" id="custom-notes" placeholder="Ex: Formation nouveau, événement spécial, double service..."></textarea>
+        </div>
+      </div>
+      <!-- Onglet Absence -->
+      <div class="modal-tab-content" id="tab-absence">
+        <div class="form-label">Type d'absence</div>
+        <div class="shift-types-grid">
+          <div class="shift-type-opt" onclick="selectAbsence('vacances')" id="aopt-vacances"><span data-icon="sun"></span> Congés<small>Vacances payées</small></div>
+          <div class="shift-type-opt" onclick="selectAbsence('maladie')" id="aopt-maladie"><span data-icon="alert_circle"></span> Maladie<small>Arrêt maladie</small></div>
+          <div class="shift-type-opt" onclick="selectAbsence('formation')" id="aopt-formation"><span data-icon="book"></span> Formation<small>Stage / formation</small></div>
+          <div class="shift-type-opt" onclick="selectAbsence('autre')" id="aopt-autre"><span data-icon="no_entry"></span> Autre<small>Indisponible</small></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Motif (optionnel)</label>
+          <input type="text" class="form-input" id="absence-reason" placeholder="Ex: Vacances en famille">
+        </div>
+      </div>
+
+      <!-- Liste créneaux multiples -->
+      <div class="shift-list" id="multi-shifts-section" style="display:none">
+        <div style="font-size:.78rem;font-weight:700;color:#4b5563;margin-bottom:6px"><span data-icon="pin"></span> Créneaux du jour</div>
+        <div id="multi-shifts-list"></div>
+        <button class="btn btn-secondary btn-sm" onclick="addNewShiftSlot()" style="margin-top:5px">+ Ajouter un autre créneau</button>
+      </div>
+
+      <!-- Options avancées -->
+      <details style="margin-top:14px;border-top:1.5px solid #EEF5F2;padding-top:10px">
+        <summary style="cursor:pointer;font-size:.78rem;font-weight:700;color:#4b5563"><span data-icon="settings"></span> Options avancées (répéter, copier...)</summary>
+        <div style="margin-top:10px">
+          <div class="form-group">
+            <label class="form-label">Répéter ce créneau</label>
+            <select class="form-select" id="repeat-pattern">
+              <option value="">Pas de répétition</option>
+              <option value="rest-week">Sur le reste de la semaine</option>
+              <option value="weekdays">Lun-Ven uniquement</option>
+              <option value="weekend">Sam-Dim uniquement</option>
+              <option value="all-week">Toute la semaine (Lun-Dim)</option>
+            </select>
+          </div>
+        </div>
+      </details>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="btn-delete-shift" onclick="deleteShift()" style="margin-right:auto;display:none"><span data-icon="trash"></span> Supprimer</button>
+      <button class="btn btn-secondary" onclick="closeShiftModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveShift()"><span data-icon="check_circle"></span> Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Templates -->
+<div class="modal-overlay" id="templates-modal" onclick="if(event.target===this)closeTemplatesModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><span data-icon="file_text"></span> Templates de planning</h3>
+      <button class="modal-close" onclick="closeTemplatesModal()"><span data-icon="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nom du template</label>
+        <input type="text" class="form-input" id="template-name" placeholder="Ex: Semaine type été">
+        <button class="btn btn-primary btn-sm" onclick="saveAsTemplate()" style="margin-top:8px"><span data-icon="save"></span> Enregistrer la semaine actuelle</button>
+      </div>
+      <div style="border-top:1.5px solid #EEF5F2;padding-top:14px">
+        <div class="form-label">Templates enregistrés</div>
+        <div id="templates-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : Créer un panneau de planning -->
+<div class="modal-overlay" id="create-panel-modal" onclick="if(event.target===this)closeCreatePanelModal()">
+  <div class="modal lg">
+    <div class="modal-header">
+      <h3><span data-icon="box"></span> Créer un panneau de planning</h3>
+      <button class="modal-close" onclick="closeCreatePanelModal()"><span data-icon="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-warn" style="background:#f0f9eb;color:#0E4B47;border-left:3px solid #0E4B47">
+        <span data-icon="sparkles"></span> Un <strong>panneau</strong> est une copie complète du planning de la semaine affichée que vous pouvez télécharger, partager et insérer plus tard pour les employés concernés.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nom du panneau</label>
+        <input type="text" class="form-input" id="panel-name" placeholder="Ex: Planning Semaine 19 — Salle">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Employés inclus dans le panneau</label>
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="panelToggleAll(true)">Tout cocher</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="panelToggleAll(false)">Tout décocher</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="panelSelectWithShifts()">Seulement ceux avec créneaux</button>
+        </div>
+        <div id="panel-employees-list" style="max-height:240px;overflow-y:auto;border:1.5px solid #B8D0C8;border-radius:8px;padding:8px"></div>
+      </div>
+      <div class="info-card" id="panel-summary" style="margin-top:0;padding:10px 12px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeCreatePanelModal()">Annuler</button>
+      <button class="btn btn-secondary" onclick="downloadPanel()"><span data-icon="download"></span> Télécharger le panneau</button>
+      <button class="btn btn-primary" onclick="insertPanelDirect()">📥 Insérer & sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : Importer un panneau -->
+<div class="modal-overlay" id="import-panel-modal" onclick="if(event.target===this)closeImportPanelModal()">
+  <div class="modal lg">
+    <div class="modal-header">
+      <h3>📥 Insérer un panneau de planning</h3>
+      <button class="modal-close" onclick="closeImportPanelModal()"><span data-icon="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Sélectionnez un fichier panneau (.json)</label>
+        <input type="file" class="form-input" id="panel-file-input" accept=".json,application/json" onchange="onPanelFileChosen(event)">
+        <div style="font-size:.7rem;color:#6b7280;margin-top:4px">Le panneau a été créé depuis « <span data-icon="box"></span> Créer panneau » sur ce planning ou un autre poste.</div>
+      </div>
+      <div id="panel-preview" style="display:none">
+        <div class="alert-warn" style="background:#f0f9eb;color:#0E4B47;border-left:3px solid #0E4B47" id="panel-preview-info"></div>
+        <div class="form-group">
+          <label class="form-label">Insérer pour quels employés ?</label>
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="importPanelToggleAll(true)">Tout cocher</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="importPanelToggleAll(false)">Tout décocher</button>
+          </div>
+          <div id="panel-import-employees" style="max-height:200px;overflow-y:auto;border:1.5px solid #B8D0C8;border-radius:8px;padding:8px"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Insérer pour quelle semaine ?</label>
+          <select class="form-select" id="panel-target-week">
+            <option value="0">Cette semaine</option>
+            <option value="1" selected>Semaine prochaine</option>
+            <option value="2">Dans 2 semaines</option>
+            <option value="3">Dans 3 semaines</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:6px;font-size:.82rem">
+            <input type="checkbox" id="panel-overwrite"> Écraser les créneaux existants pour cette semaine
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeImportPanelModal()">Annuler</button>
+      <button class="btn btn-primary" id="panel-import-confirm" onclick="confirmImportPanel()" disabled><span data-icon="check_circle"></span> Insérer & sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Absence en masse -->
+<div class="modal-overlay" id="absence-modal" onclick="if(event.target===this)closeAbsenceModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><span data-icon="sun"></span> Ajouter une absence</h3>
+      <button class="modal-close" onclick="closeAbsenceModal()"><span data-icon="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Employé</label>
+        <select class="form-select" id="abs-employee"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Du</label>
+          <input type="date" class="form-input" id="abs-from">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Au</label>
+          <input type="date" class="form-input" id="abs-to">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="abs-type">
+          <option value="vacances">Congés payés</option>
+          <option value="maladie">Maladie</option>
+          <option value="formation">Formation</option>
+          <option value="repos">Repos</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Motif (optionnel)</label>
+        <input type="text" class="form-input" id="abs-reason">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeAbsenceModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="applyAbsence()"><span data-icon="check_circle"></span> Appliquer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ajout rapide créneau -->
+<div class="modal-overlay" id="quick-add-modal" onclick="if(event.target===this)closeQuickAddModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><span data-icon="plus"></span> Nouveau créneau</h3>
+      <button class="modal-close" onclick="closeQuickAddModal()"><span data-icon="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Employé</label>
+        <select class="form-select" id="qa-employee"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="qa-date">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Heure début</label>
+          <input type="time" class="form-input" id="qa-start" value="09:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Heure fin</label>
+          <input type="time" class="form-input" id="qa-end" value="17:00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Poste / zone (optionnel)</label>
+        <select class="form-select" id="qa-position">
+          <option value="">— Aucun —</option>
+          <option value="cuisine">Cuisine</option>
+          <option value="salle">Salle</option>
+          <option value="bar">Bar</option>
+          <option value="caisse">Caisse</option>
+          <option value="livraison">Livraison</option>
+          <option value="manager">Manager</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes (optionnel)</label>
+        <input type="text" class="form-input" id="qa-notes" placeholder="Ex: Formation, double service...">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeQuickAddModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="applyQuickAdd()"><span data-icon="check_circle"></span> Ajouter le créneau</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context menu -->
+<div class="ctx-menu" id="ctx-menu" style="display:none"></div>
+
+<div class="snackbar" id="snackbar"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/permissions.js"></script>
+<script src="/icons.js"></script>
+<script>
+window.addEventListener('load', () => { try { window.ICONS && window.ICONS.replaceEmojisGlobal && window.ICONS.replaceEmojisGlobal(); } catch(e) {} });
+const ORIGIN = window.location.origin;
+let user = (typeof requireAuth === 'function') ? requireAuth() : JSON.parse(sessionStorage.getItem('user') || '{}');
+// Si requireAuth a retourné null (redirection en cours), on évite que le reste du script crash
+if (!user) user = { email:'', role:'', restaurantId:'' };
+const isAdmin = user.role === 'Admin';
+const canEdit = ['Admin','Manager'].includes(user.role);
+let currentRestaurantId = user.restaurantId || null;
+let employees = [];
+let weekOffset = 0;
+let schedule = {}; // schedule[empId][dateKey] = [{ type, start, end, position, notes, absenceType, reason }]
+let currentView = 'week'; // week | day | list
+let editTarget = null; // { empId, dateKey, shiftIndex (optional) }
+let editBuffer = null; // shift being edited
+let activeTab = 'quick';
+let dragData = null; // { empId, dateKey, shiftIndex, mode: 'move'|'copy' }
+let _pageReady = false; // true une fois renderPage() appelé — bloque renderAll() prématuré
+let templates = {}; // saved templates
+
+const DAYS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+const DAYS_SHORT = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+const COLORS = ['c0','c1','c2','c3','c4','c5','c6','c7'];
+const POS_LABELS = { cuisine:'<span data-icon="chef_hat"></span> Cuisine', salle:'<span data-icon="plate"></span> Salle', bar:'<span data-icon="cocktail"></span> Bar', caisse:'<span data-icon="credit_card"></span> Caisse', livraison:'<span data-icon="bike"></span> Livraison', manager:'<span data-icon="briefcase"></span> Manager' };
+const POS_SHORT = { cuisine:'<span data-icon="chef_hat"></span>', salle:'<span data-icon="plate"></span>', bar:'<span data-icon="cocktail"></span>', caisse:'<span data-icon="credit_card"></span>', livraison:'<span data-icon="bike"></span>', manager:'<span data-icon="briefcase"></span>' };
+const ABSENCE_LABELS = { vacances:'Congés', maladie:'Maladie', formation:'Formation', repos:'Repos', autre:'Absent' };
+const ABSENCE_ICONS = { vacances:'<span data-icon="sun"></span>', maladie:'<span data-icon="alert_circle"></span>', formation:'<span data-icon="book"></span>', repos:'<span data-icon="circle_dot"></span>', autre:'<span data-icon="no_entry"></span>' };
+const SHIFT_LABELS = { matin:'Matin', soir:'Soir', journee:'Journée', custom:'Custom', repos:'Repos' };
+const SHIFT_ICONS = { matin:'<span data-icon="sunrise"></span>', soir:'<span data-icon="sunset"></span>', journee:'<span data-icon="sun"></span>', custom:'<span data-icon="settings"></span>', repos:'<span data-icon="circle_dot"></span>' };
+
+function scheduleKey() { return `planning_${currentRestaurantId || 'default'}`; }
+function templatesKey() { return `planning_templates_${currentRestaurantId || 'default'}`; }
+
+function loadTemplates() {
+  try { templates = JSON.parse(localStorage.getItem(templatesKey()) || '{}'); }
+  catch(e) { templates = {}; }
+}
+function saveTemplates() {
+  localStorage.setItem(templatesKey(), JSON.stringify(templates));
+}
+
+// ─── Nettoyage historique : on supprime tous les jours antérieurs à aujourd'hui
+// (les jours futurs et le jour courant sont conservés, comme les commandes archivées).
+function todayKey() { return new Date().toISOString().split('T')[0]; }
+function pruneSchedulePast(sched) {
+  const today = todayKey();
+  if (!sched || typeof sched !== 'object') return {};
+  for (const empId in sched) {
+    const days = sched[empId];
+    if (!days || typeof days !== 'object') continue;
+    for (const dk in days) {
+      if (dk < today) delete days[dk];
+    }
+  }
+  return sched;
+}
+
+function saveSchedule() {
+  // Toujours nettoyer avant d'écrire
+  schedule = pruneSchedulePast(schedule);
+  localStorage.setItem(scheduleKey(), JSON.stringify(schedule));
+  // En mode "Tous les restaurants" on n'envoie pas au serveur (pas de restaurantId valide)
+  if (currentRestaurantId && currentRestaurantId !== '__all__') {
+    fetch(`${ORIGIN}/planning/${currentRestaurantId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schedule, updatedAt: new Date().toISOString(), updatedBy: user.nom || user.email })
+    }).catch(() => {});
+  }
+}
+
+function countShifts(sched) {
+  let n = 0;
+  for (const eid in sched) {
+    const days = sched[eid] || {};
+    for (const dk in days) n += (days[dk] || []).length;
+  }
+  return n;
+}
+
+function loadSchedule() {
+  // 1) Lecture localStorage immédiate pour affichage instantané
+  try {
+    const saved = JSON.parse(localStorage.getItem(scheduleKey()) || 'null');
+    if (saved) schedule = pruneSchedulePast(migrateSchedule(saved));
+  } catch(e) {}
+  // 2) Synchronisation avec le serveur — la version la plus complète gagne.
+  //    Si le serveur est vide alors qu'on a du local, on POUSSE le local vers
+  //    le serveur (cas typique d'une migration depuis un ancien deploy sans
+  //    endpoint /planning). Ainsi les autres utilisateurs verront enfin les
+  //    créneaux du manager au lieu d'un planning vide.
+  if (currentRestaurantId && currentRestaurantId !== '__all__') {
+    fetch(`${ORIGIN}/planning/${currentRestaurantId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const serverSched = (data && data.schedule) ? pruneSchedulePast(migrateSchedule(data.schedule)) : {};
+        const localCount = countShifts(schedule);
+        const serverCount = countShifts(serverSched);
+        if (serverCount >= localCount) {
+          // Le serveur fait foi : on aligne le local
+          schedule = serverSched;
+          localStorage.setItem(scheduleKey(), JSON.stringify(schedule));
+        } else if (localCount > 0 && canEdit) {
+          // Local plus riche que le serveur → on pousse pour partager avec l'équipe
+          console.log('[planning] Local plus riche que le serveur (' + localCount + ' vs ' + serverCount + ') → push.');
+          saveSchedule();
+        }
+        renderAll();
+      }).catch(() => { renderAll(); });
+  } else {
+    renderAll();
+  }
+}
+
+// Migration depuis l'ancien format (string) vers le nouveau (array d'objets)
+function migrateSchedule(sched) {
+  const out = {};
+  for (const empId in sched) {
+    out[empId] = {};
+    for (const dateKey in sched[empId]) {
+      const v = sched[empId][dateKey];
+      if (typeof v === 'string') {
+        // ancien format
+        if (v === 'matin') out[empId][dateKey] = [{type:'matin',start:'09:00',end:'15:00'}];
+        else if (v === 'soir') out[empId][dateKey] = [{type:'soir',start:'15:00',end:'23:00'}];
+        else if (v === 'journee') out[empId][dateKey] = [{type:'journee',start:'09:00',end:'17:00'}];
+        else if (v === 'repos') out[empId][dateKey] = [{type:'repos'}];
+        else out[empId][dateKey] = [{type:v}];
+      } else if (Array.isArray(v)) {
+        out[empId][dateKey] = v;
+      } else if (v && typeof v === 'object') {
+        out[empId][dateKey] = [v];
+      }
+    }
+  }
+  return out;
+}
+
+function getWeekDates(offset = 0) {
+  const today = new Date();
+  const day = today.getDay() || 7;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - day + 1 + offset * 7);
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+}
+
+function dateKey(d) { return d.toISOString().split('T')[0]; }
+function isToday(d) { return dateKey(d) === dateKey(new Date()); }
+
+function updateWeekLabel() {
+  const dates = getWeekDates(weekOffset);
+  const fmt = d => d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});
+  let lbl = `${fmt(dates[0])} – ${fmt(dates[6])}`;
+  if (weekOffset === 0) lbl += ' (Cette semaine)';
+  else if (weekOffset === 1) lbl += ' (Semaine prochaine)';
+  else if (weekOffset === -1) lbl += ' (Sem. dernière)';
+  const lblEl = document.getElementById('week-lbl');
+  if (lblEl) lblEl.textContent = lbl;
+}
+
+function changeWeek(dir) {
+  weekOffset += dir;
+  updateWeekLabel();
+  renderAll();
+}
+function goToCurrentWeek() {
+  weekOffset = 0;
+  updateWeekLabel();
+  renderAll();
+}
+
+async function init() {
+  loadTemplates();
+  updateWeekLabel();
+  // Re-nettoyage horaire des jours passés (pour les onglets restés ouverts toute la journée)
+  setInterval(() => {
+    const before = JSON.stringify(schedule);
+    pruneSchedulePast(schedule);
+    if (JSON.stringify(schedule) !== before) {
+      localStorage.setItem(scheduleKey(), JSON.stringify(schedule));
+      renderAll();
+    }
+  }, 60 * 60 * 1000);
+  if (isAdmin) {
+    const sel = document.getElementById('resto-select');
+    sel.style.display = 'block';
+    try {
+      const r = await fetch(ORIGIN + '/admin/restaurants');
+      const restos = await r.json();
+      // Toujours proposer "Tous les restaurants" pour voir tous les employés
+      const opts = ['<option value="__all__"><span data-icon="users"></span> Tous les restaurants</option>'];
+      if (restos.length) {
+        opts.push(...restos.map(r => `<option value="${r.id}">${r.nom || r.email}</option>`));
+      }
+      sel.innerHTML = opts.join('');
+      currentRestaurantId = '__all__';
+      sel.value = '__all__';
+    } catch { sel.innerHTML = '<option value="__all__"><span data-icon="users"></span> Tous les restaurants</option>'; currentRestaurantId = '__all__'; }
+  }
+  // Toujours charger : si admin avec "Tous", on charge tous les employés
+  loadEmployees();
+}
+
+function onRestaurantChange() {
+  currentRestaurantId = document.getElementById('resto-select').value;
+  employees = [];
+  loadTemplates();
+  loadEmployees();
+}
+
+function getActiveRestoKey() {
+  // Pour la sauvegarde : utilise un id stable, "__all__" pour la vue agrégée
+  return currentRestaurantId || 'default';
+}
+
+async function loadEmployees() {
+  _pageReady = false; // Bloque renderAll() pendant le rechargement
+  document.getElementById('main-content').innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Chargement de l\'équipe...</p></div>';
+  try {
+    const r = await fetch(ORIGIN + '/admin/employes');
+    const allEmps = await r.json();
+
+    // ─── EXCLUSION DES ADMINS ───────────────────────────────
+    // Les Admin gèrent l'équipe mais ne font pas partie du planning opérationnel
+    const operational = allEmps.filter(e => e.role !== 'Admin');
+
+    if (isAdmin) {
+      const sel = document.getElementById('resto-select');
+      const selId = sel ? sel.value : currentRestaurantId;
+      if (!selId || selId === '__all__') {
+        // Admin sans filtre : montre tous les employés opérationnels
+        employees = operational;
+      } else {
+        // Filtre strict par restaurantId quand un restaurant est sélectionné
+        employees = operational.filter(e => e.restaurantId === selId);
+      }
+    } else {
+      // Non-admin : strictement les employés du même restaurant
+      employees = operational.filter(e => e.restaurantId === currentRestaurantId);
+    }
+
+    // ─── TRI : par restaurant puis par rôle puis par nom ────
+    employees.sort((a, b) => {
+      const ra = a.restaurant || ''; const rb = b.restaurant || '';
+      if (ra !== rb) return ra.localeCompare(rb);
+      const roleOrder = { Manager:1, Serveur:2, Cuisinier:3, Barman:4 };
+      const oa = roleOrder[a.role] || 9; const ob = roleOrder[b.role] || 9;
+      if (oa !== ob) return oa - ob;
+      return (a.nom || a.email || '').localeCompare(b.nom || b.email || '');
+    });
+
+    if (!employees.length) { renderEmpty(); return; }
+    renderPage();
+    populateRoleFilter();
+    loadSchedule();
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px;margin:0"><p style="color:#dc2626;font-size:.88rem">Erreur : ${e.message}</p></div>`;
+  }
+}
+
+function populateRoleFilter() {
+  const roles = [...new Set(employees.map(e => e.role).filter(Boolean))];
+  const sel = document.getElementById('filter-role');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Tous les rôles</option>' + roles.map(r => `<option value="${r}">${r}</option>`).join('');
+}
+
+// ── Synchro temps réel : recharger l'équipe quand un employé change ailleurs ──
+(function setupEmployesLiveSync() {
+  if (typeof io !== 'function') return;
+  try {
+    const sock = io();
+    let _last = 0;
+    sock.on('employes-updated', () => {
+      const now = Date.now();
+      if (now - _last < 400) return;  // debounce
+      _last = now;
+      try {
+        const snack = document.getElementById('snackbar');
+        if (snack) {
+          snack.innerHTML = '<span data-icon="refresh"></span> Équipe mise à jour…';
+          if (window.ICONS?.replaceAll) window.ICONS.replaceAll(snack);
+          snack.classList.add('show');
+          setTimeout(() => snack.classList.remove('show'), 1800);
+        }
+      } catch {}
+      loadEmployees();
+    });
+  } catch (e) { console.warn('Socket employés indisponible :', e.message); }
+})();
+
+function renderNoData() {
+  document.getElementById('main-content').innerHTML = `<div class="empty-state"><div class="empty-icon"><span data-icon="users"></span></div><div class="empty-title">Aucun restaurant sélectionné</div><div class="empty-sub">Sélectionnez un restaurant pour voir son planning.</div></div>`;
+}
+
+function renderEmpty() {
+  document.getElementById('main-content').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon"><span data-icon="users"></span></div>
+      <div class="empty-title">Aucun membre d'équipe trouvé</div>
+      <div class="empty-sub">${isAdmin ? 'Aucun employé n\'est encore enregistré. Ajoutez votre première équipe depuis l\'espace Admin pour commencer à planifier.' : 'Votre manager n\'a pas encore configuré d\'équipe. Contactez-le pour ajouter des employés.'}</div>
+      ${isAdmin ? '<a href="/admin.html" class="btn btn-primary" style="margin-top:8px">→ Gérer les employés</a>' : ''}
+    </div>`;
+}
+
+function renderPage() {
+  document.getElementById('toolbar').style.display = 'flex';
+  if (canEdit) {
+    document.getElementById('actions-group').style.display = 'flex';
+    document.getElementById('panneaux-group').style.display = 'flex';
+  }
+  document.getElementById('main-content').innerHTML = `
+    <div class="pgrid">
+      <div class="no-print">
+        <div class="staff-card">
+          <div class="staff-head">Équipe <span class="staff-count" id="staff-count">${employees.length}</span></div>
+          <div class="staff-search"><input type="text" id="staff-search" placeholder="<span data-icon="search"></span> Rechercher..." oninput="renderStaffList()"></div>
+          <div class="staff-list" id="staff-list"></div>
+        </div>
+        <div class="info-card">
+          <div class="info-head"><span data-icon="chart_bar"></span> Statistiques semaine</div>
+          <div id="week-stats"></div>
+        </div>
+        <div class="info-card" id="alerts-card" style="display:none">
+          <div class="info-head"><span data-icon="alert"></span> Alertes</div>
+          <div id="alerts-list"></div>
+        </div>
+        <div class="info-card">
+          <div class="info-head"><span data-icon="palette"></span> Légende</div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot shift-matin"></div>Matin</div>
+            <div class="legend-item"><div class="legend-dot shift-soir"></div>Soir</div>
+            <div class="legend-item"><div class="legend-dot shift-journee"></div>Journée</div>
+            <div class="legend-item"><div class="legend-dot shift-custom"></div>Custom</div>
+            <div class="legend-item"><div class="legend-dot shift-vacances"></div>Congés</div>
+            <div class="legend-item"><div class="legend-dot shift-maladie"></div>Maladie</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="archive-banner"><span data-icon="save"></span> Les créneaux sont sauvegardés sur le serveur · Les jours passés sont automatiquement archivés (comme les anciennes commandes)</div>
+        <div id="cal-area"></div>
+      </div>
+    </div>`;
+  _pageReady = true; // Activé APRÈS l'injection HTML — maintenant les éléments existent
+  renderAll();
+}
+
+function renderAll() {
+  if (!_pageReady) return; // La page n'est pas encore rendue — évite tout crash DOM
+  renderStaffList();
+  if (currentView === 'week') renderWeekView();
+  else if (currentView === 'day') renderDayView();
+  else if (currentView === 'list') renderListView();
+  renderWeekStats();
+  renderAlerts();
+  // Ré-applique les permissions sur les boutons (pour les éléments rendus dynamiquement)
+  if (window.PermissionsAPI && window.PermissionsAPI.applyButtonPermissions) {
+    window.PermissionsAPI.applyButtonPermissions();
+  }
+}
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  renderAll();
+}
+
+function getFilteredEmployees() {
+  const role = document.getElementById('filter-role')?.value;
+  const pos = document.getElementById('filter-position')?.value;
+  const search = (document.getElementById('staff-search')?.value || '').toLowerCase();
+  let list = employees.slice();
+  if (role) list = list.filter(e => e.role === role);
+  if (search) list = list.filter(e => (e.nom||'').toLowerCase().includes(search) || (e.email||'').toLowerCase().includes(search));
+  if (pos) {
+    // Filter to employees who have a shift with this position this week
+    const dates = getWeekDates(weekOffset).map(dateKey);
+    list = list.filter(e => {
+      const sd = schedule[e.id] || {};
+      return dates.some(dk => (sd[dk] || []).some(s => s.position === pos));
+    });
+  }
+  return list;
+}
+
+function renderStaffList() {
+  const list = getFilteredEmployees();
+  const dates = getWeekDates(weekOffset).map(dateKey);
+  const countEl = document.getElementById('staff-count');
+  if (countEl) countEl.textContent = list.length;
+
+  // ─── REGROUPEMENT PAR RESTAURANT (en mode "Tous") ───
+  const showRestaurantHeaders = isAdmin && currentRestaurantId === '__all__';
+  let html = '';
+  let lastResto = '___INIT___';
+
+  list.forEach(e => {
+    if (showRestaurantHeaders) {
+      const resto = e.restaurant || '— Sans restaurant —';
+      if (resto !== lastResto) {
+        html += `<div style="font-size:.7rem;font-weight:800;color:#0E4B47;text-transform:uppercase;letter-spacing:.6px;padding:8px 8px 4px;border-top:${lastResto==='___INIT___'?'none':'1px solid #EEF5F2'};margin-top:${lastResto==='___INIT___'?'0':'4px'}"><span data-icon="storefront"></span> ${escapeHtml(resto)}</div>`;
+        lastResto = resto;
+      }
+    }
+    const hours = computeWeekHours(e.id, dates);
+    const overTime = hours > 48;
+    const warnTime = hours > 35;
+    const cls = overTime ? 'over' : warnTime ? '' : '';
+    const i2 = employees.indexOf(e);
+    html += `
+    <div class="staff-item" id="staff-${e.id}" draggable="${canEdit?'true':'false'}"
+         ondragstart="onStaffDragStart(event,'${e.id}')"
+         onclick="openEmployeeProfile('${e.id}')" title="Voir le profil de ${escapeHtml(e.nom||e.email)}">
+      <div class="staff-avatar ${COLORS[i2%8]}">${(e.nom||'?')[0].toUpperCase()}</div>
+      <div class="staff-info">
+        <div class="staff-name">${escapeHtml(e.nom || e.email)}</div>
+        <div class="staff-role">
+          <span class="role-badge rb-${e.role||'Autre'}">${e.role||'—'}</span>
+          <span class="statut-dot sd-${e.statut||'Actif'}"></span>
+        </div>
+      </div>
+      <div class="staff-hours ${cls}" title="Heures cette semaine">${hours.toFixed(0)}h</div>
+    </div>`;
+  });
+
+  const staffListEl = document.getElementById('staff-list');
+  if (staffListEl) staffListEl.innerHTML = html || '<div style="padding:14px;text-align:center;color:#4D6260;font-size:.8rem">Aucun résultat</div>';
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+function computeShiftHours(s) {
+  if (!s || s.type === 'repos' || s.absenceType) return 0;
+  if (!s.start || !s.end) {
+    if (s.type === 'matin') return 6;
+    if (s.type === 'soir') return 8;
+    if (s.type === 'journee') return 8;
+    return 0;
+  }
+  const [h1,m1] = s.start.split(':').map(Number);
+  const [h2,m2] = s.end.split(':').map(Number);
+  let mins = (h2*60+m2) - (h1*60+m1);
+  if (mins < 0) mins += 24*60;
+  return mins/60;
+}
+function computeDayHours(empId, dk) {
+  const arr = schedule[empId]?.[dk] || [];
+  return arr.reduce((t,s) => t + computeShiftHours(s), 0);
+}
+function computeWeekHours(empId, dates) {
+  return dates.reduce((t,dk) => t + computeDayHours(empId, dk), 0);
+}
+
+// ─── VUE SEMAINE (table) ───
+function renderWeekView() {
+  const dates = getWeekDates(weekOffset);
+  const list = getFilteredEmployees();
+  const today = todayKey();
+  const MONTHS_SHORT = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  const calArea = document.getElementById('cal-area');
+  if (!calArea) return;
+  calArea.innerHTML = `
+    <div class="cal-card">
+      <div class="cal-head">
+        <h2><span data-icon="calendar"></span> Planning semaine</h2>
+        <span class="cal-info">${canEdit?'Cliquez une case · Glissez pour déplacer · Clic droit pour menu · Les jours passés sont automatiquement archivés':'Lecture seule · Les jours passés sont archivés automatiquement'}</span>
+      </div>
+      <div class="cal-grid">
+        <table class="cal-table" id="cal-table">
+          <thead><tr><th>Employé</th>${dates.map((d,i) => {
+            const dk = dateKey(d);
+            const cls = [];
+            if (isToday(d)) cls.push('today');
+            if (i >= 5) cls.push('weekend');
+            if (dk < today) cls.push('past');
+            return `<th class="${cls.join(' ')}"><span class="day-name">${DAYS_SHORT[i]}</span><span class="day-num">${d.getDate()}</span><span class="day-month">${MONTHS_SHORT[d.getMonth()]}</span></th>`;
+          }).join('')}</tr></thead>
+          <tbody id="cal-tbody"></tbody>
+        </table>
+      </div>
+    </div>`;
+  const tbody = document.getElementById('cal-tbody');
+  tbody.innerHTML = list.map((e,i) => {
+    const i2 = employees.indexOf(e);
+    const hours = computeWeekHours(e.id, dates.map(dateKey));
+    const overTime = hours > 48;
+    const warnTime = hours > 35;
+    const cls = overTime ? 'over' : '';
+    const cells = dates.map((d,di) => {
+      const dk = dateKey(d);
+      const shifts = schedule[e.id]?.[dk] || [];
+      const tdCls = [];
+      if (dk === today) tdCls.push('today-col');
+      else if (dk < today) tdCls.push('past-col');
+      // Si pas de créneau : grand "+", sinon : créneaux + petit bouton "+ Ajouter" en bas
+      const blocks = shifts.length
+        ? shifts.map((s,si) => renderShiftBlock(s, e.id, dk, si)).join('') + (canEdit ? '<span class="shift-add" style="font-size:.7rem;color:#0E4B47;cursor:pointer;padding:2px 0">+ Ajouter</span>' : '')
+        : (canEdit ? '<span class="shift-add">+</span>' : '<span class="shift-add">—</span>');
+      const click = canEdit ? `onclick="openShiftModal('${e.id}','${dk}',${di},null)"` : '';
+      return `<td class="${tdCls.join(' ')}">
+        <div class="shift-cell" ${click}
+             ondragover="onCellDragOver(event)"
+             ondragleave="onCellDragLeave(event)"
+             ondrop="onCellDrop(event,'${e.id}','${dk}')"
+             oncontextmenu="onCellContextMenu(event,'${e.id}','${dk}')">
+          ${blocks}
+        </div>
+      </td>`;
+    }).join('');
+    return `<tr>
+      <td>
+        <div class="emp-cell">
+          <div class="emp-avatar-sm ${COLORS[i2%8]}">${(e.nom||'?')[0].toUpperCase()}</div>
+          <div>
+            <div class="emp-name-sm">${escapeHtml(e.nom||e.email)}</div>
+            <div class="emp-role-sm">${e.role||'—'}</div>
+            <div class="emp-hours-sm ${cls}">${hours.toFixed(0)}h ${overTime?'<span data-icon="alert"></span>':warnTime?'':''}</div>
+          </div>
+        </div>
+      </td>
+      ${cells}
+    </tr>`;
+  }).join('');
+}
+
+function renderShiftBlock(s, empId, dk, si) {
+  if (s.absenceType) {
+    const cls = `shift-${s.absenceType}`;
+    return `<div class="shift-block ${cls}" draggable="${canEdit}"
+                  ondragstart="onShiftDragStart(event,'${empId}','${dk}',${si})"
+                  ondragend="onShiftDragEnd(event)"
+                  onclick="event.stopPropagation();${canEdit?`openShiftModal('${empId}','${dk}',null,${si})`:''}"
+                  oncontextmenu="event.stopPropagation();onShiftContextMenu(event,'${empId}','${dk}',${si})">
+      ${ABSENCE_ICONS[s.absenceType]||''} ${ABSENCE_LABELS[s.absenceType]||s.absenceType}
+    </div>`;
+  }
+  const isCustom = s.type === 'custom' || (s.start && !['matin','soir','journee'].includes(s.type));
+  const shiftClass = isCustom ? 'shift-custom' : ('shift-' + (s.type || 'custom'));
+  const posClass = s.position ? 'pos-' + s.position : '';
+  const time = (s.start && s.end) ? `${s.start}–${s.end}` : '';
+  const label = s.type === 'repos' ? 'Repos' : (SHIFT_LABELS[s.type] || (s.position ? POS_LABELS[s.position]?.split(' ')[1] : 'Custom'));
+  const noteIcon = s.notes ? '<span class="shift-note-icon" title="'+escapeHtml(s.notes)+'">📝</span>' : '';
+  const posIcon = s.position ? `<span class="shift-pos">${POS_SHORT[s.position]||''}</span>` : '';
+  return `<div class="shift-block ${shiftClass} ${posClass}" draggable="${canEdit}"
+              ondragstart="onShiftDragStart(event,'${empId}','${dk}',${si})"
+              ondragend="onShiftDragEnd(event)"
+              onclick="event.stopPropagation();${canEdit?`openShiftModal('${empId}','${dk}',null,${si})`:''}"
+              oncontextmenu="event.stopPropagation();onShiftContextMenu(event,'${empId}','${dk}',${si})">
+    <span style="display:flex;flex-direction:column;align-items:center;gap:1px;flex:1">
+      <span>${label}${noteIcon}</span>
+      ${time?`<span class="shift-time">${time}</span>`:''}
+    </span>
+    ${posIcon}
+  </div>`;
+}
+
+// ─── VUE JOUR ───
+function renderDayView() {
+  const dates = getWeekDates(weekOffset);
+  const list = getFilteredEmployees();
+  let dayIdx = (new Date().getDay() || 7) - 1;
+  if (weekOffset !== 0) dayIdx = 0;
+  const todayStr = todayKey();
+  if (!document.getElementById('cal-area')) return;
+  document.getElementById('cal-area').innerHTML = `
+    <div class="day-view">
+      <div class="day-head">
+        <h2 style="font-size:.95rem;font-weight:800;color:#1a2e1a;display:flex;align-items:center"><span data-icon="calendar"></span> Vue journée ${dateKey(dates[dayIdx]) === todayStr ? '<span class="today-badge">Aujourd\'hui</span>' : ''}</h2>
+        <select class="form-select" style="width:auto" id="day-select" onchange="renderDayView()">
+          ${dates.map((d,i) => `<option value="${i}" ${i===dayIdx?'selected':''}>${DAYS[i]} ${d.getDate()}/${d.getMonth()+1}${dateKey(d)===todayStr?' • Aujourd\'hui':dateKey(d)<todayStr?' • passé':''}</option>`).join('')}
+        </select>
+      </div>
+      <div id="day-rows"></div>
+    </div>`;
+  const sel = document.getElementById('day-select');
+  if (sel) sel.value = dayIdx;
+  const selectedDate = dates[parseInt(document.getElementById('day-select')?.value || dayIdx)];
+  const dk = dateKey(selectedDate);
+  document.getElementById('day-rows').innerHTML = list.map((e,i) => {
+    const i2 = employees.indexOf(e);
+    const shifts = schedule[e.id]?.[dk] || [];
+    const blocks = shifts.length ? shifts.map((s,si) => renderShiftBlock(s, e.id, dk, si)).join('') : (canEdit ? '<span class="shift-add">+ Ajouter</span>' : '<span class="shift-add">— Repos —</span>');
+    const click = canEdit ? `onclick="openShiftModal('${e.id}','${dk}',null,null)"` : '';
+    return `<div class="day-emp-row">
+      <div class="day-emp-info">
+        <div class="emp-avatar-sm ${COLORS[i2%8]}">${(e.nom||'?')[0].toUpperCase()}</div>
+        <div>
+          <div class="emp-name-sm">${escapeHtml(e.nom||e.email)}</div>
+          <div class="emp-role-sm">${e.role||'—'}</div>
+        </div>
+      </div>
+      <div class="day-shifts-row" ${click} ondragover="onCellDragOver(event)" ondragleave="onCellDragLeave(event)" ondrop="onCellDrop(event,'${e.id}','${dk}')">
+        ${blocks}
+      </div>
+    </div>`;
+  }).join('') || '<div style="padding:30px;text-align:center;color:#4D6260">Aucun résultat</div>';
+}
+
+// ─── VUE LISTE ───
+function renderListView() {
+  const dates = getWeekDates(weekOffset);
+  const list = getFilteredEmployees();
+  const rows = [];
+  list.forEach(e => {
+    dates.forEach(d => {
+      const dk = dateKey(d);
+      const shifts = schedule[e.id]?.[dk] || [];
+      shifts.forEach(s => {
+        if (s.type === 'repos') return;
+        rows.push({ emp: e, date: d, dk, shift: s });
+      });
+    });
+  });
+  rows.sort((a,b) => a.dk.localeCompare(b.dk) || (a.shift.start||'').localeCompare(b.shift.start||''));
+  if (!document.getElementById('cal-area')) return;
+  document.getElementById('cal-area').innerHTML = `
+    <div class="cal-card">
+      <div class="cal-head"><h2><span data-icon="clipboard"></span> Vue liste — ${rows.length} créneaux</h2></div>
+      <div style="overflow-x:auto">
+        <table class="cal-table">
+          <thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Employé</th><th>Type</th><th>Horaires</th><th>Poste</th><th>Notes</th><th>Heures</th></tr></thead>
+          <tbody>
+            ${rows.length ? rows.map(r => `
+              <tr style="cursor:pointer" onclick="${canEdit?`openShiftModalByShift('${r.emp.id}','${r.dk}',${schedule[r.emp.id][r.dk].indexOf(r.shift)})`:''}">
+                <td style="text-align:left;padding:8px 14px">${r.date.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit'})}</td>
+                <td style="text-align:left">${escapeHtml(r.emp.nom||r.emp.email)} <small style="color:#4D6260">${r.emp.role||''}</small></td>
+                <td>${r.shift.absenceType?ABSENCE_ICONS[r.shift.absenceType]+' '+ABSENCE_LABELS[r.shift.absenceType]:(SHIFT_ICONS[r.shift.type]||'')+' '+(SHIFT_LABELS[r.shift.type]||r.shift.type||'Custom')}</td>
+                <td>${r.shift.start?r.shift.start+' – '+r.shift.end:'—'}</td>
+                <td>${r.shift.position?POS_LABELS[r.shift.position]:'—'}</td>
+                <td style="font-size:.75rem;color:#6b7280">${escapeHtml(r.shift.notes||'')}</td>
+                <td>${computeShiftHours(r.shift).toFixed(1)}h</td>
+              </tr>
+            `).join('') : '<tr><td colspan="7" style="padding:30px;text-align:center;color:#4D6260">Aucun créneau cette semaine</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function openShiftModalByShift(empId, dk, idx) {
+  openShiftModal(empId, dk, null, idx);
+}
+
+// ─── STATISTIQUES ───
+function renderWeekStats() {
+  const dates = getWeekDates(weekOffset).map(dateKey);
+  const list = getFilteredEmployees();
+  let totalHours = 0, totalShifts = 0, totalRepos = 0, totalAbs = 0;
+  const byPosition = {};
+  const byRole = {};
+  list.forEach(e => {
+    dates.forEach(dk => {
+      const shifts = schedule[e.id]?.[dk] || [];
+      shifts.forEach(s => {
+        if (s.absenceType) totalAbs++;
+        else if (s.type === 'repos') totalRepos++;
+        else {
+          totalShifts++;
+          totalHours += computeShiftHours(s);
+          if (s.position) byPosition[s.position] = (byPosition[s.position]||0) + computeShiftHours(s);
+          if (e.role) byRole[e.role] = (byRole[e.role]||0) + computeShiftHours(s);
+        }
+      });
+    });
+  });
+  const panel = document.getElementById('week-stats');
+  if (!panel) return;
+  panel.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-tile"><div class="stat-num">${totalShifts}</div><div class="stat-lbl">Créneaux</div></div>
+      <div class="stat-tile"><div class="stat-num">${totalHours.toFixed(0)}h</div><div class="stat-lbl">Total heures</div></div>
+      <div class="stat-tile"><div class="stat-num">${totalRepos}</div><div class="stat-lbl">Jours repos</div></div>
+      <div class="stat-tile ${totalAbs>0?'warn':''}"><div class="stat-num">${totalAbs}</div><div class="stat-lbl">Absences</div></div>
+    </div>
+    ${Object.keys(byPosition).length ? `
+      <div style="font-size:.72rem;font-weight:700;color:#6b7280;margin-top:6px;margin-bottom:4px">PAR POSTE</div>
+      ${Object.entries(byPosition).map(([k,v])=>`<div class="info-row"><span class="info-lbl">${POS_LABELS[k]||k}</span><span class="info-val">${v.toFixed(0)}h</span></div>`).join('')}
+    ` : ''}
+    ${Object.keys(byRole).length ? `
+      <div style="font-size:.72rem;font-weight:700;color:#6b7280;margin-top:6px;margin-bottom:4px">PAR RÔLE</div>
+      ${Object.entries(byRole).map(([k,v])=>`<div class="info-row"><span class="info-lbl">${k}</span><span class="info-val">${v.toFixed(0)}h</span></div>`).join('')}
+    ` : ''}
+  `;
+}
+
+function renderAlerts() {
+  const dates = getWeekDates(weekOffset).map(dateKey);
+  const alerts = [];
+  employees.forEach(e => {
+    const hours = computeWeekHours(e.id, dates);
+    if (hours > 48) alerts.push({type:'error',msg:`${e.nom||e.email} : <b>${hours.toFixed(0)}h</b> (limite légale 48h dépassée)`});
+    else if (hours > 44) alerts.push({type:'warn',msg:`${e.nom||e.email} : <b>${hours.toFixed(0)}h</b> proche de la limite (max 48h/sem)`});
+    // Detect 7 jours d'affilée
+    let consec = 0, maxConsec = 0;
+    dates.forEach(dk => {
+      const shifts = schedule[e.id]?.[dk] || [];
+      const works = shifts.some(s => !s.absenceType && s.type !== 'repos');
+      if (works) { consec++; maxConsec = Math.max(maxConsec,consec); } else consec = 0;
+    });
+    if (maxConsec >= 7) alerts.push({type:'warn',msg:`${e.nom||e.email} : 7 jours d'affilée sans repos`});
+  });
+  // Detect days with no staff
+  dates.forEach((dk,di) => {
+    const onShift = employees.filter(e => (schedule[e.id]?.[dk] || []).some(s => !s.absenceType && s.type !== 'repos')).length;
+    if (onShift === 0 && employees.length > 0) alerts.push({type:'warn',msg:`${DAYS[di]} : aucun employé planifié`});
+  });
+  const card = document.getElementById('alerts-card');
+  const list = document.getElementById('alerts-list');
+  if (!card || !list) return;
+  if (!alerts.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  list.innerHTML = alerts.map(a => `<div class="alert-${a.type==='error'?'error':'warn'}">${a.type==='error'?'<span data-icon="alert_octagon"></span>':'<span data-icon="alert"></span>'} ${a.msg}</div>`).join('');
+}
+
+// ─── PROFIL EMPLOYÉ ───
+function openEmployeeProfile(empId) {
+  const e = employees.find(x => x.id === empId);
+  if (!e) return;
+  const dates = getWeekDates(weekOffset);
+  const dks = dates.map(dateKey);
+  const hours = computeWeekHours(e.id, dks);
+  const shiftsThisWeek = dks.flatMap(dk => schedule[e.id]?.[dk] || []);
+  const scheduled = shiftsThisWeek.filter(s => !s.absenceType && s.type !== 'repos').length;
+  const reposDays = shiftsThisWeek.filter(s => s.type === 'repos').length;
+  const absDays = shiftsThisWeek.filter(s => s.absenceType).length;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s;padding:16px';
+  overlay.onclick = ev => { if (ev.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:18px;width:400px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:slideUp .2s">
+      <div style="background:linear-gradient(135deg,#0E4B47,#0A3D3A);padding:20px 22px;display:flex;align-items:center;gap:14px">
+        <div style="width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;color:#fff">
+          ${(e.nom||'?')[0].toUpperCase()}
+        </div>
+        <div>
+          <div style="font-size:18px;font-weight:800;color:#fff">${escapeHtml(e.nom || e.email)}</div>
+          <span style="background:rgba(255,255,255,.15);color:#B8D0C8;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px">${e.role||'—'}</span>
+        </div>
+        <button onclick="this.closest('[style]').remove()" style="margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:16px"><span data-icon="x"></span></button>
+      </div>
+      <div style="padding:18px 22px">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
+          <div style="background:#f8fdf5;border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#0E4B47">${scheduled}</div><div style="font-size:10px;color:#4D6260;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Cr&eacute;neaux</div></div>
+          <div style="background:#f8fdf5;border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#0E4B47">${hours.toFixed(0)}h</div><div style="font-size:10px;color:#4D6260;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Heures sem</div></div>
+          <div style="background:#f8f8f8;border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#9ca3af">${reposDays}</div><div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Jours repos</div></div>
+          <div style="background:${absDays>0?'#fef3c7':'#f8f8f8'};border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:${absDays>0?'#92400e':'#9ca3af'}">${absDays}</div><div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Absences</div></div>
+        </div>
+        ${e.email ? `<div style="font-size:12px;color:#3a5a3a;margin-bottom:6px"><b style="color:#4D6260;min-width:70px;display:inline-block">Email</b> ${e.email}</div>` : ''}
+        ${e.tel ? `<div style="font-size:12px;color:#3a5a3a;margin-bottom:6px"><b style="color:#4D6260;min-width:70px;display:inline-block">Tél</b> ${e.tel}</div>` : ''}
+        ${e.statut ? `<div style="font-size:12px;color:#3a5a3a;margin-bottom:6px"><b style="color:#4D6260;min-width:70px;display:inline-block">Statut</b> <span style="background:${e.statut==='Actif'?'#DCF0ED':e.statut==='Suspendu'?'#fef0f0':'#f0f0f0'};color:${e.statut==='Actif'?'#0E4B47':e.statut==='Suspendu'?'#b03030':'#7a7a7a'};padding:2px 8px;border-radius:6px;font-weight:700;font-size:11px">${e.statut}</span></div>` : ''}
+        <div style="border-top:1px solid #CFE0D9;padding-top:10px;margin-top:10px">
+          <div style="font-size:10px;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Planning détaillé cette semaine</div>
+          ${dates.map((d,di) => {
+            const dk = dateKey(d);
+            const arr = schedule[e.id]?.[dk] || [];
+            return `<div style="font-size:12px;padding:6px 0;border-bottom:1px solid #f5f9f2;display:flex;gap:8px;align-items:flex-start">
+              <span style="font-weight:700;color:#4D6260;min-width:75px">${DAYS[di]} ${d.getDate()}/${d.getMonth()+1}</span>
+              <span style="flex:1">${arr.length ? arr.map(s =>
+                s.absenceType ? `<span style="color:#be185d">${ABSENCE_ICONS[s.absenceType]} ${ABSENCE_LABELS[s.absenceType]}</span>` :
+                s.type === 'repos' ? '<span style="color:#9ca3af"><span data-icon="circle_dot"></span> Repos</span>' :
+                `<span style="color:#1a2e1a">${SHIFT_ICONS[s.type]||'<span data-icon="settings"></span>'} ${s.start||''}${s.end?'–'+s.end:''} ${s.position?POS_SHORT[s.position]:''}</span>`
+              ).join(' · ') : '<span style="color:#d1d5db">—</span>'}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+// ─── MODAL ÉDITION CRÉNEAU ───
+function openShiftModal(empId, dk, dayIdx, shiftIndex) {
+  if (!canEdit) return;
+  const emp = employees.find(e => e.id === empId);
+  const date = new Date(dk);
+  const dayName = DAYS[(date.getDay()||7)-1];
+  document.getElementById('modal-title').textContent = `${emp?.nom||emp?.email||'?'} — ${dayName} ${date.getDate()}/${date.getMonth()+1}`;
+
+  // Reset form
+  document.getElementById('custom-start').value = '09:00';
+  document.getElementById('custom-end').value = '17:00';
+  document.getElementById('custom-notes').value = '';
+  document.getElementById('absence-reason').value = '';
+  document.getElementById('repeat-pattern').value = '';
+  document.querySelectorAll('.shift-type-opt').forEach(o => o.classList.remove('sel'));
+  document.querySelectorAll('.position-opt').forEach(o => o.classList.remove('sel'));
+  document.getElementById('btn-delete-shift').style.display = 'none';
+
+  const existing = (shiftIndex !== null && shiftIndex !== undefined) ? schedule[empId]?.[dk]?.[shiftIndex] : null;
+
+  if (existing) {
+    editTarget = { empId, dateKey: dk, shiftIndex };
+    editBuffer = JSON.parse(JSON.stringify(existing));
+    document.getElementById('btn-delete-shift').style.display = 'inline-flex';
+    if (existing.absenceType) {
+      switchTab('absence');
+      document.getElementById('aopt-'+existing.absenceType)?.classList.add('sel');
+      document.getElementById('absence-reason').value = existing.reason || '';
+    } else if (existing.type === 'repos') {
+      switchTab('quick');
+      document.getElementById('qopt-repos')?.classList.add('sel');
+    } else {
+      // Toutes les autres situations ouvrent l'onglet "Heures" avec les valeurs préremplies
+      // (matin/soir/journée/custom) pour que les heures soient toujours modifiables
+      switchTab('custom');
+      const defaultTimes = { matin:['09:00','15:00'], soir:['15:00','23:00'], journee:['09:00','17:00'] };
+      const defaults = defaultTimes[existing.type];
+      document.getElementById('custom-start').value = existing.start || (defaults ? defaults[0] : '09:00');
+      document.getElementById('custom-end').value = existing.end || (defaults ? defaults[1] : '17:00');
+      if (existing.position) document.querySelector(`.position-opt[data-pos="${existing.position}"]`)?.classList.add('sel');
+      document.getElementById('custom-notes').value = existing.notes || '';
+      // Garder le surlignage du préréglage correspondant pour info
+      if (existing.type === 'matin' || existing.type === 'soir' || existing.type === 'journee') {
+        document.getElementById('qopt-'+existing.type)?.classList.add('sel');
+      }
+    }
+  } else {
+    editTarget = { empId, dateKey: dk, shiftIndex: null };
+    editBuffer = null;
+    // Par défaut on ouvre directement l'onglet Heures pour permettre la saisie immédiate
+    switchTab('custom');
+  }
+
+  // Show multi-shifts section
+  const allShifts = schedule[empId]?.[dk] || [];
+  const section = document.getElementById('multi-shifts-section');
+  if (allShifts.length > 0 && shiftIndex === null) {
+    section.style.display = 'block';
+    document.getElementById('multi-shifts-list').innerHTML = allShifts.map((s,i) => `
+      <div class="shift-list-item">
+        <span>${s.absenceType?ABSENCE_ICONS[s.absenceType]:(SHIFT_ICONS[s.type]||'<span data-icon="settings"></span>')} ${s.absenceType?ABSENCE_LABELS[s.absenceType]:(SHIFT_LABELS[s.type]||(s.start+'-'+s.end))}</span>
+        <span style="font-size:.7rem;color:#6b7280">${s.position?POS_SHORT[s.position]:''}${s.notes?' 📝':''}</span>
+        <button class="remove" onclick="removeShiftAt('${empId}','${dk}',${i})" title="Supprimer"><span data-icon="x"></span></button>
+      </div>
+    `).join('');
+  } else {
+    section.style.display = 'none';
+  }
+
+  document.getElementById('shift-modal').classList.add('open');
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-'+tab));
+}
+
+function selectQuickShift(type, start, end) {
+  document.querySelectorAll('#tab-quick .shift-type-opt').forEach(o => o.classList.remove('sel'));
+  document.getElementById('qopt-'+type).classList.add('sel');
+  editBuffer = { type };
+  if (start) editBuffer.start = start;
+  if (end) editBuffer.end = end;
+  // Pour les types avec heures : pré-remplir l'onglet Heures et s'y rendre pour permettre la modification
+  if (type !== 'repos' && start && end) {
+    document.getElementById('custom-start').value = start;
+    document.getElementById('custom-end').value = end;
+    switchTab('custom');
+    showSnack('<span data-icon="sparkles"></span> Vous pouvez modifier les heures');
+  }
+}
+
+function selectAbsence(type) {
+  document.querySelectorAll('#tab-absence .shift-type-opt').forEach(o => o.classList.remove('sel'));
+  document.getElementById('aopt-'+type).classList.add('sel');
+  editBuffer = { absenceType: type, reason: document.getElementById('absence-reason').value };
+}
+
+function selectPos(pos) {
+  document.querySelectorAll('.position-opt').forEach(o => o.classList.remove('sel'));
+  document.querySelector(`.position-opt[data-pos="${pos}"]`)?.classList.add('sel');
+}
+
+function removeShiftAt(empId, dk, idx) {
+  if (!schedule[empId]?.[dk]) return;
+  schedule[empId][dk].splice(idx, 1);
+  if (!schedule[empId][dk].length) delete schedule[empId][dk];
+  saveSchedule();
+  renderAll();
+  closeShiftModal();
+  showSnack('<span data-icon="trash"></span> Créneau supprimé');
+}
+
+function deleteShift() {
+  if (!editTarget || editTarget.shiftIndex === null) return;
+  removeShiftAt(editTarget.empId, editTarget.dateKey, editTarget.shiftIndex);
+}
+
+function saveShift() {
+  if (!editTarget) return;
+  let shift = null;
+  if (activeTab === 'quick') {
+    const sel = document.querySelector('#tab-quick .shift-type-opt.sel');
+    if (!sel) { showSnack('<span data-icon="alert"></span> Sélectionnez un type', 'warn'); return; }
+    shift = { ...editBuffer };
+  } else if (activeTab === 'custom') {
+    const start = document.getElementById('custom-start').value;
+    const end = document.getElementById('custom-end').value;
+    const pos = document.querySelector('.position-opt.sel')?.dataset.pos || '';
+    const notes = document.getElementById('custom-notes').value;
+    if (!start || !end) { showSnack('<span data-icon="alert"></span> Heures requises', 'warn'); return; }
+    // Détection automatique du type si les heures correspondent à un préréglage
+    let detectedType = 'custom';
+    if (start === '09:00' && end === '15:00') detectedType = 'matin';
+    else if (start === '15:00' && end === '23:00') detectedType = 'soir';
+    else if (start === '09:00' && end === '17:00') detectedType = 'journee';
+    shift = { type: detectedType, start, end };
+    if (pos) shift.position = pos;
+    if (notes) shift.notes = notes;
+  } else if (activeTab === 'absence') {
+    const sel = document.querySelector('#tab-absence .shift-type-opt.sel');
+    if (!sel) { showSnack('<span data-icon="alert"></span> Sélectionnez un type d\'absence', 'warn'); return; }
+    const reason = document.getElementById('absence-reason').value;
+    shift = { absenceType: editBuffer?.absenceType, reason };
+  }
+  if (!shift) return;
+
+  const { empId, dateKey: dk, shiftIndex } = editTarget;
+  if (!schedule[empId]) schedule[empId] = {};
+  if (!schedule[empId][dk]) schedule[empId][dk] = [];
+
+  if (shiftIndex !== null && shiftIndex !== undefined) {
+    schedule[empId][dk][shiftIndex] = shift;
+  } else {
+    // Si on a un repos déjà, on remplace ; sinon on ajoute
+    const existing = schedule[empId][dk];
+    const hasRepos = existing.some(s => s.type === 'repos');
+    if (shift.type === 'repos' || shift.absenceType) {
+      schedule[empId][dk] = [shift]; // repos/absence remplace tout
+    } else if (hasRepos) {
+      schedule[empId][dk] = [shift];
+    } else {
+      schedule[empId][dk].push(shift);
+    }
+  }
+
+  // Répéter
+  const repeat = document.getElementById('repeat-pattern').value;
+  if (repeat) {
+    const dates = getWeekDates(weekOffset);
+    const startIdx = dates.findIndex(d => dateKey(d) === dk);
+    dates.forEach((d,i) => {
+      if (i === startIdx) return;
+      const dayOfWeek = d.getDay() || 7;
+      const tdk = dateKey(d);
+      let apply = false;
+      if (repeat === 'rest-week' && i > startIdx) apply = true;
+      if (repeat === 'weekdays' && dayOfWeek <= 5) apply = true;
+      if (repeat === 'weekend' && dayOfWeek >= 6) apply = true;
+      if (repeat === 'all-week') apply = true;
+      if (apply) {
+        if (!schedule[empId][tdk]) schedule[empId][tdk] = [];
+        if (shift.type === 'repos' || shift.absenceType) schedule[empId][tdk] = [{...shift}];
+        else schedule[empId][tdk] = [{...shift}];
+      }
+    });
+  }
+
+  saveSchedule();
+  closeShiftModal();
+  renderAll();
+  showSnack('<span data-icon="check_circle"></span> Créneau enregistré');
+}
+
+function addNewShiftSlot() {
+  // Reset to add a new shift on the same day
+  editTarget = { empId: editTarget.empId, dateKey: editTarget.dateKey, shiftIndex: null };
+  editBuffer = null;
+  document.getElementById('btn-delete-shift').style.display = 'none';
+  document.querySelectorAll('.shift-type-opt,.position-opt').forEach(o => o.classList.remove('sel'));
+  document.getElementById('custom-start').value = '15:00';
+  document.getElementById('custom-end').value = '23:00';
+  document.getElementById('custom-notes').value = '';
+  switchTab('custom');
+  showSnack('<span data-icon="plus"></span> Nouveau créneau — choisissez les options');
+}
+
+function closeShiftModal() {
+  document.getElementById('shift-modal').classList.remove('open');
+  editTarget = null; editBuffer = null;
+}
+
+// ─── DRAG & DROP ───
+function onShiftDragStart(ev, empId, dk, si) {
+  ev.stopPropagation();
+  if (!canEdit) return;
+  dragData = { empId, dateKey: dk, shiftIndex: si, mode: ev.ctrlKey || ev.metaKey ? 'copy' : 'move' };
+  ev.target.classList.add('dragging');
+  ev.dataTransfer.effectAllowed = dragData.mode === 'copy' ? 'copy' : 'move';
+}
+function onShiftDragEnd(ev) {
+  ev.target.classList.remove('dragging');
+  document.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over'));
+}
+function onCellDragOver(ev) {
+  if (!dragData) return;
+  ev.preventDefault();
+  ev.currentTarget.classList.add('drag-over');
+}
+function onCellDragLeave(ev) {
+  ev.currentTarget.classList.remove('drag-over');
+}
+function onCellDrop(ev, targetEmp, targetDk) {
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('drag-over');
+  if (!dragData) return;
+  const { empId: srcEmp, dateKey: srcDk, shiftIndex: srcSi, mode } = dragData;
+  if (srcEmp === targetEmp && srcDk === targetDk) { dragData = null; return; }
+  const srcShifts = schedule[srcEmp]?.[srcDk] || [];
+  const shift = srcShifts[srcSi];
+  if (!shift) return;
+  if (!schedule[targetEmp]) schedule[targetEmp] = {};
+  if (!schedule[targetEmp][targetDk]) schedule[targetEmp][targetDk] = [];
+  schedule[targetEmp][targetDk].push(JSON.parse(JSON.stringify(shift)));
+  if (mode === 'move') {
+    srcShifts.splice(srcSi, 1);
+    if (!srcShifts.length) delete schedule[srcEmp][srcDk];
+  }
+  saveSchedule();
+  renderAll();
+  showSnack(mode === 'copy' ? '<span data-icon="clipboard"></span> Créneau copié' : '🔀 Créneau déplacé');
+  dragData = null;
+}
+function onStaffDragStart(ev, empId) {
+  if (!canEdit) return;
+  dragData = { staffEmpId: empId };
+  ev.dataTransfer.effectAllowed = 'copy';
+}
+
+// ─── CONTEXT MENU ───
+function onCellContextMenu(ev, empId, dk) {
+  if (!canEdit) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  const items = [
+    { label: '<span data-icon="edit"></span> Modifier ce jour', action: () => openShiftModal(empId, dk, null, null) },
+    { label: '<span data-icon="plus"></span> Ajouter un créneau', action: () => openShiftModal(empId, dk, null, null) },
+    { label: '<span data-icon="circle_dot"></span> Marquer Repos', action: () => quickSetShift(empId, dk, [{type:'repos'}]) },
+    { sep: true },
+    { label: '<span data-icon="trash"></span> Effacer', action: () => clearDay(empId, dk), danger: true }
+  ];
+  showContextMenu(ev, items);
+}
+
+function onShiftContextMenu(ev, empId, dk, si) {
+  if (!canEdit) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  const shift = schedule[empId]?.[dk]?.[si];
+  if (!shift) return;
+  const items = [
+    { label: '<span data-icon="edit"></span> Modifier', action: () => openShiftModal(empId, dk, null, si) },
+    { label: '<span data-icon="clipboard"></span> Dupliquer', action: () => {
+      schedule[empId][dk].push(JSON.parse(JSON.stringify(shift)));
+      saveSchedule(); renderAll(); showSnack('<span data-icon="clipboard"></span> Dupliqué');
+    }},
+    { label: '<span data-icon="calendar"></span> Copier sur la semaine', action: () => {
+      const dates = getWeekDates(weekOffset);
+      dates.forEach(d => {
+        const tdk = dateKey(d);
+        if (tdk === dk) return;
+        if (!schedule[empId][tdk]) schedule[empId][tdk] = [];
+        schedule[empId][tdk] = [JSON.parse(JSON.stringify(shift))];
+      });
+      saveSchedule(); renderAll(); showSnack('<span data-icon="calendar"></span> Appliqué à toute la semaine');
+    }},
+    { sep: true },
+    { label: '<span data-icon="trash"></span> Supprimer', action: () => removeShiftAt(empId, dk, si), danger: true }
+  ];
+  showContextMenu(ev, items);
+}
+
+function showContextMenu(ev, items) {
+  const menu = document.getElementById('ctx-menu');
+  menu.innerHTML = items.map((it,i) => it.sep
+    ? '<div class="ctx-sep"></div>'
+    : `<div class="ctx-item ${it.danger?'danger':''}" data-idx="${i}">${it.label}</div>`).join('');
+  menu.style.display = 'block';
+  // Position
+  const rect = menu.getBoundingClientRect();
+  const x = Math.min(ev.clientX, window.innerWidth - 200);
+  const y = Math.min(ev.clientY, window.innerHeight - rect.height - 10);
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.querySelectorAll('.ctx-item').forEach(el => {
+    el.onclick = () => {
+      const it = items[parseInt(el.dataset.idx)];
+      hideContextMenu();
+      it.action?.();
+    };
+  });
+  document.addEventListener('click', hideContextMenu, { once: true });
+}
+function hideContextMenu() { document.getElementById('ctx-menu').style.display = 'none'; }
+
+function quickSetShift(empId, dk, shifts) {
+  if (!schedule[empId]) schedule[empId] = {};
+  schedule[empId][dk] = shifts;
+  saveSchedule(); renderAll();
+}
+
+function clearDay(empId, dk) {
+  if (schedule[empId]?.[dk]) {
+    delete schedule[empId][dk];
+    saveSchedule(); renderAll();
+    showSnack('<span data-icon="trash"></span> Jour effacé');
+  }
+}
+
+// ─── COPIER SEMAINE PRÉCÉDENTE ───
+function copyPreviousWeek() {
+  if (!confirm('Copier le planning de la semaine précédente ? Cela écrasera la semaine actuelle.')) return;
+  const prevDates = getWeekDates(weekOffset - 1);
+  const currDates = getWeekDates(weekOffset);
+  let copied = 0;
+  employees.forEach(e => {
+    if (!schedule[e.id]) schedule[e.id] = {};
+    prevDates.forEach((pd,i) => {
+      const pdk = dateKey(pd);
+      const cdk = dateKey(currDates[i]);
+      if (schedule[e.id][pdk]) {
+        schedule[e.id][cdk] = JSON.parse(JSON.stringify(schedule[e.id][pdk]));
+        copied++;
+      }
+    });
+  });
+  saveSchedule();
+  renderAll();
+  showSnack(`<span data-icon="clipboard"></span> ${copied} jours copiés depuis la semaine précédente`);
+}
+
+function clearWeekConfirm() {
+  if (!confirm('Effacer tout le planning de cette semaine ?')) return;
+  const dates = getWeekDates(weekOffset).map(dateKey);
+  employees.forEach(e => {
+    dates.forEach(dk => {
+      if (schedule[e.id]?.[dk]) delete schedule[e.id][dk];
+    });
+  });
+  saveSchedule();
+  renderAll();
+  showSnack('<span data-icon="trash"></span> Semaine vidée');
+}
+
+// ─── TEMPLATES ───
+function openTemplatesModal() {
+  document.getElementById('templates-modal').classList.add('open');
+  renderTemplatesList();
+}
+function closeTemplatesModal() {
+  document.getElementById('templates-modal').classList.remove('open');
+}
+function renderTemplatesList() {
+  const list = document.getElementById('templates-list');
+  const keys = Object.keys(templates);
+  if (!keys.length) {
+    list.innerHTML = '<div style="text-align:center;color:#4D6260;padding:14px;font-size:.82rem">Aucun template enregistré</div>';
+    return;
+  }
+  list.innerHTML = keys.map(k => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f5f9f2;border-radius:7px;margin-bottom:5px">
+      <div style="flex:1">
+        <div style="font-size:.85rem;font-weight:600">${escapeHtml(k)}</div>
+        <div style="font-size:.7rem;color:#6b7280">${Object.keys(templates[k]).length} employés</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="applyTemplate('${escapeHtml(k)}')">Appliquer</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteTemplate('${escapeHtml(k)}')"><span data-icon="x"></span></button>
+    </div>
+  `).join('');
+}
+function saveAsTemplate() {
+  const name = document.getElementById('template-name').value.trim();
+  if (!name) { showSnack('<span data-icon="alert"></span> Nom requis', 'warn'); return; }
+  const dates = getWeekDates(weekOffset);
+  // On stocke par index de jour (0-6) pour pouvoir réappliquer sur n'importe quelle semaine
+  const tpl = {};
+  employees.forEach(e => {
+    dates.forEach((d,i) => {
+      const dk = dateKey(d);
+      const arr = schedule[e.id]?.[dk];
+      if (arr && arr.length) {
+        if (!tpl[e.id]) tpl[e.id] = {};
+        tpl[e.id][i] = JSON.parse(JSON.stringify(arr));
+      }
+    });
+  });
+  templates[name] = tpl;
+  saveTemplates();
+  document.getElementById('template-name').value = '';
+  renderTemplatesList();
+  showSnack('<span data-icon="save"></span> Template enregistré');
+}
+function applyTemplate(name) {
+  if (!templates[name]) return;
+  if (!confirm(`Appliquer le template "${name}" ? Cela écrasera la semaine en cours.`)) return;
+  const dates = getWeekDates(weekOffset);
+  Object.entries(templates[name]).forEach(([empId, days]) => {
+    if (!schedule[empId]) schedule[empId] = {};
+    Object.entries(days).forEach(([idx, arr]) => {
+      const dk = dateKey(dates[parseInt(idx)]);
+      schedule[empId][dk] = JSON.parse(JSON.stringify(arr));
+    });
+  });
+  saveSchedule();
+  renderAll();
+  closeTemplatesModal();
+  showSnack(`<span data-icon="check_circle"></span> Template "${name}" appliqué`);
+}
+function deleteTemplate(name) {
+  if (!confirm(`Supprimer le template "${name}" ?`)) return;
+  delete templates[name];
+  saveTemplates();
+  renderTemplatesList();
+  showSnack('<span data-icon="trash"></span> Template supprimé');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ─── PANNEAUX DE PLANNING (création / téléchargement / insertion) ───
+// Le panneau est un objet JSON autonome qui contient : nom, semaine
+// d'origine, infos employés, créneaux par jour de semaine (0-6 = Lundi-Dim).
+// Workflow :
+//   1) Manager construit le planning normalement.
+//   2) « <span data-icon="box"></span> Créer panneau » → choisit nom & employés → :
+//       - Télécharge le panneau (.json)
+//       - OU « Insérer & sauvegarder » → enregistre serveur + diffuse à l'équipe.
+//   3) « 📥 Insérer panneau » → choisit fichier → choisit employés cibles &
+//      semaine cible → enregistre serveur + diffuse à l'équipe.
+// L'INSERTION = SAUVEGARDE GARANTIE : on force l'écriture serveur ET on
+// broadcast en socket pour que tous les autres utilisateurs voient le planning
+// sans rechargement. Tant que l'insertion réussit, le planning est persistant.
+// ════════════════════════════════════════════════════════════════════
+
+let pendingPanel = null;          // panneau importé en cours de prévisualisation
+let panelEmployeeSelection = {};  // { empId: bool } pour la modal Création
+let importEmpSelection = {};      // { empId: bool } pour la modal Importation
+
+function buildPanelFromCurrentWeek(name, includedEmpIds) {
+  const dates = getWeekDates(weekOffset);
+  const panel = {
+    type: 'planning-panel',
+    version: 1,
+    name: name || `Panneau du ${new Date().toLocaleDateString('fr-FR')}`,
+    createdAt: new Date().toISOString(),
+    createdBy: user.nom || user.email || 'Inconnu',
+    sourceWeek: { start: dateKey(dates[0]), end: dateKey(dates[6]) },
+    sourceRestaurantId: currentRestaurantId,
+    employees: [],
+    // shifts indexés par dayIndex (0=Lundi, 6=Dimanche) pour réapplication libre
+    shifts: {}
+  };
+  includedEmpIds.forEach(eid => {
+    const emp = employees.find(e => e.id === eid);
+    if (!emp) return;
+    panel.employees.push({
+      id: emp.id,
+      nom: emp.nom || emp.email,
+      role: emp.role || '',
+      restaurant: emp.restaurant || '',
+      restaurantId: emp.restaurantId || ''
+    });
+    const empShifts = {};
+    dates.forEach((d, idx) => {
+      const dk = dateKey(d);
+      const arr = schedule[eid]?.[dk];
+      if (arr && arr.length) empShifts[idx] = JSON.parse(JSON.stringify(arr));
+    });
+    if (Object.keys(empShifts).length) panel.shifts[eid] = empShifts;
+  });
+  return panel;
+}
+
+function openCreatePanelModal() {
+  if (!canEdit) return;
+  if (!employees.length) { showSnack('<span data-icon="alert"></span> Aucun employé', 'warn'); return; }
+  // Sélection par défaut : tous les employés ayant au moins un créneau cette semaine
+  const dates = getWeekDates(weekOffset).map(dateKey);
+  panelEmployeeSelection = {};
+  employees.forEach(e => {
+    const has = dates.some(dk => (schedule[e.id]?.[dk] || []).length > 0);
+    panelEmployeeSelection[e.id] = has;
+  });
+  const dStart = getWeekDates(weekOffset)[0];
+  document.getElementById('panel-name').value = `Planning semaine du ${dStart.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}`;
+  renderPanelEmployeesList();
+  renderPanelSummary();
+  document.getElementById('create-panel-modal').classList.add('open');
+}
+function closeCreatePanelModal() {
+  document.getElementById('create-panel-modal').classList.remove('open');
+}
+function renderPanelEmployeesList() {
+  const showRestaurantHeaders = isAdmin && currentRestaurantId === '__all__';
+  let html = '';
+  let lastResto = '___';
+  employees.forEach(e => {
+    if (showRestaurantHeaders) {
+      const r = e.restaurant || '— Sans restaurant —';
+      if (r !== lastResto) {
+        html += `<div style="font-size:.7rem;font-weight:800;color:#0E4B47;text-transform:uppercase;padding:6px 4px 2px"><span data-icon="storefront"></span> ${escapeHtml(r)}</div>`;
+        lastResto = r;
+      }
+    }
+    const checked = panelEmployeeSelection[e.id] ? 'checked' : '';
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:5px 4px;cursor:pointer;font-size:.82rem">
+      <input type="checkbox" ${checked} onchange="panelToggleOne('${e.id}',this.checked)">
+      <span style="flex:1">${escapeHtml(e.nom||e.email)} <small style="color:#4D6260">${e.role||''}</small></span>
+    </label>`;
+  });
+  document.getElementById('panel-employees-list').innerHTML = html || '<div style="color:#4D6260;font-size:.82rem;text-align:center;padding:8px">Aucun employé</div>';
+}
+function panelToggleOne(eid, val) { panelEmployeeSelection[eid] = !!val; renderPanelSummary(); }
+function panelToggleAll(val) {
+  employees.forEach(e => panelEmployeeSelection[e.id] = !!val);
+  renderPanelEmployeesList(); renderPanelSummary();
+}
+function panelSelectWithShifts() {
+  const dates = getWeekDates(weekOffset).map(dateKey);
+  employees.forEach(e => {
+    panelEmployeeSelection[e.id] = dates.some(dk => (schedule[e.id]?.[dk] || []).length > 0);
+  });
+  renderPanelEmployeesList(); renderPanelSummary();
+}
+function renderPanelSummary() {
+  const ids = Object.keys(panelEmployeeSelection).filter(id => panelEmployeeSelection[id]);
+  const dates = getWeekDates(weekOffset).map(dateKey);
+  let totalShifts = 0;
+  ids.forEach(id => dates.forEach(dk => totalShifts += (schedule[id]?.[dk] || []).length));
+  const dStart = getWeekDates(weekOffset)[0];
+  const dEnd = getWeekDates(weekOffset)[6];
+  document.getElementById('panel-summary').innerHTML = `
+    <div class="info-row"><span class="info-lbl">Semaine source</span><span class="info-val">${dStart.toLocaleDateString('fr-FR')} → ${dEnd.toLocaleDateString('fr-FR')}</span></div>
+    <div class="info-row"><span class="info-lbl">Employés inclus</span><span class="info-val">${ids.length} / ${employees.length}</span></div>
+    <div class="info-row"><span class="info-lbl">Créneaux empaquetés</span><span class="info-val">${totalShifts}</span></div>
+  `;
+}
+
+function downloadPanel() {
+  const name = document.getElementById('panel-name').value.trim() || `panneau_${todayKey()}`;
+  const ids = Object.keys(panelEmployeeSelection).filter(id => panelEmployeeSelection[id]);
+  if (!ids.length) { showSnack('<span data-icon="alert"></span> Sélectionnez au moins un employé', 'warn'); return; }
+  const panel = buildPanelFromCurrentWeek(name, ids);
+  const blob = new Blob([JSON.stringify(panel, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name.replace(/[^a-z0-9_-]/gi,'_')}.planning.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showSnack('<span data-icon="box"></span> Panneau téléchargé');
+}
+
+// Insertion directe : on prend le panneau de la semaine actuelle et on
+// l'enregistre force-serveur + broadcast (utile si la sauvegarde auto a échoué).
+async function insertPanelDirect() {
+  const ids = Object.keys(panelEmployeeSelection).filter(id => panelEmployeeSelection[id]);
+  if (!ids.length) { showSnack('<span data-icon="alert"></span> Sélectionnez au moins un employé', 'warn'); return; }
+  const name = document.getElementById('panel-name').value.trim() || `panneau_${todayKey()}`;
+  const panel = buildPanelFromCurrentWeek(name, ids);
+  // Application identité (semaine déjà courante) → on force la sauvegarde serveur
+  const ok = await applyPanelAndPersist(panel, ids, weekOffset, false);
+  if (ok) { closeCreatePanelModal(); showSnack(`<span data-icon="check_circle"></span> Panneau "${name}" inséré et sauvegardé`); }
+}
+
+// ─── IMPORT D'UN PANNEAU ───
+function openImportPanelModal() {
+  if (!canEdit) return;
+  pendingPanel = null;
+  importEmpSelection = {};
+  document.getElementById('panel-file-input').value = '';
+  document.getElementById('panel-preview').style.display = 'none';
+  document.getElementById('panel-import-confirm').disabled = true;
+  document.getElementById('import-panel-modal').classList.add('open');
+}
+function closeImportPanelModal() {
+  document.getElementById('import-panel-modal').classList.remove('open');
+}
+function onPanelFileChosen(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (data.type !== 'planning-panel') throw new Error('Format invalide');
+      pendingPanel = data;
+      // Pré-sélection : tous les employés du panneau qui existent dans la base actuelle
+      importEmpSelection = {};
+      const knownIds = new Set(employees.map(e => e.id));
+      (data.employees || []).forEach(pe => {
+        importEmpSelection[pe.id] = knownIds.has(pe.id);
+      });
+      renderPanelImportPreview();
+      document.getElementById('panel-preview').style.display = 'block';
+      document.getElementById('panel-import-confirm').disabled = false;
+    } catch(e) {
+      showSnack('<span data-icon="alert"></span> Fichier panneau invalide', 'error');
+      pendingPanel = null;
+      document.getElementById('panel-preview').style.display = 'none';
+      document.getElementById('panel-import-confirm').disabled = true;
+    }
+  };
+  reader.readAsText(file);
+}
+function renderPanelImportPreview() {
+  if (!pendingPanel) return;
+  const knownIds = new Set(employees.map(e => e.id));
+  const shiftsCount = Object.values(pendingPanel.shifts || {}).reduce((s, days) =>
+    s + Object.values(days).reduce((a, arr) => a + arr.length, 0), 0);
+  document.getElementById('panel-preview-info').innerHTML =
+    `<strong>${escapeHtml(pendingPanel.name)}</strong><br>
+     Créé par ${escapeHtml(pendingPanel.createdBy||'?')} le ${new Date(pendingPanel.createdAt).toLocaleString('fr-FR')}<br>
+     Semaine source : ${pendingPanel.sourceWeek?.start} → ${pendingPanel.sourceWeek?.end}<br>
+     ${(pendingPanel.employees||[]).length} employé(s), ${shiftsCount} créneau(x)`;
+  let html = '';
+  (pendingPanel.employees || []).forEach(pe => {
+    const exists = knownIds.has(pe.id);
+    const checked = importEmpSelection[pe.id] ? 'checked' : '';
+    const hasShifts = pendingPanel.shifts && pendingPanel.shifts[pe.id];
+    const status = !exists
+      ? '<span style="color:#dc2626;font-size:.7rem"><span data-icon="alert"></span> employé inconnu dans la base</span>'
+      : !hasShifts ? '<span style="color:#4D6260;font-size:.7rem">Aucun créneau</span>' : '';
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:5px 4px;cursor:${exists?'pointer':'not-allowed'};font-size:.82rem;opacity:${exists?'1':'.55'}">
+      <input type="checkbox" ${checked} ${exists?'':'disabled'} onchange="importEmpToggle('${pe.id}',this.checked)">
+      <span style="flex:1">${escapeHtml(pe.nom)} <small style="color:#4D6260">${pe.role||''}</small> ${status}</span>
+    </label>`;
+  });
+  document.getElementById('panel-import-employees').innerHTML = html || '<div style="color:#4D6260;font-size:.82rem;text-align:center;padding:8px">Panneau vide</div>';
+}
+function importEmpToggle(eid, val) { importEmpSelection[eid] = !!val; }
+function importPanelToggleAll(val) {
+  const knownIds = new Set(employees.map(e => e.id));
+  (pendingPanel?.employees || []).forEach(pe => {
+    if (knownIds.has(pe.id)) importEmpSelection[pe.id] = !!val;
+  });
+  renderPanelImportPreview();
+}
+async function confirmImportPanel() {
+  if (!pendingPanel) return;
+  const ids = Object.keys(importEmpSelection).filter(id => importEmpSelection[id]);
+  if (!ids.length) { showSnack('<span data-icon="alert"></span> Aucun employé sélectionné', 'warn'); return; }
+  const targetOffset = parseInt(document.getElementById('panel-target-week').value || '0');
+  const overwrite = document.getElementById('panel-overwrite').checked;
+  const ok = await applyPanelAndPersist(pendingPanel, ids, targetOffset, overwrite);
+  if (ok) {
+    closeImportPanelModal();
+    showSnack(`<span data-icon="check_circle"></span> Panneau "${pendingPanel.name}" inséré pour ${ids.length} employé(s)`);
+  }
+}
+
+// ─── COEUR : application + persistance forcée ───
+async function applyPanelAndPersist(panel, employeeIds, targetWeekOffset, overwrite) {
+  const dates = getWeekDates(targetWeekOffset);
+  const today = todayKey();
+  let appliedCount = 0;
+  employeeIds.forEach(eid => {
+    const empShifts = panel.shifts && panel.shifts[eid];
+    if (!empShifts) return;
+    if (!schedule[eid]) schedule[eid] = {};
+    Object.entries(empShifts).forEach(([dayIdx, arr]) => {
+      const i = parseInt(dayIdx);
+      const targetDate = dates[i];
+      if (!targetDate) return;
+      const dk = dateKey(targetDate);
+      // On n'écrit jamais dans le passé (cohérence avec le nettoyage automatique)
+      if (dk < today) return;
+      if (!overwrite && schedule[eid][dk] && schedule[eid][dk].length) return;
+      schedule[eid][dk] = JSON.parse(JSON.stringify(arr));
+      appliedCount += arr.length;
+    });
+  });
+  // Persistance immédiate : localStorage + serveur (forcé) + broadcast
+  schedule = pruneSchedulePast(schedule);
+  localStorage.setItem(scheduleKey(), JSON.stringify(schedule));
+  if (currentRestaurantId && currentRestaurantId !== '__all__') {
+    try {
+      const r = await fetch(`${ORIGIN}/planning/${currentRestaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schedule,
+          updatedAt: new Date().toISOString(),
+          updatedBy: (user.nom || user.email) + ' (panneau)',
+          panelInserted: panel.name
+        })
+      });
+      if (!r.ok) throw new Error('serveur '+r.status);
+    } catch(e) {
+      showSnack('<span data-icon="alert"></span> Sauvegarde locale OK, mais le serveur a échoué : ' + e.message, 'error');
+      renderAll();
+      return false;
+    }
+  }
+  renderAll();
+  return appliedCount > 0;
+}
+
+// ─── AJOUT RAPIDE D'UN CRÉNEAU ───
+function openQuickAddModal() {
+  if (!canEdit) return;
+  if (!employees.length) { showSnack('<span data-icon="alert"></span> Aucun employé disponible', 'warn'); return; }
+  const sel = document.getElementById('qa-employee');
+  sel.innerHTML = employees.map(e => `<option value="${e.id}">${escapeHtml(e.nom||e.email)}${e.role?' — '+e.role:''}</option>`).join('');
+  // Date par défaut : aujourd'hui (ou premier jour de la semaine affichée)
+  const dates = getWeekDates(weekOffset);
+  const today = new Date();
+  const defaultDate = (weekOffset === 0) ? today : dates[0];
+  document.getElementById('qa-date').value = dateKey(defaultDate);
+  document.getElementById('qa-start').value = '09:00';
+  document.getElementById('qa-end').value = '17:00';
+  document.getElementById('qa-position').value = '';
+  document.getElementById('qa-notes').value = '';
+  document.getElementById('quick-add-modal').classList.add('open');
+}
+function closeQuickAddModal() {
+  document.getElementById('quick-add-modal').classList.remove('open');
+}
+function applyQuickAdd() {
+  const empId = document.getElementById('qa-employee').value;
+  const dk = document.getElementById('qa-date').value;
+  const start = document.getElementById('qa-start').value;
+  const end = document.getElementById('qa-end').value;
+  const pos = document.getElementById('qa-position').value;
+  const notes = document.getElementById('qa-notes').value;
+  if (!empId || !dk || !start || !end) { showSnack('<span data-icon="alert"></span> Champs requis', 'warn'); return; }
+  const shift = { type: 'custom', start, end };
+  if (pos) shift.position = pos;
+  if (notes) shift.notes = notes;
+  if (!schedule[empId]) schedule[empId] = {};
+  if (!schedule[empId][dk]) schedule[empId][dk] = [];
+  // Si "repos" présent, on remplace ; sinon on ajoute
+  const hasRepos = schedule[empId][dk].some(s => s.type === 'repos');
+  if (hasRepos) schedule[empId][dk] = [shift];
+  else schedule[empId][dk].push(shift);
+  saveSchedule();
+  closeQuickAddModal();
+  renderAll();
+  showSnack('<span data-icon="check_circle"></span> Créneau ajouté');
+}
+
+// ─── ABSENCE EN MASSE ───
+function openAbsenceModal() {
+  const sel = document.getElementById('abs-employee');
+  sel.innerHTML = employees.map(e => `<option value="${e.id}">${escapeHtml(e.nom||e.email)}</option>`).join('');
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('abs-from').value = today;
+  document.getElementById('abs-to').value = today;
+  document.getElementById('absence-modal').classList.add('open');
+}
+function closeAbsenceModal() {
+  document.getElementById('absence-modal').classList.remove('open');
+}
+function applyAbsence() {
+  const empId = document.getElementById('abs-employee').value;
+  const from = document.getElementById('abs-from').value;
+  const to = document.getElementById('abs-to').value;
+  const type = document.getElementById('abs-type').value;
+  const reason = document.getElementById('abs-reason').value;
+  if (!empId || !from || !to) { showSnack('<span data-icon="alert"></span> Champs requis', 'warn'); return; }
+  if (from > to) { showSnack('<span data-icon="alert"></span> Date début > date fin', 'warn'); return; }
+  if (!schedule[empId]) schedule[empId] = {};
+  let count = 0;
+  const start = new Date(from);
+  const end = new Date(to);
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
+    const dk = dateKey(d);
+    if (type === 'repos') schedule[empId][dk] = [{type:'repos'}];
+    else schedule[empId][dk] = [{absenceType: type, reason}];
+    count++;
+  }
+  saveSchedule();
+  renderAll();
+  closeAbsenceModal();
+  showSnack(`<span data-icon="check_circle"></span> ${count} jour${count>1?'s':''} d'absence ajouté${count>1?'s':''}`);
+}
+
+// ─── EXPORT ───
+function exportCSV() {
+  const dates = getWeekDates(weekOffset);
+  const list = getFilteredEmployees();
+  let csv = 'Employé;Rôle;' + dates.map((d,i) => DAYS[i]+' '+d.toLocaleDateString('fr-FR')).join(';') + ';Total heures\n';
+  list.forEach(e => {
+    let row = `"${(e.nom||e.email).replace(/"/g,'""')}";${e.role||''}`;
+    dates.forEach(d => {
+      const dk = dateKey(d);
+      const arr = schedule[e.id]?.[dk] || [];
+      const txt = arr.map(s =>
+        s.absenceType ? ABSENCE_LABELS[s.absenceType] :
+        s.type === 'repos' ? 'Repos' :
+        `${s.start||''}${s.end?'-'+s.end:''} ${s.position?'('+s.position+')':''}`
+      ).join(' / ').trim();
+      row += ';"'+txt+'"';
+    });
+    row += ';' + computeWeekHours(e.id, dates.map(dateKey)).toFixed(1);
+    csv += row + '\n';
+  });
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const wkLbl = `${dateKey(dates[0])}_${dateKey(dates[6])}`;
+  a.download = `planning_${wkLbl}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showSnack('<span data-icon="chart_bar"></span> CSV exporté');
+}
+
+function exportPDF() {
+  // Imprimer en PDF via le navigateur
+  showSnack('<span data-icon="file_text"></span> Lancement de l\'impression — choisissez "Enregistrer en PDF"');
+  setTimeout(() => window.print(), 300);
+}
+
+// ─── SNACK ───
+function showSnack(msg, level) {
+  const s = document.getElementById('snackbar');
+  if (!s) return;
+  s.textContent = msg;
+  s.className = 'snackbar show' + (level==='error'?' error':level==='warn'?' warn':'');
+  setTimeout(() => { if (s) s.className = 'snackbar' + (level==='error'?' error':level==='warn'?' warn':''); }, 2800);
+}
+
+// ─── SOCKET.IO ───
+let socket = null;
+let isSyncingPlan = false;
+try {
+  socket = io(ORIGIN);
+  socket.on('connect', () => {
+    if (currentRestaurantId) socket.emit('join-restaurant', { restaurantId: currentRestaurantId });
+    // À chaque reconnexion (et au premier connect), on relit le serveur
+    // pour récupérer ce qui a été modifié pendant qu'on était déconnecté.
+    if (currentRestaurantId && currentRestaurantId !== '__all__') {
+      fetch(`${ORIGIN}/planning/${currentRestaurantId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data && data.schedule) {
+            const fresh = pruneSchedulePast(migrateSchedule(data.schedule));
+            if (countShifts(fresh) >= countShifts(schedule)) {
+              schedule = fresh;
+              localStorage.setItem(scheduleKey(), JSON.stringify(schedule));
+              renderAll();
+            }
+          }
+        }).catch(() => {});
+    }
+  });
+  socket.on('planning-broadcast', (data) => {
+    if (data.restaurantId !== currentRestaurantId) return;
+    if (isSyncingPlan) return;
+    schedule = pruneSchedulePast(migrateSchedule(data.schedule || {}));
+    localStorage.setItem(scheduleKey(), JSON.stringify(schedule));
+    renderAll();
+    showSnack('<span data-icon="refresh"></span> Planning mis à jour par ' + (data.updatedBy || 'un collègue'));
+  });
+} catch(e) { console.warn('Socket indisponible'); }
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.target.matches('input,textarea,select')) return;
+  if (e.key === 'ArrowLeft' && e.ctrlKey) { changeWeek(-1); e.preventDefault(); }
+  else if (e.key === 'ArrowRight' && e.ctrlKey) { changeWeek(1); e.preventDefault(); }
+  else if (e.key === 'Escape') { closeShiftModal(); closeTemplatesModal(); closeAbsenceModal(); closeQuickAddModal(); hideContextMenu(); }
+  else if (e.key === 't' && e.ctrlKey) { goToCurrentWeek(); e.preventDefault(); }
+});
+
+init().catch(err => {
+  console.error('[planning] init() error:', err);
+  const mc = document.getElementById('main-content');
+  if (mc) mc.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:20px;margin:20px"><p style="color:#dc2626;font-weight:600">Erreur de chargement : ${err.message}</p><p style="color:#888;font-size:.85rem;margin-top:6px">Essayez de recharger la page (F5).</p></div>`;
+});
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

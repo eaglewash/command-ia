@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Clés API – Commande-IA</title>
+<script src="/icons.js"></script>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+<script>
+// La gestion des clés API a été centralisée dans admin.html
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (user.role === 'Admin') {
+  window.location.href = '/admin.html';
+} else {
+  window.location.href = '/index.html';
+}
+</script>
+<p style="font-family:sans-serif;color:#666;text-align:center;margin-top:20vh;font-size:14px">
+  Redirection vers la gestion des clés API…
+</p>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src="/permissions.js"></script>
+<script>if (typeof requireAuth === 'function') requireAuth();</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

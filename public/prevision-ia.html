@@ -1,0 +1,326 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Prévisions — Commande-IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;min-height:100vh;color:#111}
+.topbar{background:#0E4B47;display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;position:sticky;top:0;z-index:100}
+.tl{display:flex;align-items:center;gap:14px}
+.logo{font-size:16px;font-weight:700;color:#fff;display:flex;align-items:center;gap:9px}
+.logo-icon{width:30px;height:30px;border-radius:8px;background:#0E4B47;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:14px;height:14px}
+.page-badge{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;background:rgba(123,187,181,.15);color:#B8D0C8;padding:3px 9px;border-radius:5px;border:1px solid rgba(123,187,181,.25)}
+.tr{display:flex;align-items:center;gap:10px}
+.back-btn{font-size:12px;font-weight:600;color:#B8D0C8;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:6px 14px;border-radius:7px;cursor:pointer;text-decoration:none;transition:all .15s;font-family:'Inter',sans-serif}
+.back-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+.period-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#B8D0C8;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.period-btn.active{background:rgba(123,187,181,.2);color:#B8D0C8;border-color:rgba(123,187,181,.4)}
+.main{padding:24px 28px;max-width:1400px;margin:0 auto}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.page-title{font-size:22px;font-weight:800;color:#0F2A28;letter-spacing:-.5px}
+.page-sub{font-size:13px;color:#4D6260;margin-top:4px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.select-std{font-size:12px;padding:8px 12px;border-radius:8px;border:1.5px solid #B8D0C8;font-family:'Inter',sans-serif;color:#0F2A28;background:#fff;cursor:pointer}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1.5px solid #B8D0C8;border-radius:14px;padding:16px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.green::after{background:linear-gradient(90deg,#0E4B47,#7BBBB5)}
+.kpi.blue::after{background:linear-gradient(90deg,#2a50aa,#70a0f0)}
+.kpi.orange::after{background:linear-gradient(90deg,#e08a10,#f0c040)}
+.kpi.purple::after{background:linear-gradient(90deg,#6030a0,#b060f0)}
+.kpi-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.kpi-val{font-size:24px;font-weight:800;color:#0F2A28;letter-spacing:-.6px}
+.kpi-lbl{font-size:10px;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+.kpi-sub{font-size:11px;color:#b0c8b0;margin-top:2px}
+.layout{display:grid;grid-template-columns:1fr 340px;gap:16px;margin-bottom:16px}
+.card{background:#fff;border:1.5px solid #B8D0C8;border-radius:14px;padding:20px}
+.card-title{font-size:13px;font-weight:700;color:#0F2A28;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.chart-wrap{position:relative;height:260px}
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.alert-item{display:flex;gap:10px;padding:10px 12px;border-radius:9px;margin-bottom:8px;border:1.5px solid transparent}
+.alert-item.warn{background:#fff8e8;border-color:#e8d080}
+.alert-item.info{background:#DCF0ED;border-color:#7BBBB5}
+.alert-item.crit{background:#fef0f0;border-color:#f0c0c0}
+.alert-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.alert-text{font-size:12px;font-weight:600;color:#0F2A28;flex:1;line-height:1.4}
+.alert-sub{font-size:10px;color:#8aaa8a;margin-top:2px}
+.dish-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f0f6ee}
+.dish-item:last-child{border-bottom:none}
+.dish-rank{font-size:11px;font-weight:800;color:#4D6260;min-width:18px}
+.dish-name{font-size:12px;font-weight:600;color:#0F2A28;flex:1}
+.dish-bar{flex:0 0 60px;height:5px;background:#B8D0C8;border-radius:3px;overflow:hidden}
+.dish-fill{height:100%;background:linear-gradient(90deg,#0E4B47,#7BBBB5);border-radius:3px}
+.dish-qty{font-size:11px;font-weight:700;color:#0E4B47;min-width:30px;text-align:right}
+.hm-cell{border-radius:3px;height:20px;transition:all .15s;cursor:pointer}
+.hm-cell:hover{opacity:.7}
+.conf-bar{flex:1;height:8px;background:#B8D0C8;border-radius:4px;overflow:hidden}
+.conf-fill{height:100%;background:linear-gradient(90deg,#0E4B47,#7BBBB5);border-radius:4px}
+.state-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;text-align:center}
+.state-icon{font-size:40px;opacity:.5}
+.state-title{font-size:15px;font-weight:700;color:#0F2A28}
+.state-sub{font-size:12px;color:#8aaa8a;max-width:300px}
+.spinner{width:32px;height:32px;border:3px solid #B8D0C8;border-top-color:#0E4B47;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-banner{background:#fef0f0;border:1.5px solid #f0c0c0;border-radius:10px;padding:12px 18px;font-size:12px;color:#b03030;font-weight:600;margin-bottom:16px;display:flex;gap:10px;align-items:center}
+
+  </style>
+<script src="/icons.js"></script>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="tl">
+    <div class="logo"><div class="logo-icon"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2v10" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>Commande-IA</div>
+    <span class="page-badge">Prévisions</span>
+  </div>
+  <div class="tr">
+    <a href="/index.html" class="back-btn">← Dashboard</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Prévisions de la demande</div>
+      <div class="page-sub">Projections basées sur votre historique réel de commandes</div>
+    </div>
+    <div class="actions" id="header-actions">
+      <select class="select-std" id="period-sel" onchange="loadData()">
+        <option value="14">14 jours d'historique</option>
+        <option value="30" selected>30 jours</option>
+        <option value="60">60 jours</option>
+      </select>
+    </div>
+  </div>
+  <div id="error-zone"></div>
+  <div id="content-zone">
+    <div class="state-wrap"><div class="spinner"></div><div class="state-title">Calcul des prévisions...</div></div>
+  </div>
+</div>
+
+<script>
+const ORIGIN = window.location.origin;
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (!user.email) window.location.href = '/login.html';
+const isAdmin = user.role === 'Admin';
+let currentRestaurantId = user.restaurantId || null;
+let fcChart = null;
+
+async function init() {
+  if (isAdmin) {
+    try {
+      const r = await fetch(ORIGIN + '/admin/restaurants');
+      const restos = await r.json();
+      if (restos.length) {
+        const sel = document.createElement('select');
+        sel.className = 'select-std';
+        sel.innerHTML = restos.map(r => `<option value="${r.id}">${r.nom}</option>`).join('');
+        currentRestaurantId = restos[0].id;
+        sel.onchange = () => { currentRestaurantId = sel.value; loadData(); };
+        document.getElementById('header-actions').prepend(sel);
+      }
+    } catch {}
+  }
+  if (currentRestaurantId) loadData();
+  else showEmpty('Aucun restaurant associé', 'Votre compte n\'est pas lié à un restaurant.');
+}
+
+async function loadData() {
+  const days = parseInt(document.getElementById('period-sel').value);
+  showLoading();
+  clearError();
+  try {
+    const [aRes, statsRes] = await Promise.all([
+      fetch(`${ORIGIN}/analytics?restaurantId=${currentRestaurantId}&days=${days}`),
+      isAdmin ? fetch(ORIGIN + '/admin/stats').catch(() => null) : Promise.resolve(null)
+    ]);
+    if (!aRes.ok) throw new Error('analytics');
+    const analytics = await aRes.json();
+    const stats = statsRes && statsRes.ok ? await statsRes.json() : null;
+    if (!analytics.totalOrders || analytics.totalOrders === 0) {
+      showEmpty('Données insuffisantes', `Aucune commande sur les ${days} derniers jours. Les prévisions nécessitent un historique d'activité.`);
+      return;
+    }
+    renderAll(analytics, stats, days);
+  } catch (e) {
+    showError('Erreur lors du chargement : ' + (e.message || ''));
+  }
+}
+
+function computeProjection(revenueByDay, ordersByDay, projectDays = 7) {
+  if (!revenueByDay || revenueByDay.length < 3) return null;
+  // Moving average projection
+  const window = Math.min(7, revenueByDay.length);
+  const recent = revenueByDay.slice(-window);
+  const avgDay = recent.reduce((a, b) => a + b, 0) / window;
+  const trend = recent.length >= 2 ? (recent[recent.length - 1] - recent[0]) / (recent.length - 1) : 0;
+  const projected = [];
+  for (let i = 0; i < projectDays; i++) {
+    projected.push(Math.max(0, avgDay + trend * (i + 1)));
+  }
+  return projected;
+}
+
+function renderAll(analytics, stats, days) {
+  const revenue = analytics.totalRevenue || 0;
+  const orders = analytics.totalOrders || 0;
+  const avgOrder = analytics.avgOrderValue || 0;
+  const topProducts = analytics.topProducts || [];
+  const revenueByDay = analytics.revenueByDay || [];
+  const ordersByDay = analytics.ordersByDay || [];
+
+  const halfLen = Math.floor(revenueByDay.length / 2);
+  const prev = revenueByDay.slice(0, halfLen).reduce((a, b) => a + b, 0);
+  const curr = revenueByDay.slice(halfLen).reduce((a, b) => a + b, 0);
+  const trend = prev > 0 ? ((curr - prev) / prev * 100) : 0;
+  const trendSign = trend >= 0 ? '+' : '';
+
+  const proj = computeProjection(revenueByDay, ordersByDay, 7);
+  const projTotal = proj ? proj.reduce((a, b) => a + b, 0) : null;
+
+  // Activity heatmap data
+  const activityByHour = stats?.activityByHour || {};
+  const hoursAvailable = Object.keys(activityByHour).length > 0;
+
+  // Build alerts from data
+  const alerts = [];
+  if (topProducts.length > 0) {
+    alerts.push({ type: 'info', icon: '<span data-icon="star"></span>', text: `"${topProducts[0].name || topProducts[0].nom}" est votre produit le plus commandé`, sub: `${topProducts[0].count || ''} commandes sur la période` });
+  }
+  if (trend > 15) alerts.push({ type: 'info', icon: '<span data-icon="trend_up"></span>', text: `Tendance haussière détectée : +${trend.toFixed(1)}% de CA`, sub: 'Deuxième moitié de période vs première moitié' });
+  if (trend < -15) alerts.push({ type: 'warn', icon: '<span data-icon="trend_down"></span>', text: `Tendance baissière : ${trend.toFixed(1)}% de CA`, sub: 'Deuxième moitié de période vs première moitié' });
+  if (analytics.refusedOrders > orders * 0.05) alerts.push({ type: 'warn', icon: '<span data-icon="alert"></span>', text: `Taux de refus élevé : ${((analytics.refusedOrders / orders) * 100).toFixed(1)}%`, sub: `${analytics.refusedOrders} commandes refusées` });
+  if (projTotal) alerts.push({ type: 'info', icon: '🔮', text: `CA projeté semaine prochaine : ${projTotal.toFixed(0)}€`, sub: `Basé sur la tendance des ${Math.min(7, revenueByDay.length)} derniers jours` });
+
+  document.getElementById('content-zone').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi green"><div class="kpi-icon" style="background:#DCF0ED"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><path d="M3 17l4-8 4 4 4-8" stroke="#0E4B47" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="kpi-val">${revenue.toFixed(0)}€</div><div class="kpi-lbl">CA réel (${days}j)</div>
+        <div class="kpi-sub" style="color:${trend >= 0 ? '#0E4B47' : '#c03030'}">${trendSign}${trend.toFixed(1)}% vs période préc.</div></div>
+      <div class="kpi blue"><div class="kpi-icon" style="background:#e8f0ff"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><path d="M4 12l3-5 3 3 3-5 3 3" stroke="#2a50aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="kpi-val">${projTotal ? projTotal.toFixed(0) + '€' : '—'}</div><div class="kpi-lbl">CA projeté (7j)</div>
+        <div class="kpi-sub">Projection moyenne glissante</div></div>
+      <div class="kpi orange"><div class="kpi-icon" style="background:#fff8e8"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><path d="M10 2l2.5 5 5.5.8-4 3.9.9 5.5L10 14.7 5.1 17.2l.9-5.5L2 7.8l5.5-.8z" stroke="#e08a10" stroke-width="1.5"/></svg></div>
+        <div class="kpi-val">${topProducts.length > 0 ? (topProducts[0].name || topProducts[0].nom || '—').split(' ').slice(0, 2).join(' ') : '—'}</div>
+        <div class="kpi-lbl">Plat top</div><div class="kpi-sub">${topProducts.length > 0 ? (topProducts[0].count || 0) + ' commandes' : 'Aucune donnée'}</div></div>
+      <div class="kpi purple"><div class="kpi-icon" style="background:#f5eeff"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><circle cx="10" cy="10" r="8" stroke="#6030a0" stroke-width="1.5"/><path d="M10 6v4l3 3" stroke="#6030a0" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <div class="kpi-val">${avgOrder.toFixed(0)}€</div><div class="kpi-lbl">Panier moyen</div>
+        <div class="kpi-sub">Sur ${orders} commandes</div></div>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <div class="card-title">Historique & Projection CA <span style="font-size:11px;font-weight:400;color:#8aaa8a">Vert = réel · Bleu pointillé = projection</span></div>
+        <div class="chart-wrap"><canvas id="fc-chart"></canvas></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card">
+          <div class="card-title">Alertes & Insights</div>
+          ${alerts.length ? alerts.map(a => `<div class="alert-item ${a.type}"><span class="alert-icon">${a.icon}</span><div><div class="alert-text">${a.text}</div><div class="alert-sub">${a.sub}</div></div></div>`).join('') : '<div style="font-size:12px;color:#8aaa8a;padding:12px 0;text-align:center">Aucune alerte</div>'}
+        </div>
+        <div class="card">
+          <div class="card-title">Confiance du modèle</div>
+          <div style="display:flex;align-items:center;gap:8px;padding:10px;background:#f8fbf5;border-radius:8px">
+            <span style="font-size:12px;color:#4D6260">Précision estimée</span>
+            <div class="conf-bar"><div class="conf-fill" style="width:${Math.min(95, 40 + revenueByDay.length * 1.5)}%"></div></div>
+            <span style="font-size:13px;font-weight:700;color:#0E4B47">${Math.min(95, 40 + Math.round(revenueByDay.length * 1.5))}%</span>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:#8aaa8a;line-height:1.6">Basé sur ${revenueByDay.length} jours d'historique. Plus l'historique est long, plus la prévision est précise.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-grid">
+      <div class="card">
+        <div class="card-title">Top produits sur la période</div>
+        ${topProducts.length > 0 ? `<div id="top-dishes">
+          ${topProducts.slice(0, 10).map((p, i) => {
+            const maxC = topProducts[0].count || 1;
+            const cnt = p.count || 0;
+            return `<div class="dish-item"><span class="dish-rank">${i+1}</span><span class="dish-name">${p.name || p.nom || '—'}</span><div class="dish-bar"><div class="dish-fill" style="width:${Math.round(cnt/maxC*100)}%"></div></div><span class="dish-qty">${cnt}</span></div>`;
+          }).join('')}
+        </div>` : '<div style="font-size:12px;color:#8aaa8a;text-align:center;padding:16px">Aucun produit enregistré sur la période.</div>'}
+      </div>
+      <div class="card">
+        <div class="card-title">Activité par heure ${!hoursAvailable ? '<span style="font-size:10px;font-weight:400;color:#8aaa8a">(admin uniquement)</span>' : ''}</div>
+        ${hoursAvailable ? buildHeatmap(activityByHour) : `<div style="font-size:12px;color:#8aaa8a;line-height:1.7;padding:8px 0">
+          Répartition commandes / heure de la journée (données agrégées sur toute la plateforme).
+          <br><br>Disponible uniquement pour les comptes administrateur.
+        </div>`}
+      </div>
+    </div>`;
+
+  buildForecastChart(revenueByDay, proj);
+}
+
+function buildHeatmap(activityByHour) {
+  const hours = Object.keys(activityByHour).sort((a, b) => parseInt(a) - parseInt(b));
+  const vals = hours.map(h => activityByHour[h] || 0);
+  const max = Math.max(...vals, 1);
+  function heatColor(v) {
+    const pct = v / max;
+    const r = Math.round(59 + pct * 121), g = Math.round(109 + pct * 111), b = Math.round(17 + pct * 73);
+    return `rgba(${r},${g},${b},${0.2 + pct * 0.8})`;
+  }
+  return `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+    ${hours.map(h => `<div class="hm-cell" style="width:36px;background:${heatColor(activityByHour[h])};display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;border-radius:6px">
+      <span style="font-size:9px;font-weight:700;color:#0F2A28;opacity:.7">${h}h</span>
+      <span style="font-size:10px;font-weight:800;color:#0F2A28">${activityByHour[h]}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+function buildForecastChart(revenueByDay, proj) {
+  const ctx = document.getElementById('fc-chart');
+  if (!ctx) return;
+  if (fcChart) { fcChart.destroy(); fcChart = null; }
+  const histLen = revenueByDay.length;
+  const histLabels = revenueByDay.map((_, i) => `J-${histLen - i}`);
+  const projLabels = proj ? proj.map((_, i) => `J+${i + 1}`) : [];
+  const allLabels = [...histLabels, ...projLabels];
+  const histData = [...revenueByDay, ...Array(projLabels.length).fill(null)];
+  const projData = [...Array(histLen).fill(null), ...(proj || [])];
+  fcChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: allLabels, datasets: [
+      { label: 'CA réel', data: histData, borderColor: '#0E4B47', backgroundColor: 'rgba(14,75,71,.08)', tension: .4, fill: true, pointRadius: 3, pointBackgroundColor: '#0E4B47', spanGaps: false },
+      { label: 'Projection', data: projData, borderColor: '#2a50aa', backgroundColor: 'rgba(42,80,170,.05)', tension: .4, fill: false, borderDash: [5, 5], pointRadius: 3, pointBackgroundColor: '#2a50aa', spanGaps: false }
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font: { family: 'Inter', size: 11 } } } },
+      scales: {
+        y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { font: { family: 'Inter', size: 11 }, callback: v => v + '€' } },
+        x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, maxTicksLimit: 14 } }
+      }
+    }
+  });
+}
+
+function showLoading() {
+  document.getElementById('content-zone').innerHTML = `<div class="state-wrap"><div class="spinner"></div><div class="state-title">Calcul des prévisions...</div></div>`;
+}
+function showEmpty(title, sub) {
+  document.getElementById('content-zone').innerHTML = `<div class="card"><div class="state-wrap"><div class="state-icon">🔮</div><div class="state-title">${title}</div><div class="state-sub">${sub}</div></div></div>`;
+}
+function showError(msg) {
+  document.getElementById('error-zone').innerHTML = `<div class="error-banner"><span data-icon="alert"></span> ${msg} <button onclick="loadData()" style="margin-left:auto;font-size:11px;font-weight:600;color:#b03030;background:none;border:none;cursor:pointer;text-decoration:underline">Réessayer</button></div>`;
+  document.getElementById('content-zone').innerHTML = '';
+}
+function clearError() { document.getElementById('error-zone').innerHTML = ''; }
+
+init();
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src="/permissions.js"></script>
+<script>if (typeof requireAuth === 'function') requireAuth();</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

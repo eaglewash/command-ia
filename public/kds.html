@@ -1,0 +1,810 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Écran Cuisine — Commande-IA</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #EEF5F2; min-height: 100vh; color: #0E4B47; overflow-x: hidden; }
+
+    /* ── HEADER ── */
+    .kds-header {
+      background: #EEF5F2;
+      padding: 16px 24px 12px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid #dddfd8;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-left { display: flex; flex-direction: column; gap: 3px; }
+    .header-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    /* ── Burger btn override (header clair) ── */
+    .kds-header .bn-btn {
+      background: #0E4B47 !important;
+      border-color: #2d6a65 !important;
+    }
+    .kds-header .bn-btn:hover { background: #1a5e59 !important; transform: scale(1.05); }
+    .kds-header .bn-menu { top: calc(100% + 6px); }
+    .service-name { font-size: 24px; font-weight: 700; color: #0E4B47; letter-spacing: -0.5px; }
+    .service-meta { font-size: 14px; color: #7a7a6a; font-weight: 400; }
+    .urg-pill {
+      display: none; align-items: center; gap: 5px;
+      background: #fef2f2; border: 1.5px solid #fca5a5;
+      border-radius: 20px; padding: 3px 11px;
+      font-size: 12px; font-weight: 700; color: #dc2626;
+    }
+    .urg-pill.show { display: flex; }
+    .urg-dot { width: 7px; height: 7px; border-radius: 50%; background: #dc2626; flex-shrink: 0; }
+    .header-sub { font-style: italic; color: #4D6260; font-size: 12px; padding-left: 40px; }
+    .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .sound-btn {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 500; color: #3a5a3a;
+      cursor: pointer; background: none; border: none;
+      font-family: 'Inter', sans-serif; padding: 5px 4px;
+      transition: opacity .15s;
+    }
+    .sound-dot { width: 7px; height: 7px; border-radius: 50%; background: #2d8a2d; flex-shrink: 0; }
+    .sound-btn.muted .sound-dot { background: #c0c0b8; }
+    .sound-btn.muted { color: #4D6260; }
+    .nav-tabs { display: flex; background: rgba(0,0,0,0.07); border-radius: 9px; padding: 3px; gap: 2px; }
+    .nav-tab {
+      font-size: 13px; font-weight: 500; padding: 5px 13px;
+      border-radius: 7px; border: none; background: transparent;
+      color: #6a6a5a; cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all .12s; white-space: nowrap;
+    }
+    .nav-tab.active { background: #0E4B47; color: #fff; font-weight: 600; }
+    .nav-tab:not(.active):hover { background: rgba(0,0,0,0.05); color: #3a3a2a; }
+    .fullscreen-btn {
+      width: 30px; height: 30px; border-radius: 7px;
+      border: 1px solid #d0d2cc; background: #fff;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background .12s;
+    }
+    .fullscreen-btn:hover { background: #EEF5F2; }
+
+    /* burger injecté par burger-menu.js */
+
+    /* ── KDS BOARD ── */
+    .kds-board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      min-height: calc(100vh - 68px);
+    }
+    .kds-col {
+      display: flex; flex-direction: column;
+      border-right: 1px solid #dddfd8;
+    }
+    .kds-col:last-child { border-right: none; }
+
+    .col-header {
+      padding: 12px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px dashed #d0d2cc;
+      flex-shrink: 0;
+      background: #EEF5F2;
+      position: sticky; top: 68px; z-index: 10;
+    }
+    .col-label {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.9px;
+      color: #7a7a6a; text-transform: uppercase;
+    }
+    .col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .col-dot.new   { background: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.2); }
+    .col-dot.enc   { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,.2); }
+    .col-dot.pret  { background: #7BBBB5; box-shadow: 0 0 0 2px rgba(123,187,181,.2); }
+    .col-dot.done  { background: #9ca3af; }
+    .col-count { font-size: 14px; font-weight: 700; color: #0F2A28; }
+
+    .col-body {
+      padding: 14px 12px;
+      display: flex; flex-direction: column; gap: 10px;
+      flex: 1; overflow-y: auto;
+      background: #EEF5F2;
+    }
+    .col-body::-webkit-scrollbar { width: 3px; }
+    .col-body::-webkit-scrollbar-thumb { background: #c0c0b4; border-radius: 3px; }
+
+    /* ── CARDS ── */
+    .cmd-card {
+      background: #fff;
+      border: 1px solid #e2e4de;
+      border-radius: 12px;
+      padding: 13px 15px;
+      cursor: pointer;
+      transition: box-shadow .15s, transform .15s;
+      position: relative;
+    }
+    .cmd-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.08); transform: translateY(-1px); }
+    .cmd-card.urgent { border-color: #ef4444; border-width: 1.5px; }
+    .cmd-card.selected { box-shadow: 0 0 0 2px #0E4B47 !important; }
+    .cmd-card.card-new-anim { animation: cardIn .35s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes cardIn { from { opacity:0; transform: translateY(16px) scale(.97); } to { opacity:1; transform:none; } }
+
+    /* Envoyées dimmed */
+    .col-envoyees .cmd-card { opacity: 0.42; cursor: default; pointer-events: none; }
+    .col-envoyees .cmd-card:hover { transform: none; box-shadow: none; }
+
+    .card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; gap: 6px; }
+    .card-table { font-size: 17px; font-weight: 700; color: #0E4B47; line-height: 1.1; }
+    .card-time { font-size: 12px; font-weight: 500; color: #9a9a8a; white-space: nowrap; margin-top: 2px; }
+    .card-time.urg { color: #ef4444; font-weight: 700; }
+
+    .card-items { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+    .card-item {
+      display: flex; align-items: baseline; justify-content: space-between;
+      font-size: 13px; color: #2a2a1a; padding: 1px 0;
+      cursor: pointer; transition: opacity .1s;
+    }
+    .card-item:hover { opacity: .7; }
+    .card-item-name { flex: 1; }
+    .card-item-qty { font-size: 12px; color: #9a9a8a; font-weight: 500; white-space: nowrap; margin-left: 8px; }
+    .card-item.done .card-item-name { text-decoration: line-through; color: #b8b8a8; }
+    .card-item.done .card-item-qty { color: #c8c8b8; }
+
+    .card-badges { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+
+    .timer-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #fef2f2; border: 1px solid #fca5a5;
+      border-radius: 20px; padding: 3px 9px;
+      font-size: 12px; font-weight: 700; color: #dc2626;
+      font-variant-numeric: tabular-nums; letter-spacing: 0;
+    }
+    .prete-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #DCF0ED; border: 1px solid #B8D0C8;
+      border-radius: 20px; padding: 4px 11px;
+      font-size: 12px; font-weight: 700; color: #0E4B47;
+    }
+    .allergy-badge {
+      font-size: 10px; font-weight: 600; padding: 2px 7px;
+      border-radius: 6px; background: #fef2f2; color: #dc2626;
+      border: 1px solid #fca5a5;
+    }
+    .note-badge {
+      font-size: 10px; font-weight: 600; padding: 2px 7px;
+      border-radius: 6px; background: #eff6ff; color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    /* Prep bar */
+    .prep-wrap { margin-bottom: 8px; }
+    .prep-top { display: flex; justify-content: space-between; font-size: 10px; color: #6a8a6a; margin-bottom: 3px; }
+    .prep-track { height: 3px; background: #e0e8e0; border-radius: 3px; overflow: hidden; }
+    .prep-fill { height: 100%; background: linear-gradient(90deg,#7BBBB5,#7BBBB5); border-radius: 3px; transition: width 1s linear; }
+
+    /* Card actions */
+    .card-actions { display: flex; gap: 5px; margin-top: 10px; padding-top: 9px; border-top: 1px solid #CFE0D9; }
+    .card-btn {
+      flex: 1; padding: 7px 8px; border-radius: 8px; border: none;
+      font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif;
+      cursor: pointer; transition: all .12s; white-space: nowrap;
+    }
+    .card-btn.primary { background: #0E4B47; color: #fff; }
+    .card-btn.primary:hover { background: #333; }
+    .card-btn.secondary { background: #EEF5F2; color: #0F2A28; border: 1px solid #B8D0C8; }
+    .card-btn.secondary:hover { background: #eaeae0; }
+    .card-btn.danger { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+    .card-btn.danger:hover { background: #fee2e2; }
+    .card-btn.sm { flex: 0; padding: 7px 9px; }
+
+    /* Empty column */
+    .col-empty {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; flex: 1; gap: 7px;
+      color: #b8b8a8; font-size: 12px; padding: 40px 16px; text-align: center;
+    }
+    .col-empty-icon { font-size: 22px; opacity: .3; }
+
+    /* ── CHRONO & ARCHIVES ── */
+    #chrono-view { display: none; padding: 24px; background: #EEF5F2; min-height: calc(100vh - 68px); }
+    #archives-view { display: none; min-height: calc(100vh - 68px); flex-direction: column; background: #EEF5F2; }
+
+    .arch-stats-bar { display: grid; grid-template-columns: repeat(5,1fr); background: #fff; border-bottom: 1px solid #e0e2dd; }
+    .arch-stat { padding: 14px 20px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid #CFE0D9; }
+    .arch-stat:last-child { border-right: none; }
+    .arch-stat-label { font-size: 10px; font-weight: 700; color: #9a9a8a; text-transform: uppercase; letter-spacing: 1px; }
+    .arch-stat-value { font-size: 24px; font-weight: 800; color: #0E4B47; line-height: 1; letter-spacing: -1px; }
+    .arch-stat-value.green { color: #0E4B47; }
+    .arch-content { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .arch-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap: 12px; }
+    .arch-card { background: #fff; border: 1px solid #e2e4de; border-radius: 12px; padding: 14px; cursor: pointer; transition: all .2s; animation: cardIn .3s ease both; }
+    .arch-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .arch-card.done { border-left: 3px solid #7BBBB5; }
+    .arch-card.cancelled { border-left: 3px solid #ef4444; }
+    .arch-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .arch-card-name { font-size: 14px; font-weight: 700; color: #0E4B47; }
+    .arch-card-time { font-size: 11px; color: #9a9a8a; }
+    .arch-card-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
+    .arch-card-badge.done { background: #DCF0ED; color: #0E4B47; border: 1px solid #B8D0C8; }
+    .arch-card-badge.cancelled { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+    .arch-card-items { font-size: 12px; color: #6a6a5a; line-height: 1.7; margin: 6px 0; }
+    .arch-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #CFE0D9; }
+    .arch-card-dur { font-size: 11px; color: #9a9a8a; }
+    .arch-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 70px 20px; gap: 12px; color: #9a9a8a; }
+
+    /* ── SNACKBAR ── */
+    .snackbar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #0E4B47; color: #fff; padding: 11px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; z-index: 3000; transition: transform .28s; pointer-events: none; white-space: nowrap; }
+    .snackbar.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── MODAL ── */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); animation: fadeIn .15s; }
+    @keyframes fadeIn { from{opacity:0;} }
+    .modal-box { background: #fff; border-radius: 16px; padding: 22px; width: 360px; max-width: 94vw; box-shadow: 0 20px 60px rgba(0,0,0,0.18); animation: modalIn .22s cubic-bezier(.22,1,.36,1); }
+    @keyframes modalIn { from { opacity:0; transform: scale(.93) translateY(10px); } }
+    .modal-title { font-size: 15px; font-weight: 700; color: #0E4B47; margin-bottom: 3px; }
+    .modal-sub { font-size: 12px; color: #9a9a8a; margin-bottom: 14px; }
+    .modal-actions { display: flex; gap: 7px; margin-top: 12px; }
+    .modal-actions .card-btn { flex: 1; padding: 9px; }
+
+    @media (max-width: 1100px) { .kds-board { grid-template-columns: repeat(3,1fr); } .col-envoyees { display: none !important; } }
+    @media (max-width: 750px)  { .kds-board { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px)  { .kds-board { grid-template-columns: 1fr; } }
+  
+  </style>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header class="kds-header">
+  <div class="header-left">
+    <div class="header-title" id="burger-anchor">
+      <div class="logo-icon" style="display:none"></div><!-- remplacé par burger-menu.js -->
+      <span class="service-name">Service du soir</span>
+      <span class="service-meta">· <span id="h-total">0</span> cmds</span>
+      <div class="urg-pill" id="urg-pill">
+        <div class="urg-dot"></div>
+        <span id="urg-count">0</span> urgentes
+      </div>
+    </div>
+    <div class="header-sub" id="header-sub">Chargement…</div>
+  </div>
+  <div class="header-right">
+    <button class="sound-btn" id="snd-btn" onclick="toggleSound()">
+      <div class="sound-dot" id="snd-dot"></div>
+      <span id="snd-label">sons ON</span>
+    </button>
+    <div class="nav-tabs">
+      <button class="nav-tab" onclick="window.location='/index.html'">Service</button>
+      <button class="nav-tab active" id="tab-kds-btn" onclick="switchTab('kds')">KDS</button>
+      <button class="nav-tab" id="tab-arch-btn" onclick="switchTab('archives')">Archives</button>
+      <button class="nav-tab" onclick="window.location='/plan-salle.html'">Salle</button>
+    </div>
+    <button class="fullscreen-btn" onclick="toggleFullscreen()" title="Plein écran">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="#0F2A28" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+</header>
+
+<!-- ═══ KDS BOARD ═══ -->
+<div id="kds-view">
+  <div class="kds-board">
+    <!-- NOUVELLE -->
+    <div class="kds-col">
+      <div class="col-header">
+        <div class="col-label"><div class="col-dot new"></div>← NOUVELLE</div>
+        <div class="col-count" id="cc-new">0</div>
+      </div>
+      <div class="col-body" id="col-new"></div>
+    </div>
+    <!-- EN PRÉP -->
+    <div class="kds-col">
+      <div class="col-header">
+        <div class="col-label"><div class="col-dot enc"></div>◑ EN PRÉP</div>
+        <div class="col-count" id="cc-enc">0</div>
+      </div>
+      <div class="col-body" id="col-enc"></div>
+    </div>
+    <!-- À ENVOYER -->
+    <div class="kds-col">
+      <div class="col-header">
+        <div class="col-label"><div class="col-dot pret"></div>→ À ENVOYER</div>
+        <div class="col-count" id="cc-pret">0</div>
+      </div>
+      <div class="col-body" id="col-pret"></div>
+    </div>
+    <!-- ENVOYÉES -->
+    <div class="kds-col col-envoyees">
+      <div class="col-header">
+        <div class="col-label"><div class="col-dot done"></div>✓ ENVOYÉES</div>
+        <div class="col-count" id="cc-done">0</div>
+      </div>
+      <div class="col-body" id="col-done"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ARCHIVES TAB ═══ -->
+<div id="archives-view" style="display:none;flex-direction:column">
+  <div class="arch-stats-bar">
+    <div class="arch-stat"><div class="arch-stat-label">Total servies</div><div class="arch-stat-value green" id="arch-total">0</div></div>
+    <div class="arch-stat"><div class="arch-stat-label">Temps moyen</div><div class="arch-stat-value" id="arch-avg">—</div></div>
+    <div class="arch-stat"><div class="arch-stat-label">Rapides</div><div class="arch-stat-value" id="arch-fast">0</div></div>
+    <div class="arch-stat"><div class="arch-stat-label">Longues</div><div class="arch-stat-value" id="arch-slow">0</div></div>
+    <div class="arch-stat"><div class="arch-stat-label">Annulées</div><div class="arch-stat-value" style="color:#dc2626" id="arch-cancelled">0</div></div>
+  </div>
+  <div class="arch-content">
+    <div class="arch-grid" id="arch-grid">
+      <div class="arch-empty"><div style="font-size:28px;opacity:.3">📋</div><div style="font-size:14px;font-weight:600">Aucune commande archivée</div><div style="font-size:12px">Les commandes servies apparaîtront ici</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="snackbar" id="snackbar"></div>
+
+<script src="/permissions.js"></script>
+<script src="/icons.js"></script>
+<script>
+// ── Auth ──
+if (typeof requireAuth === 'function') requireAuth();
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (!user.email) window.location.href = '/login.html';
+const isAdmin = user.role === 'Admin';
+const ORIGIN = window.location.origin;
+if (isAdmin) document.getElementById('admin-menu-link').style.display = 'flex';
+
+// ── State ──
+let orders = {};
+let archived = JSON.parse(localStorage.getItem('kds_arch_' + (user.restaurantId || 'default')) || '[]');
+let doneCount = 0;
+let cookTimes = [];
+let soundOn = true;
+let activeFilter = 'all';
+let sortAsc = true;
+let selectedId = null;
+let currentRid = isAdmin ? null : (user.restaurantId || null);
+let activeTab = 'kds';
+let actx = null;
+
+// ── Audio ──
+function beep(f, d, v = 0.25, t = 'sine') {
+  if (!soundOn) return;
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.connect(g); g.connect(actx.destination);
+    o.frequency.value = f; o.type = t;
+    g.gain.setValueAtTime(v, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + d);
+    o.start(); o.stop(actx.currentTime + d);
+  } catch(e) {}
+}
+function sndNew()    { beep(880, .1); setTimeout(() => beep(1100, .1), 120); }
+function sndReady()  { beep(660, .07); setTimeout(() => beep(880, .07), 100); setTimeout(() => beep(1100, .1), 200); }
+function sndUrgent() { [0, 180, 360].forEach(d => setTimeout(() => beep(1320, .08, .4, 'square'), d)); }
+
+function toggleSound() {
+  soundOn = !soundOn;
+  document.getElementById('snd-dot').style.background = soundOn ? '#2d8a2d' : '#c0c0b8';
+  document.getElementById('snd-label').textContent = soundOn ? 'sons ON' : 'sons OFF';
+  document.getElementById('snd-btn').classList.toggle('muted', !soundOn);
+  showSnack(soundOn ? '🔊 Son activé' : '🔇 Son coupé');
+}
+
+// ── Burger menu ──
+// Navigation burger injectée par burger-menu.js
+
+// ── Admin resto ──
+async function loadRestaurants() {
+  try {
+    const list = await fetch(`${ORIGIN}/admin/restaurants`).then(r => r.json());
+    // admin: auto-select first or use selector elsewhere
+  } catch(e) {}
+}
+function onRestoChange() {
+  currentRid = null;
+  orders = {}; doneCount = 0; cookTimes = [];
+  renderAll();
+}
+
+// ── Socket ──
+const socket = io(ORIGIN);
+socket.on('connect', () => {
+  if (!isAdmin && currentRid) socket.emit('join-restaurant', currentRid);
+  updateHeaderSub();
+});
+socket.on('disconnect', () => { updateHeaderSub(); });
+socket.on('new-order', o => {
+  if (!matchRid(o)) return;
+  orders[o.id] = {
+    ...o, kds: 'new', rcvd: o.timestamp || Date.now(), startedAt: null,
+    items: (o.items || []).map(i => ({ ...i, done: false })),
+    urgent: !!o.urgent, allergies: o.allergies || [], isNew: true
+  };
+  sndNew();
+  if (o.urgent) sndUrgent();
+  renderAll();
+  setTimeout(() => { if (orders[o.id]) orders[o.id].isNew = false; }, 400);
+});
+socket.on('kds-status', ({ id, status }) => {
+  if (!orders[id]) return;
+  if (status === 'done')     orders[id].kds = 'pret';
+  if (status === 'en-cours') orders[id].kds = 'enc';
+  renderAll();
+});
+socket.on('order-cancelled', ({ id }) => {
+  if (orders[id]) {
+    archiveOrder(orders[id], 'cancelled');
+    delete orders[id];
+    renderAll();
+    showSnack('✕ Commande annulée');
+  }
+  if (selectedId === id) { selectedId = null; }
+});
+socket.on('kds-update', data => { if (data) { orders = { ...orders, ...data }; renderAll(); } });
+
+function matchRid(o) {
+  if (isAdmin) return currentRid ? o.restaurantId === currentRid : false;
+  return !o.restaurantId || o.restaurantId === currentRid;
+}
+
+// ── Tab switching ──
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-kds-btn').classList.toggle('active', tab === 'kds');
+  document.getElementById('tab-arch-btn').classList.toggle('active', tab === 'archives');
+  document.getElementById('kds-view').style.display = tab === 'kds' ? 'block' : 'none';
+  const av = document.getElementById('archives-view');
+  av.style.display = tab === 'archives' ? 'flex' : 'none';
+  if (tab === 'archives') renderArchives();
+}
+
+// ── Fullscreen ──
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+  else document.exitFullscreen().catch(() => {});
+}
+
+// ── Filtres / tri ──
+function setFilter(f) {
+  activeFilter = f;
+  renderAll();
+}
+function toggleSort() {
+  sortAsc = !sortAsc;
+  renderAll();
+}
+function clearPret() {
+  Object.values(orders).filter(o => o.kds === 'pret').forEach(o => {
+    archiveOrder(o, 'done');
+    delete orders[o.id];
+  });
+  renderAll();
+  showSnack('🗑 Commandes prêtes vidées');
+}
+
+// ── Actions ──
+function start(id) {
+  if (!orders[id]) return;
+  orders[id].kds = 'enc';
+  orders[id].startedAt = Date.now();
+  socket.emit('kds-status', { id, status: 'en-cours', restaurantId: currentRid });
+  renderAll();
+  showSnack('▶ Préparation démarrée');
+}
+function ready(id) {
+  if (!orders[id]) return;
+  orders[id].kds = 'pret';
+  const dur = orders[id].startedAt ? Math.round((Date.now() - orders[id].startedAt) / 60000) : null;
+  if (dur !== null) { doneCount++; cookTimes.push(dur); }
+  socket.emit('kds-status', { id, status: 'done', restaurantId: currentRid });
+  renderAll();
+  sndReady();
+  showSnack('✓ Commande prête à envoyer');
+}
+function served(id) {
+  if (!orders[id]) return;
+  archiveOrder(orders[id], 'done');
+  delete orders[id];
+  if (selectedId === id) selectedId = null;
+  renderAll();
+  showSnack('→ Servie — archivée');
+}
+function setUrgent(id) {
+  if (!orders[id]) return;
+  orders[id].urgent = !orders[id].urgent;
+  socket.emit('kds-update', { id, urgent: orders[id].urgent, restaurantId: currentRid });
+  renderAll();
+}
+function cancelOrder(id) {
+  if (!orders[id] || !confirm('Annuler cette commande ?')) return;
+  archiveOrder(orders[id], 'cancelled');
+  socket.emit('order-cancelled', { id, restaurantId: currentRid });
+  delete orders[id];
+  if (selectedId === id) selectedId = null;
+  renderAll();
+  showSnack('✕ Commande annulée');
+}
+function toggleItem(oid, idx) {
+  if (!orders[oid]) return;
+  orders[oid].items[idx].done = !orders[oid].items[idx].done;
+  const card = document.getElementById('card-' + oid);
+  if (card) {
+    const items = card.querySelectorAll('.card-item');
+    if (items[idx]) items[idx].classList.toggle('done', orders[oid].items[idx].done);
+  }
+}
+function archiveOrder(o, status) {
+  const storKey = 'kds_arch_' + (currentRid || user.restaurantId || 'default');
+  archived.unshift({ ...o, archivedStatus: status, archivedAt: Date.now() });
+  if (archived.length > 200) archived.pop();
+  localStorage.setItem(storKey, JSON.stringify(archived.slice(0, 200)));
+}
+function selectOrder(id) {
+  selectedId = id === selectedId ? null : id;
+  document.querySelectorAll('.cmd-card').forEach(c => c.classList.remove('selected'));
+  if (selectedId) {
+    const el = document.getElementById('card-' + selectedId);
+    if (el) el.classList.add('selected');
+  }
+}
+
+// ── Helpers ──
+function elapsed(ts) {
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return '< 1 min';
+  if (m < 60) return m + ' min';
+  return Math.floor(m / 60) + 'h' + (m % 60 > 0 ? String(m % 60).padStart(2, '0') : '');
+}
+function elapsedMmSs(ts) {
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+function fmtTime(ts) {
+  return new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+function waitClass(ts) {
+  const m = (Date.now() - ts) / 60000;
+  if (m < 8) return 'ok';
+  if (m < 12) return 'warn';
+  return 'danger';
+}
+
+// ── Filtered list ──
+function filtered(col) {
+  let list = Object.values(orders).filter(o => o.kds === col);
+  if (activeFilter === 'urgent')  list = list.filter(o => o.urgent);
+  if (activeFilter === 'allergie') list = list.filter(o => o.allergies?.length || (o.items || []).some(i => i.allergies?.length));
+  if (activeFilter === 'long')    list = list.filter(o => (Date.now() - o.rcvd) / 60000 > 10);
+  list.sort((a, b) => sortAsc ? a.rcvd - b.rcvd : b.rcvd - a.rcvd);
+  return list;
+}
+
+// ── Card HTML ──
+function cardHtml(o) {
+  const isUrg = o.urgent;
+  const timeStr = fmtTime(o.rcvd);
+
+  const itemsHtml = (o.items || []).map((item, idx) => `
+    <div class="card-item${item.done ? ' done' : ''}" onclick="event.stopPropagation();toggleItem('${o.id}',${idx})">
+      <span class="card-item-name">${item.name || item.nom || 'Article'}</span>
+      <span class="card-item-qty">×${item.qty || 1}</span>
+    </div>`).join('');
+
+  // Badges
+  let badges = '';
+  if (o.kds === 'new') {
+    badges += `<span class="timer-badge" id="timer-${o.id}">🔥 ${elapsedMmSs(o.rcvd)}</span>`;
+  }
+  if (o.kds === 'pret') {
+    badges += `<span class="prete-badge">✓ PRÊTE</span>`;
+  }
+  if (o.allergies?.length) {
+    o.allergies.forEach(a => { badges += `<span class="allergy-badge">⚠ ${a}</span>`; });
+  }
+  if (o.note) {
+    badges += `<span class="note-badge">📝 ${o.note}</span>`;
+  }
+
+  // Prep bar
+  let prepHtml = '';
+  if (o.kds === 'enc' && o.startedAt) {
+    const elapsed_m = (Date.now() - o.startedAt) / 60000;
+    const pct = Math.min(100, Math.round(elapsed_m / 12 * 100));
+    prepHtml = `<div class="prep-wrap">
+      <div class="prep-top"><span>En préparation</span><span id="preptime-${o.id}">${Math.round(elapsed_m)} min</span></div>
+      <div class="prep-track"><div class="prep-fill" id="prepfill-${o.id}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+
+  // Actions
+  let actions = '';
+  if (o.kds === 'new') {
+    actions = `
+      <button class="card-btn primary" onclick="event.stopPropagation();start('${o.id}')">Démarrer</button>
+      <button class="card-btn secondary sm" onclick="event.stopPropagation();setUrgent('${o.id}')" title="${isUrg ? 'Retirer urgence' : 'Marquer urgent'}">!</button>
+      <button class="card-btn danger sm" onclick="event.stopPropagation();cancelOrder('${o.id}')" title="Annuler">✕</button>`;
+  } else if (o.kds === 'enc') {
+    actions = `
+      <button class="card-btn primary" onclick="event.stopPropagation();ready('${o.id}')">Prêt ✓</button>
+      <button class="card-btn secondary sm" onclick="event.stopPropagation();setUrgent('${o.id}')" title="${isUrg ? 'Retirer urgence' : 'Marquer urgent'}">!</button>`;
+  } else if (o.kds === 'pret') {
+    actions = `
+      <button class="card-btn primary" onclick="event.stopPropagation();served('${o.id}')">Servie →</button>`;
+  }
+
+  return `<div class="cmd-card${isUrg ? ' urgent' : ''}${selectedId === o.id ? ' selected' : ''}${o.isNew ? ' card-new-anim' : ''}" id="card-${o.id}" onclick="selectOrder('${o.id}')">
+    <div class="card-head">
+      <div class="card-table">${o.table || 'Commande'}</div>
+      <div class="card-time${isUrg ? ' urg' : ''}">${timeStr}</div>
+    </div>
+    <div class="card-items">${itemsHtml}</div>
+    ${prepHtml}
+    ${badges ? `<div class="card-badges">${badges}</div>` : ''}
+    ${actions ? `<div class="card-actions" onclick="event.stopPropagation()">${actions}</div>` : ''}
+  </div>`;
+}
+
+// Card pour ENVOYÉES (dimmed)
+function doneCardHtml(o) {
+  const timeStr = fmtTime(o.archivedAt || o.rcvd);
+  const itemsHtml = (o.items || []).map(item => `
+    <div class="card-item">
+      <span class="card-item-name">${item.name || item.nom || 'Article'}</span>
+      <span class="card-item-qty">×${item.qty || 1}</span>
+    </div>`).join('');
+  return `<div class="cmd-card">
+    <div class="card-head">
+      <div class="card-table">${o.table || 'Commande'}</div>
+      <div class="card-time">${timeStr}</div>
+    </div>
+    <div class="card-items">${itemsHtml}</div>
+  </div>`;
+}
+
+// ── Render all ──
+function renderAll() {
+  ['new', 'enc', 'pret'].forEach(col => {
+    const list = filtered(col);
+    const el = document.getElementById('col-' + col);
+    const emptyMsgs = { new: 'En attente de commandes…', enc: 'Aucune commande en cours', pret: 'Aucune commande prête' };
+    const emptyIcons = { new: '📋', enc: '⏱', pret: '✓' };
+    if (!list.length) {
+      el.innerHTML = `<div class="col-empty"><div class="col-empty-icon">${emptyIcons[col]}</div><div>${emptyMsgs[col]}</div></div>`;
+    } else {
+      el.innerHTML = list.map(o => cardHtml(o)).join('');
+    }
+    document.getElementById('cc-' + col).textContent = list.length;
+  });
+
+  // ENVOYÉES column
+  const recentDone = archived.filter(o => o.archivedStatus === 'done').slice(0, 6);
+  const doneEl = document.getElementById('col-done');
+  document.getElementById('cc-done').textContent = recentDone.length;
+  if (!recentDone.length) {
+    doneEl.innerHTML = `<div class="col-empty"><div class="col-empty-icon">✓</div><div>Aucune commande servie</div></div>`;
+  } else {
+    doneEl.innerHTML = recentDone.map(o => doneCardHtml(o)).join('');
+  }
+
+  // Header
+  const all = Object.values(orders);
+  const urgCount = all.filter(o => o.urgent).length;
+  document.getElementById('h-total').textContent = all.length;
+  const urgPill = document.getElementById('urg-pill');
+  urgPill.classList.toggle('show', urgCount > 0);
+  document.getElementById('urg-count').textContent = urgCount;
+
+  updateHeaderSub();
+}
+
+function updateHeaderSub() {
+  const now = new Date();
+  const jours = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  const jour = jours[now.getDay()];
+  const h = now.getHours();
+  const min = String(now.getMinutes()).padStart(2, '0');
+  const all = Object.values(orders);
+  let msg = '';
+  if (!socket.connected) {
+    msg = 'Connexion perdue — tentative de reconnexion…';
+  } else if (all.length === 0) {
+    msg = 'Calme plat, on attend les premières commandes.';
+  } else if (all.filter(o => o.urgent).length > 1) {
+    msg = 'Coup de feu ! On garde la tête froide.';
+  } else if (all.length > 8) {
+    msg = 'Ça pulse, on tient le rythme.';
+  } else {
+    msg = 'Service en cours, tout roule.';
+  }
+  document.getElementById('header-sub').textContent = `${jour} ${h}h${min} — ${msg}`;
+}
+
+// ── Archives ──
+function renderArchives() {
+  const done = archived.filter(o => o.archivedStatus === 'done');
+  const cancelled = archived.filter(o => o.archivedStatus === 'cancelled');
+  document.getElementById('arch-total').textContent = done.length;
+  document.getElementById('arch-cancelled').textContent = cancelled.length;
+  const times = done.filter(o => o.startedAt && o.archivedAt).map(o => Math.round((o.archivedAt - o.startedAt) / 60000));
+  document.getElementById('arch-avg').textContent = times.length ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) + 'min' : '—';
+  document.getElementById('arch-fast').textContent = times.filter(t => t < 8).length;
+  document.getElementById('arch-slow').textContent = times.filter(t => t > 15).length;
+
+  const grid = document.getElementById('arch-grid');
+  if (!archived.length) {
+    grid.innerHTML = `<div class="arch-empty"><div style="font-size:28px;opacity:.3">📋</div><div style="font-size:14px;font-weight:600">Aucune commande archivée</div><div style="font-size:12px">Les commandes servies apparaîtront ici</div></div>`;
+    return;
+  }
+  grid.innerHTML = archived.slice(0, 60).map(o => {
+    const isDone = o.archivedStatus === 'done';
+    const dur = o.startedAt && o.archivedAt ? Math.round((o.archivedAt - o.startedAt) / 60000) + ' min' : '—';
+    return `<div class="arch-card ${isDone ? 'done' : 'cancelled'}">
+      <div class="arch-card-top">
+        <div class="arch-card-name">${o.table || 'Commande'}</div>
+        <span class="arch-card-badge ${isDone ? 'done' : 'cancelled'}">${isDone ? '✓ Servie' : '✕ Annulée'}</span>
+      </div>
+      <div class="arch-card-time">${o.archivedAt ? new Date(o.archivedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+      <div class="arch-card-items">${(o.items || []).map(i => `${i.qty || 1}× ${i.name || i.nom || ''}`).join(', ')}</div>
+      <div class="arch-card-footer">
+        <span class="arch-card-dur">⏱ ${dur}</span>
+        <span style="font-size:10px;color:#c0c0b0">#${(o.num || o.id || '').toString().slice(-4)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Snackbar ──
+function showSnack(msg) {
+  const s = document.getElementById('snackbar');
+  s.textContent = msg;
+  s.classList.add('show');
+  setTimeout(() => s.classList.remove('show'), 2500);
+}
+
+// ── Déconnexion ──
+function deconnexion() {
+  if (confirm('Se déconnecter ?')) { sessionStorage.clear(); window.location.href = '/login.html'; }
+}
+
+// ── Timer update (1s) + slow update (15s) ──
+setInterval(() => {
+  // Update timers on NOUVELLE cards
+  Object.values(orders).filter(o => o.kds === 'new').forEach(o => {
+    const el = document.getElementById('timer-' + o.id);
+    if (el) el.textContent = '🔥 ' + elapsedMmSs(o.rcvd);
+  });
+  // Update prep bars on EN PRÉP cards
+  Object.values(orders).filter(o => o.kds === 'enc' && o.startedAt).forEach(o => {
+    const fill = document.getElementById('prepfill-' + o.id);
+    const label = document.getElementById('preptime-' + o.id);
+    if (fill) {
+      const em = (Date.now() - o.startedAt) / 60000;
+      fill.style.width = Math.min(100, Math.round(em / 12 * 100)) + '%';
+      if (label) label.textContent = Math.round(em) + ' min';
+    }
+  });
+  updateHeaderSub();
+}, 1000);
+
+setInterval(() => {
+  // Check for newly urgent (>15min) orders
+  Object.values(orders).filter(o => o.kds === 'new' && (Date.now() - o.rcvd) / 60000 > 15 && !o.urgent).forEach(o => {
+    o.urgent = true;
+    renderAll();
+  });
+}, 60000);
+
+// ── Init ──
+if (isAdmin) loadRestaurants();
+renderAll();
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+{
+  "name": "Commande-IA",
+  "short_name": "Commande-IA",
+  "description": "Système de gestion restaurant intelligent avec IA vocale",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#f0f2f0",
+  "theme_color": "#1a3a1a",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "fr",
+  "categories": ["business", "food"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzFhM2ExYSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTUlIiBmb250LXNpemU9IjI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+8J+lqjwvdGV4dD48L3N2Zz4=",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Commandes",
+      "short_name": "Commandes",
+      "description": "Voir les commandes en cours",
+      "url": "/index.html",
+      "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='18' font-size='18'>📋</text></svg>", "sizes": "any"}]
+    },
+    {
+      "name": "KDS Cuisine",
+      "short_name": "KDS",
+      "description": "Écran cuisine",
+      "url": "/kds.html",
+      "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='18' font-size='18'>👨‍🍳</text></svg>", "sizes": "any"}]
+    },
+    {
+      "name": "Vocal IA",
+      "short_name": "Vocal",
+      "description": "Commande vocale",
+      "url": "/vocal-avance.html",
+      "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='18' font-size='18'>🎤</text></svg>", "sizes": "any"}]
+    }
+  ],
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

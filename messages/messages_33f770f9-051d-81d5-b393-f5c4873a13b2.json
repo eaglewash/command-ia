@@ -1,0 +1,187 @@
+[
+  {
+    "id": "1776303499717",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "admin",
+    "fromName": "Quentin Admin",
+    "content": "comment ça va ?",
+    "type": "message",
+    "meta": null,
+    "timestamp": "2026-04-16T01:38:19.717Z",
+    "readBy": [
+      "33f770f9-051d-81d5-b393-f5c4873a13b2",
+      "admin"
+    ],
+    "dismissed": false
+  },
+  {
+    "id": "1776303534498",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "restaurant",
+    "fromName": "mcdo",
+    "content": "ée",
+    "type": "message",
+    "meta": null,
+    "timestamp": "2026-04-16T01:38:54.498Z",
+    "readBy": [
+      "admin",
+      "33f770f9-051d-81d5-b393-f5c4873a13b2"
+    ],
+    "dismissed": false
+  },
+  {
+    "id": "1776303534789",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "restaurant",
+    "fromName": "mcdo",
+    "content": "ffe",
+    "type": "message",
+    "meta": null,
+    "timestamp": "2026-04-16T01:38:54.789Z",
+    "readBy": [
+      "admin",
+      "33f770f9-051d-81d5-b393-f5c4873a13b2"
+    ],
+    "dismissed": false
+  },
+  {
+    "id": "1776303535146",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "restaurant",
+    "fromName": "mcdo",
+    "content": "fe",
+    "type": "message",
+    "meta": null,
+    "timestamp": "2026-04-16T01:38:55.146Z",
+    "readBy": [
+      "admin",
+      "33f770f9-051d-81d5-b393-f5c4873a13b2"
+    ],
+    "dismissed": false
+  },
+  {
+    "id": "1776303632639",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "admin",
+    "fromName": "Quentin Admin",
+    "content": "bonjour",
+    "type": "message",
+    "meta": null,
+    "timestamp": "2026-04-16T01:40:32.639Z",
+    "readBy": [
+      "33f770f9-051d-81d5-b393-f5c4873a13b2",
+      "admin"
+    ],
+    "dismissed": false
+  },
+  {
+    "id": "1776304147309",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "restaurant",
+    "fromName": "mcdo",
+    "content": "bonjour",
+    "type": "message",
+    "meta": null,
+    "timestamp": "2026-04-16T01:49:07.309Z",
+    "readBy": [
+      "admin",
+      "33f770f9-051d-81d5-b393-f5c4873a13b2"
+    ],
+    "dismissed": false
+  },
+  {
+    "id": "1779843007095",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "restaurant",
+    "fromName": "mcdo",
+    "content": "bonjour",
+    "type": "message",
+    "meta": null,
+    "timestamp": "2026-05-27T00:50:07.095Z",
+    "readBy": [
+      "33f770f9-051d-81d5-b393-f5c4873a13b2",
+      "admin"
+    ],
+    "dismissed": false
+  },
+  {
+    "id": "1779844046451",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "restaurant",
+    "fromName": "mcdo",
+    "content": "bonjour j'ai u probleme",
+    "type": "message",
+    "meta": null,
+    "timestamp": "2026-05-27T01:07:26.451Z",
+    "readBy": [
+      "33f770f9-051d-81d5-b393-f5c4873a13b2",
+      "admin"
+    ],
+    "dismissed": false
+  },
+  {
+    "id": "1779844206918",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "restaurant",
+    "fromName": "mcdo",
+    "content": "bonjour",
+    "type": "message",
+    "meta": null,
+    "timestamp": "2026-05-27T01:10:06.918Z",
+    "readBy": [
+      "33f770f9-051d-81d5-b393-f5c4873a13b2",
+      "admin"
+    ],
+    "dismissed": false
+  },
+  {
+    "id": "auto_1779871938340_lgk3y",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "system",
+    "fromName": "Commande IA",
+    "content": "🎉 Bravo ! Vous avez vendu 12 produits aujourd'hui — c'est votre meilleure journée de la semaine !",
+    "type": "auto_felicitation_ventes",
+    "timestamp": "2026-05-27T08:52:18.340Z",
+    "readBy": [
+      "33f770f9-051d-81d5-b393-f5c4873a13b2",
+      "admin"
+    ]
+  },
+  {
+    "id": "auto_1779871953541_0n5g9",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "system",
+    "fromName": "Commande IA",
+    "content": "🎉 Bravo ! Vous avez vendu 12 produits aujourd'hui — c'est votre meilleure journée de la semaine !",
+    "type": "auto_felicitation_ventes",
+    "timestamp": "2026-05-27T08:52:33.541Z",
+    "readBy": [
+      "33f770f9-051d-81d5-b393-f5c4873a13b2",
+      "admin"
+    ]
+  },
+  {
+    "id": "auto_1779872327439_6c0t0",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "system",
+    "fromName": "Commande IA",
+    "content": "🎉 Bravo ! Vous avez vendu 12 produits aujourd'hui — c'est votre meilleure journée de la semaine !",
+    "type": "auto_felicitation_ventes",
+    "timestamp": "2026-05-27T08:58:47.439Z",
+    "readBy": [
+      "33f770f9-051d-81d5-b393-f5c4873a13b2"
+    ]
+  },
+  {
+    "id": "auto_1779872339743_oynv3",
+    "restaurantId": "33f770f9-051d-81d5-b393-f5c4873a13b2",
+    "from": "system",
+    "fromName": "Commande IA",
+    "content": "🎉 Bravo ! Vous avez vendu 12 produits aujourd'hui — c'est votre meilleure journée de la semaine !",
+    "type": "auto_felicitation_ventes",
+    "timestamp": "2026-05-27T08:58:59.743Z",
+    "readBy": [
+      "33f770f9-051d-81d5-b393-f5c4873a13b2"
+    ]
+  }
+]

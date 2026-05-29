@@ -1,0 +1,844 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Multi-Langues – Commande-IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:100vh}
+
+/* ── TOPBAR ── */
+.topbar{background:#0E4B47;padding:0 24px;height:72px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.tl{display:flex;align-items:center;gap:16px}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:1.1rem;text-decoration:none}
+.logo-icon{width:36px;height:36px;background:#0E4B47;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.page-badge{background:rgba(255,255,255,.12);color:#c8e6c9;font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:20px}
+.tr{display:flex;align-items:center;gap:12px}
+.burger{background:none;border:none;color:#fff;cursor:pointer;padding:6px;border-radius:8px;transition:background .2s;display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+.burger:hover{background:rgba(255,255,255,.1)}
+.burger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-family:'Inter',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:#0E4B47;color:#fff}.btn-primary:hover{background:#2d5509}
+.btn-secondary{background:#fff;color:#1a2e1a;border:1.5px solid #B8D0C8}.btn-secondary:hover{background:#f5f9f2}
+.btn-ghost{background:rgba(255,255,255,.1);color:#fff;border:none}.btn-ghost:hover{background:rgba(255,255,255,.2)}
+
+/* ── BURGER MENU ── */
+.menu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;opacity:0;pointer-events:none;transition:opacity .3s}
+.menu-overlay.open{opacity:1;pointer-events:all}
+.side-menu{position:fixed;top:0;left:-280px;width:280px;height:100vh;background:#0E4B47;z-index:301;transition:left .3s;display:flex;flex-direction:column;overflow-y:auto}
+.side-menu.open{left:0}
+.sm-head{padding:20px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between}
+.sm-logo{color:#fff;font-weight:800;font-size:1rem;display:flex;align-items:center;gap:8px}
+.sm-close{background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background .2s}.sm-close:hover{background:rgba(255,255,255,.1)}
+.sm-section{padding:12px 0}
+.sm-label{font-size:.65rem;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.8px;padding:8px 20px 4px}
+.sm-item{display:flex;align-items:center;gap:12px;padding:11px 20px;color:rgba(255,255,255,.8);text-decoration:none;font-size:.88rem;font-weight:500;transition:all .2s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.sm-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.sm-item.active{background:rgba(255,255,255,.12);color:#fff}
+.sm-icon{width:18px;text-align:center;font-size:1rem;flex-shrink:0}
+.sm-divider{height:1px;background:rgba(255,255,255,.08);margin:4px 16px}
+
+/* ── MAIN ── */
+.main{padding:24px;max-width:1300px;margin:0 auto}
+.card{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;overflow:hidden;margin-bottom:20px}
+.card-head{padding:16px 20px;border-bottom:1.5px solid #B8D0C8;display:flex;align-items:center;justify-content:space-between}
+.card-head h2{font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-body{padding:20px}
+
+/* ── HOW IT WORKS ── */
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.how-step{background:#f5f9f2;border:1.5px solid #B8D0C8;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.how-num{width:28px;height:28px;background:#0E4B47;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;flex-shrink:0}
+.how-title{font-size:.88rem;font-weight:700;color:#1a2e1a}
+.how-desc{font-size:.78rem;color:#6b7280;line-height:1.5}
+
+/* ── LANG GRID ── */
+.lang-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.lang-card{border:2px solid #B8D0C8;border-radius:12px;padding:16px;cursor:pointer;transition:all .2s;text-align:center;position:relative;user-select:none}
+.lang-card:not(.is-default):hover{border-color:#0E4B47;transform:translateY(-2px);box-shadow:0 4px 12px rgba(14,75,71,.12)}
+.lang-card.active{border-color:#0E4B47;background:#EEF5F2}
+.lang-card.is-default{cursor:default}
+.lang-flag{font-size:2.4rem;margin-bottom:8px;line-height:1}
+.lang-name{font-weight:700;font-size:.9rem;color:#1a2e1a}
+.lang-native{font-size:.75rem;color:#6b7280;margin-top:2px}
+.lang-status{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:6px;display:inline-block;margin-top:6px}
+.ls-active{background:#dcfce7;color:#166534}
+.ls-off{background:#f3f4f6;color:#9ca3af}
+.lang-badge{position:absolute;top:8px;right:8px;font-size:.65rem;font-weight:700;padding:2px 6px;border-radius:4px}
+.lang-badge.default{background:#0E4B47;color:#fff}
+.lang-pct{margin-top:6px;font-size:.72rem;color:#6b7280;display:flex;align-items:center;justify-content:center;gap:4px}
+.lang-pct-bar{flex:1;max-width:60px;height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden}
+.lang-pct-fill{height:100%;border-radius:2px;background:#0E4B47}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* ── PROGRESS ── */
+.lang-prog{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #EEF5F2}
+.lang-prog:last-child{border-bottom:none}
+.lp-flag{font-size:1.4rem;flex-shrink:0}
+.lp-name{font-size:.88rem;font-weight:700;color:#1a2e1a;min-width:80px}
+.lp-bar-bg{flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+.lp-bar{height:100%;border-radius:4px;transition:width .5s}
+.lp-pct{font-size:.82rem;font-weight:800;min-width:40px;text-align:right}
+
+/* ── SETTINGS TOGGLES ── */
+.toggle-wrap{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #EEF5F2}
+.toggle-wrap:last-child{border-bottom:none}
+.toggle-lbl{font-size:.88rem;font-weight:600;color:#1a2e1a}
+.toggle-sub{font-size:.75rem;color:#6b7280;margin-top:3px}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#d1d5db;border-radius:12px;cursor:pointer;transition:.3s}
+.slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider{background:#0E4B47}
+.toggle input:checked+.slider:before{transform:translateX(20px)}
+
+/* ── PREVIEW ── */
+.preview-panel{background:#f5f9f2;border:1.5px solid #B8D0C8;border-radius:12px;padding:20px}
+.preview-title{font-size:.9rem;font-weight:700;color:#1a2e1a;margin-bottom:12px}
+.preview-menu{display:flex;flex-direction:column;gap:8px}
+.pm-item{background:#fff;border:1px solid #B8D0C8;border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between}
+.pm-name{font-weight:600;font-size:.88rem}
+.pm-desc{font-size:.75rem;color:#6b7280;margin-top:2px}
+.pm-price{font-weight:700;font-size:.9rem;color:#0E4B47;white-space:nowrap;margin-left:12px}
+.lang-switcher-preview{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.lsp-btn{border:1.5px solid #B8D0C8;border-radius:8px;padding:5px 12px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;background:#fff;display:flex;align-items:center;gap:5px}
+.lsp-btn.active{background:#0E4B47;color:#fff;border-color:#0E4B47}
+.lsp-btn:hover:not(.active){border-color:#0E4B47}
+
+/* ── TRANSLATION EDITOR ── */
+.trans-table{width:100%;border-collapse:collapse}
+.trans-table th{background:#f5f9f2;padding:10px 14px;text-align:left;font-size:.78rem;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:.4px;position:sticky;top:72px}
+.trans-table td{padding:10px 14px;border-bottom:1.5px solid #EEF5F2;font-size:.85rem;vertical-align:middle}
+.trans-table tr:last-child td{border-bottom:none}
+.trans-cat{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:5px;background:#B8D0C8;color:#4b5563}
+.trans-input{border:1.5px solid #B8D0C8;border-radius:6px;padding:6px 10px;font-family:'Inter',sans-serif;font-size:.83rem;width:100%;transition:border-color .2s;background:#fff}
+.trans-input:focus{outline:none;border-color:#0E4B47}
+.trans-input.missing{border-color:#fca5a5;background:#fef2f2}
+.trans-badge{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.tb-done{background:#dcfce7;color:#166534}
+.tb-miss{background:#fee2e2;color:#dc2626}
+.ai-bar{background:linear-gradient(135deg,#ecfdf5,#EEF5F2);border:1.5px solid #86efac;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin:12px 16px 0}
+.ai-icon{font-size:1.5rem;flex-shrink:0}
+.ai-body{flex:1}
+.ai-title{font-weight:700;font-size:.88rem;color:#166534}
+.ai-sub{font-size:.78rem;color:#166534;margin-top:2px}
+
+/* ── SAVE STATUS ── */
+.save-dot{width:8px;height:8px;border-radius:50%;background:#9ca3af;display:inline-block;margin-right:4px;transition:background .3s}
+.save-dot.saved{background:#0E4B47}
+.save-dot.saving{background:#d97706;animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── ALERT BANNER ── */
+.alert-info{background:#dbeafe;border:1.5px solid #93c5fd;border-radius:10px;padding:12px 16px;font-size:.82rem;color:#1e40af;display:flex;align-items:flex-start;gap:10px;margin-bottom:16px}
+.alert-warn{background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:12px 16px;font-size:.82rem;color:#92400e;display:flex;align-items:flex-start;gap:10px;margin-bottom:16px}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:slideUp .2s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-head{padding:20px 24px 16px;border-bottom:1.5px solid #B8D0C8;display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:1rem;font-weight:700}
+.modal-close{background:none;border:none;font-size:1.3rem;cursor:pointer;color:#6b7280;border-radius:6px;padding:2px 6px}.modal-close:hover{background:#f3f4f6}
+.modal-body{padding:20px 24px}
+.modal-foot{padding:16px 24px;border-top:1.5px solid #B8D0C8;display:flex;justify-content:flex-end;gap:8px}
+
+/* ── ADMIN SWITCHER ── */
+.admin-bar{background:rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.1);padding:6px 24px;display:flex;align-items:center;gap:10px;font-size:.78rem;color:rgba(255,255,255,.7)}
+.admin-bar select{background:rgba(255,255,255,.1);border:none;color:#fff;padding:3px 8px;border-radius:6px;font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer}
+
+/* ── SNACKBAR ── */
+.snackbar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#0E4B47;color:#fff;padding:12px 24px;border-radius:10px;font-size:.88rem;font-weight:600;z-index:2000;transition:transform .3s;white-space:nowrap}
+.snackbar.show{transform:translateX(-50%) translateY(0)}
+
+@media(max-width:800px){
+  .lang-grid{grid-template-columns:repeat(2,1fr)}
+  .two-col{grid-template-columns:1fr}
+  .how-grid{grid-template-columns:1fr}
+}
+
+  </style>
+<script src="/icons.js"></script>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+
+<!-- ── BURGER SIDE MENU ── -->
+<div class="menu-overlay" id="overlay" onclick="closeMenu()"></div>
+<nav class="side-menu" id="sideMenu">
+  <div class="sm-head">
+    <div class="sm-logo"><div class="logo-icon" style="width:28px;height:28px;background:#0E4B47;border-radius:6px;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div> Commande-IA</div>
+    <button class="sm-close" onclick="closeMenu()"><span data-icon="x"></span></button>
+  </div>
+  <div class="sm-section">
+    <div class="sm-label">Principal</div>
+    <a href="/index.html" class="sm-item"><span class="sm-icon"><span data-icon="home"></span></span> Dashboard</a>
+    <a href="/kds.html" class="sm-item"><span class="sm-icon"><span data-icon="chef_hat"></span></span> Cuisine (KDS)</a>
+    <a href="/plan-salle.html" class="sm-item"><span class="sm-icon"><span data-icon="building"></span></span> Plan de salle</a>
+    <a href="/planning.html" class="sm-item"><span class="sm-icon"><span data-icon="calendar"></span></span> Planning équipe</a>
+  </div>
+  <div class="sm-divider"></div>
+  <div class="sm-section">
+    <div class="sm-label">Menu & Commandes</div>
+    <a href="/kds.html" class="sm-item"><span class="sm-icon"><span data-icon="clipboard"></span></span> Commandes</a>
+  </div>
+  <div class="sm-divider"></div>
+  <div class="sm-section">
+    <div class="sm-label">Analytics & CRM</div>
+    <a href="/fraude.html" class="sm-item"><span class="sm-icon"><span data-icon="search"></span></span> Détection fraude</a>
+  </div>
+  <div class="sm-divider"></div>
+  <div class="sm-section">
+    <div class="sm-label">Configuration</div>
+    <a href="/multilangues.html" class="sm-item active"><span class="sm-icon"><span data-icon="globe"></span></span> Multi-Langues</a>
+    <a href="/multi-sites.html" class="sm-item"><span class="sm-icon"><span data-icon="storefront"></span></span> Multi-Sites</a>
+    <a href="/admin.html" class="sm-item"><span class="sm-icon"><span data-icon="settings"></span></span> Paramètres</a>
+    <a href="/securite.html" class="sm-item"><span class="sm-icon"><span data-icon="lock"></span></span> Sécurité</a>
+  </div>
+  <div id="sm-admin-section" style="display:none">
+    <div class="sm-divider"></div>
+    <div class="sm-section">
+      <div class="sm-label">Admin</div>
+      <a href="/admin.html" class="sm-item"><span class="sm-icon"><span data-icon="shield"></span></span> Admin Hub</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="tl">
+    <button class="burger" onclick="openMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <a href="/index.html" class="logo">
+      <div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+      Commande-IA
+    </a>
+    <span class="page-badge"><span data-icon="globe"></span> Multi-Langues</span>
+  </div>
+  <div class="tr">
+    <span id="save-indicator" style="display:flex;align-items:center;font-size:.78rem;color:rgba(255,255,255,.6)"><span class="save-dot" id="save-dot"></span><span id="save-txt">Prêt</span></span>
+    <button class="btn btn-ghost" onclick="saveAll()" style="font-size:.82rem"><span data-icon="save"></span> Sauvegarder</button>
+    <a href="/index.html" class="btn btn-ghost" style="font-size:.82rem;text-decoration:none">← Dashboard</a>
+  </div>
+</div>
+<div id="admin-bar" style="display:none" class="admin-bar">
+  <span data-icon="shield"></span> Vue Admin — Restaurant :
+  <select id="admin-rest-select" onchange="adminSwitchRestaurant(this.value)"></select>
+</div>
+
+<div class="main">
+
+  <!-- ── COMMENT ÇA MARCHE ── -->
+  <div class="card">
+    <div class="card-head"><h2><span data-icon="sparkles"></span> Comment fonctionne le multi-langues ?</h2></div>
+    <div class="card-body">
+      <div class="how-grid">
+        <div class="how-step">
+          <div style="display:flex;align-items:center;gap:10px"><div class="how-num">1</div><div class="how-title">Activez des langues</div></div>
+          <div class="how-desc">Cliquez sur une langue ci-dessous pour l'activer. Le Français est toujours actif (langue source). Les langues actives apparaissent sur votre <strong>menu QR code client</strong>.</div>
+        </div>
+        <div class="how-step">
+          <div style="display:flex;align-items:center;gap:10px"><div class="how-num">2</div><div class="how-title">Traduisez votre menu</div></div>
+          <div class="how-desc">Utilisez l'éditeur de traductions en bas de page pour saisir le nom et la description de chaque plat dans chaque langue activée.</div>
+        </div>
+        <div class="how-step">
+          <div style="display:flex;align-items:center;gap:10px"><div class="how-num">3</div><div class="how-title">Le client choisit sa langue</div></div>
+          <div class="how-desc">Sur la page QR de votre restaurant, vos clients voient automatiquement un sélecteur de langue. Le menu s'affiche dans la langue choisie.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LANGUAGE SELECTION ── -->
+  <div class="card">
+    <div class="card-head">
+      <h2><span data-icon="globe"></span> Langues disponibles</h2>
+      <span style="font-size:.78rem;color:#6b7280;font-style:italic">Cliquez sur une langue pour l'activer / désactiver</span>
+    </div>
+    <div class="card-body">
+      <div class="lang-grid" id="lang-grid"></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <!-- Left col: progress + settings -->
+    <div>
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="chart_bar"></span> Avancement des traductions</h2></div>
+        <div class="card-body">
+          <div id="progress-list"><div style="color:#9ca3af;font-size:.82rem">Activez au moins une langue pour voir la progression.</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="settings"></span> Paramètres d'affichage</h2></div>
+        <div class="card-body">
+          <div class="toggle-wrap">
+            <div>
+              <div class="toggle-lbl">Sélecteur de langue visible</div>
+              <div class="toggle-sub">Affiche les drapeaux sur la page QR client pour que le client choisisse sa langue</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="tog-selector" checked onchange="saveSettings()"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-wrap">
+            <div>
+              <div class="toggle-lbl">Détection automatique de langue</div>
+              <div class="toggle-sub">Détecte la langue du navigateur du client et affiche le menu dans cette langue automatiquement</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="tog-autodetect" checked onchange="saveSettings()"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-wrap">
+            <div>
+              <div class="toggle-lbl">Fallback sur le français si traduction manquante</div>
+              <div class="toggle-sub">Si un plat n'est pas encore traduit, affiche le nom français au lieu d'un champ vide</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="tog-fallback" checked onchange="saveSettings()"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-wrap">
+            <div>
+              <div class="toggle-lbl">Traductions dans les reçus</div>
+              <div class="toggle-sub">Le reçu imprimé est généré dans la langue du client</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="tog-receipts" onchange="saveSettings()"><span class="slider"></span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right col: preview -->
+    <div>
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="eye"></span> Aperçu — Menu client</h2></div>
+        <div class="card-body">
+          <div id="alert-no-active" class="alert-info" style="display:none">
+            <span data-icon="sparkles"></span> Activez une langue pour voir l'aperçu du menu dans cette langue.
+          </div>
+          <div class="lang-switcher-preview" id="lang-switcher"></div>
+          <div class="preview-panel">
+            <div class="preview-title" id="preview-title"><span data-icon="plate"></span> Notre carte</div>
+            <div class="preview-menu" id="preview-menu"></div>
+          </div>
+          <div style="font-size:.75rem;color:#9ca3af;margin-top:10px"><span data-icon="upload"></span> C'est ce que voit le client sur la page QR de votre restaurant.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TRANSLATION EDITOR ── -->
+  <div class="card">
+    <div class="card-head">
+      <h2><span data-icon="edit"></span> Éditeur de traductions</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="font-size:.82rem;color:#6b7280;font-weight:500">Langue :</label>
+        <select id="edit-lang" style="border:1.5px solid #B8D0C8;border-radius:8px;padding:6px 10px;font-family:'Inter',sans-serif;font-size:.82rem;background:#fff" onchange="renderTransEditor()"></select>
+        <button class="btn btn-primary" style="font-size:.78rem;padding:6px 12px" onclick="saveTranslations()"><span data-icon="save"></span> Sauvegarder</button>
+      </div>
+    </div>
+    <div id="editor-no-lang" style="padding:24px;text-align:center;color:#9ca3af;font-size:.88rem;display:none">
+      Activez au moins une langue étrangère pour commencer les traductions.
+    </div>
+    <div id="editor-wrap">
+      <div class="ai-bar">
+        <div class="ai-icon"><span data-icon="cpu"></span></div>
+        <div class="ai-body">
+          <div class="ai-title">Traduction assistée disponible</div>
+          <div class="ai-sub">Pré-remplissez automatiquement les champs vides avec des suggestions de traduction</div>
+        </div>
+        <button class="btn btn-primary" style="font-size:.78rem;padding:6px 12px" onclick="autoFillMissing()"><span data-icon="sparkles"></span> Suggérer traductions</button>
+      </div>
+      <table class="trans-table">
+        <thead><tr><th style="width:110px">Catégorie</th><th>Français (source)</th><th>Traduction</th><th style="width:90px">État</th></tr></thead>
+        <tbody id="trans-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<div class="snackbar" id="snackbar"></div>
+
+<!-- ── AUTO-TRANSLATE MODAL ── -->
+<div class="modal-bg" id="modal-autotranslate" style="display:none" onclick="if(event.target===this)closeModal('modal-autotranslate')">
+  <div class="modal">
+    <div class="modal-head">
+      <h3><span data-icon="cpu"></span> Suggestions de traduction</h3>
+      <button class="modal-close" onclick="closeModal('modal-autotranslate')"><span data-icon="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.88rem;color:#4b5563;margin-bottom:14px">Les suggestions ci-dessous ont été générées automatiquement. Vérifiez et modifiez-les avant de les appliquer.</p>
+      <div id="autotranslate-list" style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('modal-autotranslate')">Annuler</button>
+      <button class="btn btn-primary" onclick="applyAutoTranslations()"><span data-icon="check_circle"></span> Appliquer les suggestions</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const user=JSON.parse(sessionStorage.getItem('user')||'{}');
+if(!user.email) window.location.href='/login.html';
+
+const ORIGIN=window.location.origin;
+let restaurantId=user.restaurantId||'';
+const isAdmin=user.role==='Admin';
+
+// ── ADMIN BAR ──
+if(isAdmin){
+  document.getElementById('admin-bar').style.display='flex';
+  document.getElementById('sm-admin-section').style.display='block';
+  fetch(`${ORIGIN}/admin/restaurants`).then(r=>r.json()).then(list=>{
+    const sel=document.getElementById('admin-rest-select');
+    list.forEach(r=>{
+      const o=document.createElement('option');
+      o.value=r.id;
+      o.textContent=r.nom||r.name||r.id;
+      if(r.id===restaurantId) o.selected=true;
+      sel.appendChild(o);
+    });
+  }).catch(()=>{});
+}
+function adminSwitchRestaurant(id){
+  restaurantId=id;
+  init();
+}
+
+// ── BURGER MENU ──
+function openMenu(){ document.getElementById('sideMenu').classList.add('open'); document.getElementById('overlay').classList.add('open'); }
+function closeMenu(){ document.getElementById('sideMenu').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+// ── MODAL ──
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+
+// ── LANG CATALOG ──
+const LANG_CATALOG=[
+  {code:'fr',flag:'<span data-icon="flag"></span>',name:'Français',native:'Français',default:true},
+  {code:'en',flag:'<span data-icon="flag"></span>',name:'Anglais',native:'English'},
+  {code:'es',flag:'<span data-icon="flag"></span>',name:'Espagnol',native:'Español'},
+  {code:'de',flag:'<span data-icon="flag"></span>',name:'Allemand',native:'Deutsch'},
+  {code:'it',flag:'<span data-icon="flag"></span>',name:'Italien',native:'Italiano'},
+  {code:'zh',flag:'<span data-icon="flag"></span>',name:'Chinois',native:'中文'},
+  {code:'ja',flag:'<span data-icon="flag"></span>',name:'Japonais',native:'日本語'},
+  {code:'ar',flag:'🇸🇦',name:'Arabe',native:'العربية'},
+];
+
+// ── STATE ──
+let menuItems=[];
+let activeLangs=['fr'];
+let currentPreviewLang='fr';
+let settings={selector:true,autodetect:true,fallback:true,receipts:false};
+let pendingAutoTranslations={};
+
+// ── STORAGE KEYS ──
+function cfgKey(){ return 'lang_config_'+restaurantId; }
+function transKey(lang){ return 'translations_'+restaurantId+'_'+lang; }
+function settKey(){ return 'lang_settings_'+restaurantId; }
+
+// ── PERSISTENCE ──
+function loadConfig(){
+  try{
+    const d=JSON.parse(localStorage.getItem(cfgKey())||'null');
+    if(d){ activeLangs=d.active||['fr']; }
+    else activeLangs=['fr'];
+  }catch(e){ activeLangs=['fr']; }
+  if(!activeLangs.includes('fr')) activeLangs.unshift('fr');
+}
+function saveConfig(){
+  localStorage.setItem(cfgKey(), JSON.stringify({active:activeLangs}));
+  syncConfigToServer();
+}
+function loadSettings(){
+  try{
+    const d=JSON.parse(localStorage.getItem(settKey())||'null');
+    if(d) settings={...settings,...d};
+  }catch(e){}
+  document.getElementById('tog-selector').checked=settings.selector;
+  document.getElementById('tog-autodetect').checked=settings.autodetect;
+  document.getElementById('tog-fallback').checked=settings.fallback;
+  document.getElementById('tog-receipts').checked=settings.receipts;
+}
+function saveSettings(){
+  settings.selector=document.getElementById('tog-selector').checked;
+  settings.autodetect=document.getElementById('tog-autodetect').checked;
+  settings.fallback=document.getElementById('tog-fallback').checked;
+  settings.receipts=document.getElementById('tog-receipts').checked;
+  localStorage.setItem(settKey(), JSON.stringify(settings));
+  showSnack('<span data-icon="settings"></span> Paramètres sauvegardés');
+}
+function getTranslations(lang){ try{ return JSON.parse(localStorage.getItem(transKey(lang))||'{}'); }catch(e){ return {}; } }
+function saveTranslations_lang(lang,data){ localStorage.setItem(transKey(lang),JSON.stringify(data)); }
+
+// ── SERVER SYNC ──
+let syncTimer=null;
+function setSaveState(s){ // 'saving'|'saved'|'idle'
+  const dot=document.getElementById('save-dot');
+  const txt=document.getElementById('save-txt');
+  dot.className='save-dot'+(s==='saving'?' saving':s==='saved'?' saved':'');
+  txt.textContent=s==='saving'?'Sauvegarde…':s==='saved'?'Sauvegardé':'Prêt';
+}
+async function syncConfigToServer(){
+  if(!restaurantId) return;
+  setSaveState('saving');
+  try{
+    const payload={active:activeLangs,settings,updatedAt:new Date().toISOString()};
+    await fetch(`${ORIGIN}/multilangues/${restaurantId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    setSaveState('saved');
+    setTimeout(()=>setSaveState('idle'),3000);
+  }catch(e){ setSaveState('idle'); }
+}
+async function loadConfigFromServer(){
+  if(!restaurantId) return;
+  try{
+    const res=await fetch(`${ORIGIN}/multilangues/${restaurantId}`);
+    if(!res.ok) return;
+    const d=await res.json();
+    if(d.active){ activeLangs=d.active; localStorage.setItem(cfgKey(),JSON.stringify({active:activeLangs})); }
+    if(d.settings){ settings={...settings,...d.settings}; localStorage.setItem(settKey(),JSON.stringify(settings)); }
+    // Load translations
+    if(d.translations){
+      Object.entries(d.translations).forEach(([lang,data])=>{
+        localStorage.setItem(transKey(lang),JSON.stringify(data));
+      });
+    }
+  }catch(e){}
+}
+async function saveAll(){
+  // Save current translation editor state first
+  const editLang=document.getElementById('edit-lang').value;
+  if(editLang) _flushTransEditor(editLang);
+  // Collect all translations
+  const transData={};
+  LANG_CATALOG.filter(l=>l.code!=='fr').forEach(l=>{
+    const t=getTranslations(l.code);
+    if(Object.keys(t).length) transData[l.code]=t;
+  });
+  setSaveState('saving');
+  try{
+    const payload={active:activeLangs,settings,translations:transData,updatedAt:new Date().toISOString()};
+    await fetch(`${ORIGIN}/multilangues/${restaurantId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    setSaveState('saved');
+    setTimeout(()=>setSaveState('idle'),3000);
+    showSnack('<span data-icon="save"></span> Tout sauvegardé sur le serveur');
+  }catch(e){
+    setSaveState('idle');
+    showSnack('<span data-icon="smartphone"></span> Sauvegardé localement (serveur indisponible)');
+  }
+}
+
+// ── COMPUTE PCT ──
+function computePct(lang){
+  if(lang==='fr') return 100;
+  if(!menuItems.length) return 0;
+  const trans=getTranslations(lang);
+  const done=menuItems.filter(i=>trans[i.name]?.name?.trim()).length;
+  return Math.round(done/menuItems.length*100);
+}
+
+// ── LOAD MENU ──
+async function loadMenu(){
+  if(!restaurantId){ renderAll(); return; }
+  try{
+    const res=await fetch(`${ORIGIN}/mon-menu/${restaurantId}`);
+    if(!res.ok) throw 0;
+    const data=await res.json();
+    menuItems=[];
+    if(Array.isArray(data)){
+      data.forEach(cat=>{
+        if(Array.isArray(cat.items)) cat.items.forEach(item=>menuItems.push({...item,category:cat.category||cat.name||''}));
+        else if(cat.name) menuItems.push(cat);
+      });
+    } else if(data&&typeof data==='object'){
+      Object.entries(data).forEach(([cat,items])=>{
+        if(Array.isArray(items)) items.forEach(item=>menuItems.push({...item,category:cat}));
+      });
+    }
+  }catch(e){ menuItems=[]; }
+  renderAll();
+}
+
+// ── RENDER ALL ──
+function renderAll(){
+  renderLangGrid();
+  renderProgress();
+  renderLangSwitcher();
+  renderPreview('fr');
+  renderTransEditorLangSelect();
+  renderTransEditor();
+}
+
+// ── RENDER LANG GRID ──
+function renderLangGrid(){
+  document.getElementById('lang-grid').innerHTML=LANG_CATALOG.map(l=>{
+    const active=activeLangs.includes(l.code);
+    const pct=active&&l.code!=='fr'?computePct(l.code):null;
+    const isDefault=l.code==='fr';
+    const barColor=pct===100?'#0E4B47':pct>50?'#d97706':'#dc2626';
+    return `<div class="lang-card ${active?'active':''} ${isDefault?'is-default':''}" onclick="toggleLang('${l.code}')" title="${isDefault?'Langue par défaut (toujours active)':'Cliquez pour '+(active?'désactiver':'activer')}">
+      ${isDefault?'<span class="lang-badge default">Par défaut</span>':''}
+      <div class="lang-flag">${l.flag}</div>
+      <div class="lang-name">${l.name}</div>
+      <div class="lang-native">${l.native}</div>
+      <span class="lang-status ${active?'ls-active':'ls-off'}">${active?'<span data-icon="check_circle"></span> Actif':'<span data-icon="plus"></span> Inactif'}</span>
+      ${pct!==null?`<div class="lang-pct"><div class="lang-pct-bar"><div class="lang-pct-fill" style="width:${pct}%;background:${barColor}"></div></div><span style="color:${barColor}">${pct}%</span></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER PROGRESS ──
+function renderProgress(){
+  const foreign=LANG_CATALOG.filter(l=>l.code!=='fr'&&activeLangs.includes(l.code));
+  const el=document.getElementById('progress-list');
+  if(!foreign.length){
+    el.innerHTML='<div style="color:#9ca3af;font-size:.82rem">Activez au moins une langue pour voir la progression.</div>';
+    return;
+  }
+  el.innerHTML=foreign.map(l=>{
+    const pct=computePct(l.code);
+    const color=pct===100?'#0E4B47':pct>50?'#d97706':'#dc2626';
+    const label=pct===100?'Complet':pct===0?'Aucune traduction':pct+'%';
+    return `<div class="lang-prog">
+      <div class="lp-flag">${l.flag}</div>
+      <div class="lp-name">${l.name}</div>
+      <div class="lp-bar-bg"><div class="lp-bar" style="width:${pct}%;background:${color}"></div></div>
+      <div class="lp-pct" style="color:${color}">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER LANG SWITCHER ──
+function renderLangSwitcher(){
+  const langs=LANG_CATALOG.filter(l=>activeLangs.includes(l.code));
+  const noActive=langs.filter(l=>l.code!=='fr').length===0;
+  document.getElementById('alert-no-active').style.display=noActive?'flex':'none';
+  document.getElementById('lang-switcher').innerHTML=langs.map(l=>`
+    <button class="lsp-btn ${l.code===currentPreviewLang?'active':''}" onclick="switchPreview('${l.code}',this)">${l.flag} ${l.name}</button>`).join('');
+}
+
+// ── PREVIEW ──
+function switchPreview(code,btn){
+  document.querySelectorAll('.lsp-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  currentPreviewLang=code;
+  renderPreview(code);
+}
+function renderPreview(code){
+  const meta=LANG_CATALOG.find(l=>l.code===code);
+  document.getElementById('preview-title').textContent=`${meta?meta.flag:'<span data-icon="plate"></span>'} Notre carte`;
+  const preview=document.getElementById('preview-menu');
+  if(!menuItems.length){
+    preview.innerHTML='<div style="color:#9ca3af;font-size:.82rem;padding:8px 0">Aucun plat dans votre menu.<br>Ajoutez des plats depuis <a href="/menu-ia.html" style="color:#0E4B47">Carte & Menu</a>.</div>';
+    return;
+  }
+  const trans=code==='fr'?{}:getTranslations(code);
+  const items=menuItems.slice(0,6);
+  preview.innerHTML=items.map(item=>{
+    const t=trans[item.name]||{};
+    const displayName=code==='fr'?item.name:(t.name||(settings.fallback?`${item.name} <span style="font-size:.7rem;color:#d97706">[FR]</span>`:`<span data-icon="alert"></span> ${item.name}`));
+    const displayDesc=code==='fr'?(item.description||''):(t.desc||(settings.fallback?item.description||'':''));
+    const missing=code!=='fr'&&!t.name;
+    return `<div class="pm-item" style="${missing&&!settings.fallback?'border-color:#fca5a5;':''}">
+      <div style="flex:1">
+        <div class="pm-name">${displayName}</div>
+        ${displayDesc?`<div class="pm-desc">${displayDesc}</div>`:''}
+      </div>
+      <div class="pm-price">${item.price?'€ '+Number(item.price).toFixed(2):'—'}</div>
+    </div>`;
+  }).join('');
+  if(menuItems.length>6) preview.innerHTML+='<div style="font-size:.75rem;color:#9ca3af;padding:6px 0;text-align:center">… et '+(menuItems.length-6)+' autre(s) plat(s)</div>';
+}
+
+// ── TOGGLE LANG ──
+function toggleLang(code){
+  if(code==='fr') return;
+  const meta=LANG_CATALOG.find(l=>l.code===code);
+  if(activeLangs.includes(code)){
+    if(!confirm(`Désactiver ${meta?.name} ?\n\nLes traductions seront conservées. La langue disparaîtra du menu QR client.`)) return;
+    activeLangs=activeLangs.filter(c=>c!==code);
+    if(currentPreviewLang===code){ currentPreviewLang='fr'; }
+  } else {
+    activeLangs=[...activeLangs,code];
+    showSnack(`<span data-icon="check_circle"></span> ${meta?.flag} ${meta?.name} activé — Traduisez votre menu ci-dessous`);
+  }
+  saveConfig();
+  renderAll();
+}
+
+// ── TRANS EDITOR LANG SELECT ──
+function renderTransEditorLangSelect(){
+  const sel=document.getElementById('edit-lang');
+  const prev=sel.value;
+  const foreign=LANG_CATALOG.filter(l=>l.code!=='fr'&&activeLangs.includes(l.code));
+  const editorWrap=document.getElementById('editor-wrap');
+  const editorNoLang=document.getElementById('editor-no-lang');
+  if(!foreign.length){
+    editorWrap.style.display='none';
+    editorNoLang.style.display='block';
+    return;
+  }
+  editorWrap.style.display='block';
+  editorNoLang.style.display='none';
+  sel.innerHTML=foreign.map(l=>`<option value="${l.code}">${l.flag} ${l.name}</option>`).join('');
+  // Restore previously selected if still available
+  if(prev&&foreign.some(l=>l.code===prev)) sel.value=prev;
+}
+
+// ── RENDER TRANS EDITOR ──
+function renderTransEditor(){
+  const lang=document.getElementById('edit-lang')?.value;
+  if(!lang) return;
+  const tbody=document.getElementById('trans-tbody');
+  if(!menuItems.length){
+    tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:24px;font-size:.85rem">
+      Aucun plat dans votre menu.<br><a href="/menu-ia.html" style="color:#0E4B47;font-weight:600">Carte & Menu →</a>
+    </td></tr>`;
+    return;
+  }
+  const trans=getTranslations(lang);
+  const langMeta=LANG_CATALOG.find(l=>l.code===lang);
+  tbody.innerHTML=menuItems.map(item=>{
+    const t=trans[item.name]||{};
+    const nameVal=t.name||'';
+    const descVal=t.desc||'';
+    const missing=!nameVal;
+    const key=encodeURIComponent(item.name);
+    return `<tr>
+      <td><span class="trans-cat">${item.category||'—'}</span></td>
+      <td style="color:#374151">
+        <div style="font-weight:600">${item.name}</div>
+        ${item.description?`<div style="font-size:.75rem;color:#9ca3af;margin-top:2px">${item.description.slice(0,70)}${item.description.length>70?'…':''}</div>`:''}
+      </td>
+      <td>
+        <input class="trans-input ${missing?'missing':''}" value="${nameVal.replace(/"/g,'&quot;')}" placeholder="${langMeta?'Nom en '+langMeta.native:'Nom traduit'}" id="tn-${key}" style="margin-bottom:4px" oninput="onTransInput(this,'${key}')">
+        <input class="trans-input" value="${descVal.replace(/"/g,'&quot;')}" placeholder="Description (optionnel)" id="td-${key}">
+      </td>
+      <td><span class="trans-badge ${missing?'tb-miss':'tb-done'}">${missing?'À traduire':'<span data-icon="check"></span> Traduit'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function onTransInput(el,key){
+  if(el.value.trim()){ el.classList.remove('missing'); }
+  else { el.classList.add('missing'); }
+}
+
+function _flushTransEditor(lang){
+  const trans=getTranslations(lang);
+  menuItems.forEach(item=>{
+    const key=encodeURIComponent(item.name);
+    const nameEl=document.getElementById('tn-'+key);
+    const descEl=document.getElementById('td-'+key);
+    if(nameEl){
+      const n=nameEl.value.trim();
+      const d=descEl?descEl.value.trim():'';
+      if(n) trans[item.name]={name:n,desc:d};
+      else delete trans[item.name];
+    }
+  });
+  saveTranslations_lang(lang,trans);
+}
+
+function saveTranslations(){
+  const lang=document.getElementById('edit-lang').value;
+  if(!lang) return;
+  _flushTransEditor(lang);
+  renderProgress();
+  renderLangGrid();
+  renderPreview(currentPreviewLang);
+  renderTransEditor();
+  showSnack('<span data-icon="save"></span> Traductions sauvegardées');
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(saveAll,2000);
+}
+
+// ── AUTO-FILL MISSING ──
+// Basic translation dictionary for common restaurant terms
+const DICT={
+  'en':{'Entrée':'Starter','Plat principal':'Main course','Dessert':'Dessert','Boissons':'Drinks','Menu':'Menu','Salade':'Salad','Soupe':'Soup','Steak':'Steak','Poulet':'Chicken','Saumon':'Salmon','Tarte':'Tart','Mousse au chocolat':'Chocolate mousse','Crème brûlée':'Crème brûlée','Tiramisu':'Tiramisu','Vin':'Wine','Eau':'Water','Café':'Coffee','Thé':'Tea','Jus':'Juice','Bière':'Beer'},
+  'es':{'Entrée':'Entrada','Plat principal':'Plato principal','Dessert':'Postre','Boissons':'Bebidas','Menu':'Menú','Salade':'Ensalada','Soupe':'Sopa','Steak':'Filete','Poulet':'Pollo','Saumon':'Salmón','Tarte':'Tarta','Mousse au chocolat':'Mousse de chocolate','Crème brûlée':'Crema catalana','Tiramisu':'Tiramisú','Vin':'Vino','Eau':'Agua','Café':'Café','Thé':'Té','Jus':'Zumo','Bière':'Cerveza'},
+  'de':{'Entrée':'Vorspeise','Plat principal':'Hauptgericht','Dessert':'Nachspeise','Boissons':'Getränke','Menu':'Menü','Salade':'Salat','Soupe':'Suppe','Steak':'Steak','Poulet':'Hähnchen','Saumon':'Lachs','Tarte':'Tarte','Mousse au chocolat':'Schokoladenmousse','Crème brûlée':'Crème brûlée','Tiramisu':'Tiramisu','Vin':'Wein','Eau':'Wasser','Café':'Kaffee','Thé':'Tee','Jus':'Saft','Bière':'Bier'},
+  'it':{'Entrée':'Antipasto','Plat principal':'Secondo','Dessert':'Dolce','Boissons':'Bevande','Menu':'Menù','Salade':'Insalata','Soupe':'Zuppa','Steak':'Bistecca','Poulet':'Pollo','Saumon':'Salmone','Tarte':'Torta','Mousse au chocolat':'Mousse al cioccolato','Crème brûlée':'Crème brûlée','Tiramisu':'Tiramisù','Vin':'Vino','Eau':'Acqua','Café':'Caffè','Thé':'Tè','Jus':'Succo','Bière':'Birra'},
+};
+
+function autoFillMissing(){
+  const lang=document.getElementById('edit-lang')?.value;
+  if(!lang){ showSnack('Sélectionnez une langue d\'abord'); return; }
+  const trans=getTranslations(lang);
+  const dict=DICT[lang]||{};
+  const langMeta=LANG_CATALOG.find(l=>l.code===lang);
+  const missing=menuItems.filter(item=>!trans[item.name]?.name?.trim());
+  if(!missing.length){ showSnack('<span data-icon="check_circle"></span> Toutes les traductions sont déjà complètes !'); return; }
+  // Generate suggestions
+  pendingAutoTranslations={};
+  missing.forEach(item=>{
+    // Try exact match in dict
+    const suggestion=dict[item.name]||null;
+    pendingAutoTranslations[item.name]={name:suggestion||'',desc:''};
+  });
+  // Show modal
+  const list=document.getElementById('autotranslate-list');
+  list.innerHTML=missing.map(item=>{
+    const sug=pendingAutoTranslations[item.name];
+    return `<div style="border:1.5px solid #B8D0C8;border-radius:8px;padding:10px 12px;background:#f9fafb">
+      <div style="font-size:.8rem;color:#6b7280;margin-bottom:4px"><span data-icon="flag"></span> ${item.name}</div>
+      <input style="border:1.5px solid ${sug.name?'#0E4B47':'#fca5a5'};border-radius:6px;padding:6px 10px;font-family:'Inter',sans-serif;font-size:.83rem;width:100%;background:#fff"
+        value="${sug.name}"
+        placeholder="${langMeta?'Traduction en '+langMeta.native:'Traduction'}"
+        id="auto-${encodeURIComponent(item.name)}"
+        oninput="pendingAutoTranslations['${item.name.replace(/'/g,"\\'")}'].name=this.value">
+    </div>`;
+  }).join('');
+  document.getElementById('modal-autotranslate').style.display='flex';
+}
+
+function applyAutoTranslations(){
+  const lang=document.getElementById('edit-lang').value;
+  const trans=getTranslations(lang);
+  Object.entries(pendingAutoTranslations).forEach(([name,t])=>{
+    if(t.name.trim()){
+      trans[name]={name:t.name.trim(),desc:t.desc||''};
+    }
+  });
+  saveTranslations_lang(lang,trans);
+  closeModal('modal-autotranslate');
+  renderTransEditor();
+  renderProgress();
+  renderLangGrid();
+  renderPreview(currentPreviewLang);
+  showSnack('<span data-icon="check_circle"></span> Suggestions appliquées — vérifiez et ajustez si besoin');
+}
+
+// ── SNACKBAR ──
+function showSnack(msg){
+  const s=document.getElementById('snackbar');
+  s.textContent=msg;s.classList.add('show');
+  setTimeout(()=>s.classList.remove('show'),3200);
+}
+
+// ── INIT ──
+async function init(){
+  loadConfig();
+  loadSettings();
+  await loadConfigFromServer();
+  loadSettings(); // Re-apply after server load
+  document.getElementById('tog-selector').checked=settings.selector;
+  document.getElementById('tog-autodetect').checked=settings.autodetect;
+  document.getElementById('tog-fallback').checked=settings.fallback;
+  document.getElementById('tog-receipts').checked=settings.receipts;
+  await loadMenu();
+}
+
+init();
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src="/permissions.js"></script>
+<script>if (typeof requireAuth === 'function') requireAuth();</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

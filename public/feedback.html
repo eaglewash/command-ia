@@ -1,0 +1,595 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Feedback Clients — Commande-IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;min-height:100vh;color:#111}
+.topbar{background:#0E4B47;display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;position:sticky;top:0;z-index:100}
+.tl{display:flex;align-items:center;gap:14px}
+.logo{font-size:16px;font-weight:700;color:#fff;display:flex;align-items:center;gap:9px}
+.logo-icon{width:30px;height:30px;border-radius:8px;background:#0E4B47;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:14px;height:14px}
+.page-badge{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;background:rgba(123,187,181,.15);color:#B8D0C8;padding:3px 9px;border-radius:5px;border:1px solid rgba(123,187,181,.25)}
+.tr{display:flex;align-items:center;gap:10px}
+.back-btn{font-size:12px;font-weight:600;color:#B8D0C8;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:6px 14px;border-radius:7px;cursor:pointer;text-decoration:none;transition:all .15s;font-family:'Inter',sans-serif}
+.back-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+.main{padding:24px 28px;max-width:1400px;margin:0 auto}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.page-title{font-size:22px;font-weight:800;color:#0F2A28;letter-spacing:-.5px}
+.page-sub{font-size:13px;color:#4D6260;margin-top:4px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn-primary{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;border:none;background:#0E4B47;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.btn-primary:hover{background:#0A3D3A}
+.btn-secondary{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;border:1.5px solid #B8D0C8;background:#fff;color:#0E4B47;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.btn-secondary:hover{border-color:#0E4B47;background:#EEF5F2}
+.select-std{font-size:12px;padding:8px 12px;border-radius:8px;border:1.5px solid #B8D0C8;font-family:'Inter',sans-serif;color:#0F2A28;background:#fff;cursor:pointer}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1.5px solid #B8D0C8;border-radius:14px;padding:16px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.green::after{background:linear-gradient(90deg,#0E4B47,#7BBBB5)}
+.kpi.blue::after{background:linear-gradient(90deg,#2a50aa,#70a0f0)}
+.kpi.orange::after{background:linear-gradient(90deg,#e08a10,#f0c040)}
+.kpi.red::after{background:linear-gradient(90deg,#c03030,#e07070)}
+.kpi-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.kpi-val{font-size:24px;font-weight:800;color:#0F2A28;letter-spacing:-.6px}
+.kpi-lbl{font-size:10px;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+.kpi-sub{font-size:11px;color:#b0c8b0;margin-top:2px}
+.layout{display:grid;grid-template-columns:1fr 320px;gap:16px}
+.card{background:#fff;border:1.5px solid #B8D0C8;border-radius:14px;padding:20px}
+.card-title{font-size:13px;font-weight:700;color:#0F2A28;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.filter-bar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.filter-pill{font-size:11px;font-weight:600;padding:5px 12px;border-radius:16px;border:1.5px solid #B8D0C8;background:#fff;color:#4D6260;cursor:pointer;font-family:'Inter',sans-serif;transition:all .12s}
+.filter-pill.active{background:#0E4B47;color:#B8D0C8;border-color:#0E4B47}
+.avis-card{background:#fff;border:1.5px solid #B8D0C8;border-radius:12px;padding:16px;margin-bottom:10px;transition:box-shadow .2s}
+.avis-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.avis-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.avis-avatar{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.avis-name{font-size:13px;font-weight:700;color:#0F2A28}
+.avis-meta{font-size:11px;color:#8aaa8a;margin-top:2px}
+.stars{display:flex;gap:2px;font-size:14px}
+.avis-comment{font-size:12px;color:#3a5a3a;line-height:1.6;margin-bottom:10px}
+.avis-footer{display:flex;align-items:center;gap:8px;padding-top:8px;border-top:1px solid #f0f6ee}
+.avis-reply{background:#EEF5F2;border:1px solid #c0e0b0;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:11px;color:#3a5a3a;line-height:1.5}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;display:inline-block}
+.bg{background:#DCF0ED;color:#0E4B47}
+.bo{background:#fff8e8;color:#906010}
+.br{background:#fef0f0;color:#b03030}
+.btn-reply{font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px;border:1.5px solid #c8e8a8;background:#EEF5F2;color:#0E4B47;cursor:pointer;font-family:'Inter',sans-serif;transition:all .12s}
+.btn-reply:hover{background:#0E4B47;color:#fff;border-color:#0E4B47}
+/* NPS bars */
+.nps-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.nps-label{font-size:11px;font-weight:600;width:75px}
+.nps-bar-bg{flex:1;height:8px;background:#B8D0C8;border-radius:4px;overflow:hidden}
+.nps-bar-fill{height:100%;border-radius:4px}
+.nps-count{font-size:11px;font-weight:700;width:25px;text-align:right}
+.state-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;gap:12px;text-align:center}
+.state-icon{font-size:40px;opacity:.5}
+.state-title{font-size:15px;font-weight:700;color:#0F2A28}
+.state-sub{font-size:12px;color:#8aaa8a;max-width:320px;line-height:1.6}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,.12);animation:mIn .2s}
+@keyframes mIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.mt{font-size:16px;font-weight:700;color:#0F2A28}
+.mc{width:28px;height:28px;border-radius:7px;border:none;background:#f5f5f5;cursor:pointer;font-size:16px}
+.fg{margin-bottom:12px}
+.fl{font-size:11px;font-weight:600;color:#8aaa8a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;display:block}
+.fi{width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #B8D0C8;background:#fafdf8;font-size:12px;font-family:'Inter',sans-serif;color:#0F2A28;outline:none;transition:all .15s}
+.fi:focus{border-color:#0E4B47;background:#fff}
+.star-sel{display:flex;gap:4px;margin-top:4px}
+.star-btn{font-size:22px;cursor:pointer;transition:transform .1s;background:none;border:none;padding:2px}
+.star-btn:hover{transform:scale(1.2)}
+.mf{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:#fff;border:1px solid #B8D0C8;border-radius:10px;padding:12px 16px;font-size:12px;font-weight:600;color:#333;box-shadow:0 6px 20px rgba(0,0,0,.1);animation:ti .25s ease}
+@keyframes ti{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  </style>
+<script src="/icons.js"></script>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="tl">
+    <div class="logo"><div class="logo-icon"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2v10" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>Commande-IA</div>
+    <span class="page-badge">Feedback</span>
+  </div>
+  <div class="tr">
+    <span id="btn-add-avis-wrap"></span>
+    <a href="/index.html" class="back-btn">← Dashboard</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Avis & Satisfaction Clients</div>
+      <div class="page-sub">Collectez et gérez les retours de vos clients — <span id="avis-count">0</span> avis</div>
+    </div>
+    <div class="actions" id="header-actions"></div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi green"><div class="kpi-icon" style="background:#DCF0ED"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><path d="M10 2l2.5 5 5.5.8-4 3.9.9 5.5L10 14.7 5.1 17.2l.9-5.5L2 7.8l5.5-.8z" stroke="#0E4B47" stroke-width="1.5"/></svg></div><div class="kpi-val" id="k-note">—</div><div class="kpi-lbl">Note moyenne</div><div class="kpi-sub">Sur 5 étoiles</div></div>
+    <div class="kpi blue"><div class="kpi-icon" style="background:#e8f0ff"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><path d="M10 2v16M2 10h16" stroke="#2a50aa" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="kpi-val" id="k-nps">—</div><div class="kpi-lbl">Score NPS</div><div class="kpi-sub">Promoteurs - Détracteurs</div></div>
+    <div class="kpi orange"><div class="kpi-icon" style="background:#fff8e8"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><path d="M4 4h12v12H4z" stroke="#e08a10" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 8h4m-4 4h4" stroke="#e08a10" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="kpi-val" id="k-sans-rep">0</div><div class="kpi-lbl">Sans réponse</div><div class="kpi-sub">En attente de traitement</div></div>
+    <div class="kpi red"><div class="kpi-icon" style="background:#fef0f0"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><circle cx="10" cy="10" r="8" stroke="#c03030" stroke-width="1.5"/><path d="M10 6v4m0 4v.01" stroke="#c03030" stroke-width="2" stroke-linecap="round"/></svg></div><div class="kpi-val" id="k-detract">0</div><div class="kpi-lbl">Détracteurs</div><div class="kpi-sub">Note ≤ 2 — à traiter</div></div>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="filter-bar">
+        <button class="filter-pill active" onclick="setFilter('all',this)">Tous</button>
+        <button class="filter-pill" onclick="setFilter('promo',this)"><span data-icon="smile"></span> Promoteurs (4-5<span data-icon="star"></span>)</button>
+        <button class="filter-pill" onclick="setFilter('detract',this)"><span data-icon="frown"></span> Détracteurs (1-2<span data-icon="star"></span>)</button>
+        <button class="filter-pill" onclick="setFilter('no-rep',this)"><span data-icon="timer"></span> Sans réponse</button>
+      </div>
+      <div id="avis-zone"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-title">Répartition des notes</div>
+        <div id="nps-bars-zone"><div style="font-size:12px;color:#8aaa8a;text-align:center;padding:20px 0">Aucun avis</div></div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="card-title" style="justify-content:center">QR Code — Collecte d'avis</div>
+        <div style="display:inline-block;padding:10px;border:2px solid #0E4B47;border-radius:10px;background:#fff;margin-bottom:10px">
+          <svg width="100" height="100" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <rect width="120" height="120" fill="white"/>
+            <rect x="4" y="4" width="32" height="32" fill="none" stroke="#111" stroke-width="4"/>
+            <rect x="10" y="10" width="20" height="20" fill="#111"/>
+            <rect x="84" y="4" width="32" height="32" fill="none" stroke="#111" stroke-width="4"/>
+            <rect x="90" y="10" width="20" height="20" fill="#111"/>
+            <rect x="4" y="84" width="32" height="32" fill="none" stroke="#111" stroke-width="4"/>
+            <rect x="10" y="90" width="20" height="20" fill="#111"/>
+            <rect x="44" y="4" width="6" height="6" fill="#111"/><rect x="52" y="4" width="6" height="6" fill="#111"/>
+            <rect x="60" y="4" width="6" height="6" fill="#111"/><rect x="44" y="12" width="6" height="6" fill="#111"/>
+            <rect x="60" y="12" width="6" height="6" fill="#111"/><rect x="44" y="20" width="6" height="6" fill="#111"/>
+            <rect x="68" y="20" width="6" height="6" fill="#111"/><rect x="4" y="44" width="6" height="6" fill="#111"/>
+            <rect x="20" y="44" width="6" height="6" fill="#111"/><rect x="44" y="44" width="6" height="6" fill="#111"/>
+            <rect x="68" y="44" width="6" height="6" fill="#111"/><rect x="84" y="44" width="6" height="6" fill="#111"/>
+            <rect x="4" y="52" width="6" height="6" fill="#111"/><rect x="52" y="52" width="6" height="6" fill="#111"/>
+            <rect x="76" y="52" width="6" height="6" fill="#111"/><rect x="100" y="52" width="6" height="6" fill="#111"/>
+            <rect x="44" y="84" width="6" height="6" fill="#111"/><rect x="68" y="84" width="6" height="6" fill="#111"/>
+            <rect x="44" y="92" width="6" height="6" fill="#111"/><rect x="60" y="92" width="6" height="6" fill="#111"/>
+          </svg>
+        </div>
+        <p style="font-size:12px;color:#8aaa8a;margin-bottom:10px">Partagez ce QR code à vos clients pour collecter leurs avis</p>
+        <div style="font-size:10px;color:#b0c8b0;margin-bottom:12px">Lien généré automatiquement selon votre restaurant</div>
+        <button onclick="copyQRLink()" class="btn-secondary" style="width:100%;justify-content:center;font-size:12px">Copier le lien</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AVIS -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="mh"><span class="mt" id="add-modal-title">Nouvel avis</span><button class="mc" onclick="closeAddModal()"><span data-icon="x"></span></button></div>
+    <div class="fg"><label class="fl">Nom du client</label><input class="fi" id="av-nom" placeholder="Marie Dupont"/></div>
+    <div class="fg">
+      <label class="fl">Note</label>
+      <div class="star-sel" id="star-sel">
+        <button class="star-btn" onclick="setStars(1)"><span data-icon="star"></span></button>
+        <button class="star-btn" onclick="setStars(2)"><span data-icon="star"></span></button>
+        <button class="star-btn" onclick="setStars(3)"><span data-icon="star"></span></button>
+        <button class="star-btn" onclick="setStars(4)"><span data-icon="star"></span></button>
+        <button class="star-btn" onclick="setStars(5)"><span data-icon="star"></span></button>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Commentaire</label><textarea class="fi" id="av-comment" rows="3" placeholder="Expérience client..."></textarea></div>
+    <div class="fg"><label class="fl">Table (optionnel)</label><input class="fi" id="av-table" placeholder="Table 5"/></div>
+    <div class="mf">
+      <button class="btn-secondary" onclick="closeAddModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveAvis()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RÉPONSE -->
+<div class="modal-overlay" id="rep-modal">
+  <div class="modal">
+    <div class="mh"><span class="mt">Répondre à l'avis</span><button class="mc" onclick="closeRepModal()"><span data-icon="x"></span></button></div>
+    <div style="font-size:12px;color:#8aaa8a;margin-bottom:14px" id="rep-modal-sub"></div>
+    <div class="fg"><label class="fl">Votre réponse</label><textarea class="fi" id="rep-text" rows="4" placeholder="Merci pour votre retour..."></textarea></div>
+    <div class="mf">
+      <button class="btn-secondary" onclick="closeRepModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveReply()">Publier la réponse</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+const ORIGIN = window.location.origin;
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (!user.email) window.location.href = '/login.html';
+const isAdmin = user.role === 'Admin';
+let currentRestaurantId = user.restaurantId || null;
+
+const STORAGE_KEY = 'feedback_avis_' + (currentRestaurantId || 'default');
+let avis = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let filterMode = 'all';
+let editingId = null;
+let currentStars = 0;
+
+// Admin-only: add review button + pending deletions badge
+if (isAdmin) {
+  document.getElementById('btn-add-avis-wrap').innerHTML =
+    '<button class="btn-primary" onclick="openAddModal()">+ Ajouter un avis</button>' +
+    '<button id="btn-pending-del" class="btn-secondary" onclick="showPendingDeletions()" style="display:none;position:relative"><span data-icon="trash"></span> Demandes <span id="pending-del-badge" style="background:#c03030;color:#fff;border-radius:10px;font-size:10px;padding:2px 6px;margin-left:4px"></span></button>';
+  checkPendingDeletions();
+} else {
+  document.getElementById('btn-add-avis-wrap').innerHTML = '';
+}
+
+function checkPendingDeletions() {
+  if (!isAdmin) return;
+  const pendingKey = 'feedback_delete_requests_' + (currentRestaurantId || 'default');
+  const requests = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+  const btn = document.getElementById('btn-pending-del');
+  const badge = document.getElementById('pending-del-badge');
+  if (btn && requests.length > 0) {
+    btn.style.display = 'flex';
+    badge.textContent = requests.length;
+  }
+}
+
+function showPendingDeletions() {
+  const pendingKey = 'feedback_delete_requests_' + (currentRestaurantId || 'default');
+  const requests = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+  if (!requests.length) { toast('Aucune demande en attente', 'info'); return; }
+  const html = requests.map(r => `
+    <div style="background:#fff8e8;border:1.5px solid #e8d090;border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:600;color:#0F2A28">Avis de ${r.avisNom} — ${'<span data-icon="star"></span>'.repeat(r.avisNote)}${'<span data-icon="star"></span>'.repeat(5-r.avisNote)}</div>
+      ${r.avisComment ? `<div style="font-size:11px;color:#8aaa8a;margin-top:3px">"${r.avisComment}"</div>` : ''}
+      <div style="font-size:11px;color:#b0a080;margin-top:3px">Demandé par ${r.requestedBy} — ${new Date(r.requestedAt).toLocaleDateString('fr-FR')}</div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button onclick="approveDeletion('${r.id}','${r.avisId}')" style="flex:1;padding:7px;border-radius:7px;border:none;background:#fef0f0;color:#b03030;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif"><span data-icon="check"></span> Approuver suppression</button>
+        <button onclick="rejectDeletion('${r.id}')" style="flex:1;padding:7px;border-radius:7px;border:1.5px solid #B8D0C8;background:#fff;color:#4D6260;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif"><span data-icon="x"></span> Refuser</button>
+      </div>
+    </div>
+  `).join('');
+  // Simple overlay
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:600;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:460px;max-width:95vw;max-height:80vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.15)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="font-size:16px;font-weight:800;color:#0F2A28">Demandes de suppression (${requests.length})</span>
+      <button onclick="this.closest('[style]').remove()" style="border:none;background:#f0f0f0;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:16px"><span data-icon="x"></span></button>
+    </div>
+    ${html}
+  </div>`;
+  overlay.id = 'pending-overlay';
+  document.body.appendChild(overlay);
+}
+
+function approveDeletion(reqId, avisId) {
+  const pendingKey = 'feedback_delete_requests_' + (currentRestaurantId || 'default');
+  let requests = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+  requests = requests.filter(r => r.id !== reqId);
+  localStorage.setItem(pendingKey, JSON.stringify(requests));
+  avis = avis.filter(x => x.id !== avisId);
+  saveStorage();
+  document.getElementById('pending-overlay')?.remove();
+  renderAvis();
+  checkPendingDeletions();
+  toast('Suppression approuvée', 'success');
+}
+
+function rejectDeletion(reqId) {
+  const pendingKey = 'feedback_delete_requests_' + (currentRestaurantId || 'default');
+  let requests = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+  requests = requests.filter(r => r.id !== reqId);
+  localStorage.setItem(pendingKey, JSON.stringify(requests));
+  // Unmark pending deletion
+  const req = JSON.parse(localStorage.getItem(pendingKey + '_tmp') || 'null');
+  avis.forEach(a => { if (a.pendingDeletion) a.pendingDeletion = false; });
+  saveStorage();
+  document.getElementById('pending-overlay')?.remove();
+  renderAvis();
+  checkPendingDeletions();
+  toast('Demande refusée', 'info');
+}
+
+const AVG_COLORS = ['#0E4B47','#2a50aa','#7030c0','#906010','#c03030','#0E4B47'];
+
+function saveStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(avis));
+  // Sync serveur
+  if (currentRestaurantId) {
+    fetch(`${ORIGIN}/feedback/${currentRestaurantId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avis, updatedAt: new Date().toISOString(), updatedBy: user.nom || user.email })
+    }).catch(() => {});
+  }
+}
+
+// Charger depuis le serveur
+async function loadFromServer() {
+  if (!currentRestaurantId) return;
+  try {
+    const res = await fetch(`${ORIGIN}/feedback/${currentRestaurantId}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.avis) && data.avis.length > 0) {
+        avis = data.avis;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(avis));
+      }
+    }
+  } catch(e) {}
+}
+
+// Socket.io sync
+let fbSocket = null;
+try {
+  fbSocket = io(ORIGIN);
+  fbSocket.on('connect', () => {
+    if (currentRestaurantId) fbSocket.emit('join-restaurant', { restaurantId: currentRestaurantId });
+  });
+  fbSocket.on('feedback-broadcast', (data) => {
+    if (data.restaurantId !== currentRestaurantId) return;
+    avis = data.avis || [];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(avis));
+    renderAvis();
+    checkPendingDeletions();
+  });
+  // Admin: recevoir alertes demandes suppression
+  if (isAdmin) {
+    fbSocket.on('feedback-delete-request', (data) => {
+      const btn = document.getElementById('btn-pending-del');
+      if (btn) { btn.style.display = 'flex'; checkPendingDeletions(); }
+    });
+  }
+} catch(e) { console.warn('Socket indisponible'); }
+
+function renderKPIs() {
+  const total = avis.length;
+  document.getElementById('avis-count').textContent = total;
+  if (!total) {
+    document.getElementById('k-note').textContent = '—';
+    document.getElementById('k-nps').textContent = '—';
+    document.getElementById('k-sans-rep').textContent = 0;
+    document.getElementById('k-detract').textContent = 0;
+    return;
+  }
+  const avgNote = (avis.reduce((s, a) => s + (a.note || 0), 0) / total).toFixed(1);
+  const promos = avis.filter(a => a.note >= 4).length;
+  const detract = avis.filter(a => a.note <= 2).length;
+  const neutrals = total - promos - detract;
+  const nps = Math.round((promos / total - detract / total) * 100);
+  const sanRep = avis.filter(a => !a.reponse).length;
+  document.getElementById('k-note').textContent = avgNote + ' <span data-icon="star"></span>';
+  document.getElementById('k-nps').textContent = (nps >= 0 ? '+' : '') + nps;
+  document.getElementById('k-sans-rep').textContent = sanRep;
+  document.getElementById('k-detract').textContent = detract;
+
+  // NPS bars
+  const barData = [5, 4, 3, 2, 1].map(n => ({ note: n, count: avis.filter(a => a.note === n).length }));
+  const maxCount = Math.max(...barData.map(b => b.count), 1);
+  document.getElementById('nps-bars-zone').innerHTML = `
+    <div style="margin-bottom:10px">
+      <div style="font-size:20px;font-weight:800;color:#0E4B47">${avgNote} <span data-icon="star"></span></div>
+      <div style="font-size:11px;color:#8aaa8a">${total} avis · NPS ${(nps >= 0 ? '+' : '') + nps}</div>
+    </div>
+    ${barData.map(b => `<div class="nps-row">
+      <span class="nps-label" style="color:${b.note >= 4 ? '#0E4B47' : b.note <= 2 ? '#c03030' : '#906010'}">${'<span data-icon="star"></span>'.repeat(b.note)}</span>
+      <div class="nps-bar-bg"><div class="nps-bar-fill" style="width:${Math.round(b.count/maxCount*100)}%;background:${b.note >= 4 ? '#0E4B47' : b.note <= 2 ? '#c03030' : '#e08a10'}"></div></div>
+      <span class="nps-count">${b.count}</span>
+    </div>`).join('')}
+    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px;text-align:center">
+      <div style="background:#DCF0ED;border-radius:6px;padding:5px"><strong style="color:#0E4B47">${promos}</strong><br><span style="color:#4D6260">Promoteurs</span></div>
+      <div style="background:#fff8e8;border-radius:6px;padding:5px"><strong style="color:#906010">${neutrals}</strong><br><span style="color:#b0a080">Neutres</span></div>
+      <div style="background:#fef0f0;border-radius:6px;padding:5px"><strong style="color:#c03030">${detract}</strong><br><span style="color:#c09090">Détracteurs</span></div>
+    </div>`;
+}
+
+function renderAvis() {
+  let list = avis.filter(a => {
+    if (filterMode === 'promo') return a.note >= 4;
+    if (filterMode === 'detract') return a.note <= 2;
+    if (filterMode === 'no-rep') return !a.reponse;
+    return true;
+  });
+  list = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const zone = document.getElementById('avis-zone');
+  if (!avis.length) {
+    zone.innerHTML = `<div class="card"><div class="state-wrap">
+      <div class="state-icon"><span data-icon="star"></span></div>
+      <div class="state-title">Aucun avis collecté</div>
+      <div class="state-sub">Partagez le QR code à vos clients pour commencer à collecter des retours. Les clients laissent leurs avis via le lien QR.</div>
+      ${isAdmin ? `<button class="btn-primary" onclick="openAddModal()" style="margin-top:8px">+ Ajouter un avis (admin)</button>` : ''}
+    </div></div>`;
+  } else if (!list.length) {
+    zone.innerHTML = `<div class="card"><div class="state-wrap"><div class="state-icon"><span data-icon="search"></span></div><div class="state-title">Aucun avis pour ce filtre</div></div></div>`;
+  } else {
+    zone.innerHTML = list.map((a, i) => {
+      const idx = (a.nom || 'A').charCodeAt(0) % AVG_COLORS.length;
+      const init = (a.nom || '?')[0].toUpperCase();
+      const stars = '<span data-icon="star"></span>'.repeat(a.note) + '<span data-icon="star"></span>'.repeat(5 - a.note);
+      const type = a.note >= 4 ? 'promo' : a.note <= 2 ? 'detract' : 'neutre';
+      const dateFmt = a.createdAt ? new Date(a.createdAt).toLocaleDateString('fr-FR') : '—';
+      return `<div class="avis-card">
+        <div class="avis-header">
+          <div class="avis-avatar" style="background:${AVG_COLORS[idx]};color:#fff">${init}</div>
+          <div style="flex:1">
+            <div class="avis-name">${a.nom || 'Client anonyme'}</div>
+            <div class="avis-meta">${dateFmt}${a.table ? ' · ' + a.table : ''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:14px;color:#f0c040">${stars}</span>
+            <span class="badge" style="background:${type==='promo'?'#DCF0ED':type==='detract'?'#fef0f0':'#fff8e8'};color:${type==='promo'?'#0E4B47':type==='detract'?'#b03030':'#906010'}">${type==='promo'?'Promoteur':type==='detract'?'Détracteur':'Neutre'}</span>
+          </div>
+        </div>
+        ${a.comment ? `<div class="avis-comment">${a.comment}</div>` : ''}
+        ${a.reponse ? `<div class="avis-reply"><strong style="color:#0E4B47">✍ Réponse :</strong> ${a.reponse}</div>` : ''}
+        <div class="avis-footer">
+          <button class="btn-reply" onclick="openRepModal('${a.id}')">${a.reponse ? '<span data-icon="edit"></span> Modifier réponse' : '<span data-icon="chat_bubble"></span> Répondre'}</button>
+          ${a.pendingDeletion && !isAdmin
+            ? `<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;background:#fff8e8;color:#906010;border:1px solid #e8d090;margin-left:auto"><span data-icon="timer"></span> Suppression en attente</span>`
+            : `<button onclick="deleteAvis('${a.id}')" style="font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;border:1.5px solid #f0c0c0;background:#fef0f0;color:#c03030;cursor:pointer;font-family:'Inter',sans-serif;margin-left:auto">${isAdmin ? 'Supprimer' : 'Demander suppression'}</button>`}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  renderKPIs();
+}
+
+function setFilter(mode, btn) {
+  filterMode = mode;
+  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAvis();
+}
+
+function setStars(n) {
+  currentStars = n;
+  const btns = document.querySelectorAll('.star-btn');
+  btns.forEach((b, i) => { b.textContent = i < n ? '<span data-icon="star"></span>' : '<span data-icon="star"></span>'; b.style.color = i < n ? '#f0c040' : '#ccc'; });
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('add-modal-title').textContent = 'Nouvel avis';
+  document.getElementById('av-nom').value = '';
+  document.getElementById('av-comment').value = '';
+  document.getElementById('av-table').value = '';
+  setStars(0);
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function closeAddModal() { document.getElementById('add-modal').classList.remove('open'); }
+
+function saveAvis() {
+  const nom = document.getElementById('av-nom').value.trim() || 'Client anonyme';
+  if (!currentStars) { toast('Veuillez sélectionner une note', 'error'); return; }
+  avis.unshift({
+    id: 'av' + Date.now(),
+    nom, note: currentStars,
+    comment: document.getElementById('av-comment').value.trim(),
+    table: document.getElementById('av-table').value.trim(),
+    restaurantId: currentRestaurantId,
+    createdAt: new Date().toISOString(),
+    reponse: null
+  });
+  saveStorage();
+  closeAddModal();
+  renderAvis();
+  toast('Avis enregistré', 'success');
+}
+
+let replyingId = null;
+function openRepModal(id) {
+  replyingId = id;
+  const a = avis.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('rep-modal-sub').textContent = `Répondre à l'avis de ${a.nom || 'Client'} (${a.note}<span data-icon="star"></span>)`;
+  document.getElementById('rep-text').value = a.reponse || '';
+  document.getElementById('rep-modal').classList.add('open');
+}
+
+function closeRepModal() { document.getElementById('rep-modal').classList.remove('open'); }
+
+function saveReply() {
+  const txt = document.getElementById('rep-text').value.trim();
+  if (!txt) { toast('Veuillez saisir une réponse', 'error'); return; }
+  const a = avis.find(x => x.id === replyingId);
+  if (a) { a.reponse = txt; saveStorage(); }
+  closeRepModal();
+  renderAvis();
+  toast('Réponse publiée', 'success');
+}
+
+function deleteAvis(id) {
+  const a = avis.find(x => x.id === id);
+  if (!a) return;
+  if (isAdmin) {
+    if (!confirm('Supprimer définitivement cet avis ?')) return;
+    avis = avis.filter(x => x.id !== id);
+    saveStorage();
+    renderAvis();
+    toast('Avis supprimé (admin)', 'success');
+    return;
+  }
+  // Non-admin: request admin approval
+  if (!confirm(`Demander la suppression de l'avis de "${a.nom || 'Client'}" ?\nUn administrateur devra valider cette demande.`)) return;
+  const pendingKey = 'feedback_delete_requests_' + (currentRestaurantId || 'default');
+  const requests = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+  const alreadyRequested = requests.find(r => r.avisId === id);
+  if (alreadyRequested) { toast('Demande déjà en cours', 'error'); return; }
+  requests.push({
+    id: 'req_' + Date.now(),
+    avisId: id,
+    avisNote: a.note,
+    avisNom: a.nom || 'Anonyme',
+    avisComment: (a.comment || '').slice(0, 80),
+    requestedBy: user.nom || user.email,
+    requestedAt: new Date().toISOString(),
+    restaurantId: currentRestaurantId
+  });
+  localStorage.setItem(pendingKey, JSON.stringify(requests));
+  // Mark avis as pending deletion
+  a.pendingDeletion = true;
+  saveStorage();
+  renderAvis();
+  toast('Demande envoyée — un administrateur va examiner cette demande', 'success');
+}
+
+function copyQRLink() {
+  const url = ORIGIN + '/feedback-form.html?restaurantId=' + (currentRestaurantId || '');
+  navigator.clipboard.writeText(url).catch(() => {});
+  toast('Lien copié dans le presse-papier', 'success');
+}
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.style.borderLeft = '3px solid ' + (type === 'success' ? '#0E4B47' : '#c03030');
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// Init
+if (isAdmin) {
+  fetch(ORIGIN + '/admin/restaurants').then(r => r.json()).then(restos => {
+    if (!restos.length) { renderAvis(); return; }
+    const sel = document.createElement('select');
+    sel.className = 'select-std';
+    sel.innerHTML = restos.map(r => `<option value="${r.id}">${r.nom}</option>`).join('');
+    currentRestaurantId = restos[0].id;
+    sel.onchange = async () => {
+      currentRestaurantId = sel.value;
+      const storKey = 'feedback_avis_' + currentRestaurantId;
+      avis = JSON.parse(localStorage.getItem(storKey) || '[]');
+      await loadFromServer();
+      if (fbSocket) fbSocket.emit('join-restaurant', { restaurantId: currentRestaurantId });
+      renderAvis(); checkPendingDeletions();
+    };
+    document.getElementById('header-actions').appendChild(sel);
+    loadFromServer().then(() => { renderAvis(); checkPendingDeletions(); }).catch(() => { renderAvis(); });
+  }).catch(() => renderAvis());
+} else {
+  loadFromServer().then(() => renderAvis()).catch(() => renderAvis());
+}
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src="/permissions.js"></script>
+<script>if (typeof requireAuth === 'function') requireAuth();</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

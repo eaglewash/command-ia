@@ -1,0 +1,1796 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stocks — Commande-IA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #EEF5F2; min-height: 100vh; color: #111; }
+
+    /* ═══ TOPBAR ═══ */
+    .topbar {
+      background: #0E4B47; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px; height: 64px; position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 16px; }
+    .logo { font-size: 17px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 9px; letter-spacing: -0.4px; }
+    .logo-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; }
+    .logo-icon svg { width: 16px; height: 16px; }
+    .page-badge { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: rgba(123,187,181,0.15); color: #B8D0C8; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(123,187,181,0.25); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .back-btn { font-size: 12px; font-weight: 600; color: #B8D0C8; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); padding: 7px 16px; border-radius: 8px; cursor: pointer; font-family: 'Inter', sans-serif; text-decoration: none; transition: all 0.15s; }
+    .back-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .resto-select { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08); font-family: 'Inter', sans-serif; color: #fff; outline: none; cursor: pointer; font-weight: 500; }
+    .resto-select option { background: #0E4B47; color: #fff; }
+
+    /* ═══ ALERT BANNER ═══ */
+    .alert-banner {
+      display: none; padding: 12px 28px; gap: 12px; align-items: center;
+      animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown { from { opacity:0; transform: translateY(-8px); } }
+    .alert-banner.show { display: flex; }
+    .alert-banner.warning { background: linear-gradient(90deg, #fff8e8, #fffdf6); border-bottom: 2px solid #f0d898; }
+    .alert-banner.critical { background: linear-gradient(90deg, #fef0f0, #fff8f8); border-bottom: 2px solid #f0b0b0; }
+    .alert-banner-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .alert-banner.warning .alert-banner-icon { background: #fff0c8; }
+    .alert-banner.critical .alert-banner-icon { background: #fde0e0; }
+    .alert-banner-content { flex: 1; }
+    .alert-banner-title { font-size: 13px; font-weight: 700; }
+    .alert-banner.warning .alert-banner-title { color: #906010; }
+    .alert-banner.critical .alert-banner-title { color: #b03030; }
+    .alert-banner-text { font-size: 12px; color: #888; margin-top: 2px; }
+    .alert-banner-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #ccc; padding: 4px; }
+
+    /* ═══ MAIN ═══ */
+    .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+    /* ═══ HEADER ═══ */
+    .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; gap: 16px; flex-wrap: wrap; }
+    .page-title { font-size: 22px; font-weight: 800; color: #0F2A28; letter-spacing: -0.5px; }
+    .page-sub { font-size: 13px; color: #4D6260; margin-top: 4px; }
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .add-btn { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 10px; border: none; background: #0E4B47; color: #fff; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; box-shadow: 0 2px 8px rgba(14,75,71,0.2); }
+    .add-btn:hover { background: #0A3D3A; transform: translateY(-1px); }
+    .restock-all-btn { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 10px; border: 1.5px solid #B8D0C8; background: #fff; color: #0E4B47; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .restock-all-btn:hover { border-color: #0E4B47; background: #EEF5F2; }
+    .export-btn { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 10px; border: 1.5px solid #B8D0C8; background: #fff; color: #4D6260; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .export-btn:hover { border-color: #7BBBB5; }
+
+    /* ═══ STATS CARDS ═══ */
+    .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card {
+      background: #fff; border: 1.5px solid #B8D0C8; border-radius: 14px; padding: 16px;
+      transition: all 0.15s; cursor: default; position: relative; overflow: hidden;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+    .stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .stat-card.total::after { background: linear-gradient(90deg, #0E4B47, #0E4B47); }
+    .stat-card.dispo::after { background: linear-gradient(90deg, #0E4B47, #7BBBB5); }
+    .stat-card.alerte::after { background: linear-gradient(90deg, #f0a020, #f8d070); }
+    .stat-card.rupture::after { background: linear-gradient(90deg, #d84040, #f0a0a0); }
+    .stat-card.valeur::after { background: linear-gradient(90deg, #2a50aa, #70a0f0); }
+    .stat-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+    .stat-card.total .stat-icon { background: #CFE0D9; }
+    .stat-card.dispo .stat-icon { background: #DCF0ED; }
+    .stat-card.alerte .stat-icon { background: #fff8e8; }
+    .stat-card.rupture .stat-icon { background: #fef0f0; }
+    .stat-card.valeur .stat-icon { background: #eef0ff; }
+    .stat-label { font-size: 10px; font-weight: 700; color: #4D6260; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+    .stat-val { font-size: 30px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
+    .stat-val.green { color: #0E4B47; }
+    .stat-val.orange { color: #c08010; }
+    .stat-val.red { color: #c03030; }
+    .stat-val.blue { color: #2a50aa; }
+    .stat-val.dark { color: #0F2A28; }
+    .stat-change { font-size: 11px; font-weight: 600; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+    .stat-change.up { color: #0E4B47; }
+    .stat-change.down { color: #c03030; }
+    .stat-change.neutral { color: #4D6260; }
+
+    /* ═══ TOOLBAR ═══ */
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .view-toggles { display: flex; gap: 2px; background: #fff; border: 1.5px solid #B8D0C8; border-radius: 10px; padding: 3px; }
+    .view-btn { font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 7px; border: none; background: transparent; color: #4D6260; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+    .view-btn.active { background: #0E4B47; color: #B8D0C8; }
+    .view-btn:hover:not(.active) { background: #F8FBF9; }
+
+    .filter-pills { display: flex; gap: 6px; }
+    .pill { font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 20px; border: 1.5px solid #B8D0C8; background: #fff; color: #4D6260; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .pill:hover { border-color: #7BBBB5; }
+    .pill.active { background: #0E4B47; color: #B8D0C8; border-color: #0E4B47; }
+    .pill .pill-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+    .search-box { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 10px; border: 1.5px solid #B8D0C8; background: #fff; min-width: 200px; transition: border-color 0.15s; }
+    .search-box:focus-within { border-color: #0E4B47; }
+    .search-box input { border: none; outline: none; font-size: 12px; font-family: 'Inter', sans-serif; color: #0F2A28; width: 100%; background: transparent; }
+    .search-box input::placeholder { color: #b0c8b0; }
+
+    /* ═══ TABLE VIEW ═══ */
+    .table-card { background: #fff; border: 1.5px solid #B8D0C8; border-radius: 16px; overflow: hidden; }
+    .table-header {
+      display: grid; grid-template-columns: 2.5fr 1.2fr 0.8fr 0.8fr 0.8fr 160px;
+      gap: 8px; padding: 12px 20px; background: #F8FBF9; border-bottom: 1.5px solid #B8D0C8;
+      font-size: 10px; font-weight: 700; color: #4D6260; text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .table-row {
+      display: grid; grid-template-columns: 2.5fr 1.2fr 0.8fr 0.8fr 0.8fr 160px;
+      gap: 8px; padding: 14px 20px; border-bottom: 1px solid #CFE0D9; align-items: center;
+      transition: all 0.15s; animation: rowIn 0.3s ease both;
+    }
+    @keyframes rowIn { from { opacity:0; transform: translateX(-8px); } }
+    .table-row:last-child { border-bottom: none; }
+    .table-row:hover { background: #fafdf8; }
+    .table-row.alert-row { background: #fffdf6; }
+    .table-row.rupture-row { background: #fff8f8; }
+
+    .product-cell { display: flex; align-items: center; gap: 12px; }
+    .product-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .product-icon.food { background: #fff8e8; }
+    .product-icon.drink { background: #e8f0ff; }
+    .product-icon.ingredient { background: #CFE0D9; }
+    .product-name { font-size: 14px; font-weight: 700; color: #0F2A28; }
+    .product-meta { font-size: 11px; color: #4D6260; margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+    .product-links { font-size: 10px; color: #4D6260; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+    .product-link-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; background: #eef5e8; color: #0E4B47; border: 1px solid #7BBBB5; }
+    .product-link-label { font-size: 9px; color: #b0c8b0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .product-category { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #CFE0D9; color: #4D6260; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .qty-cell { }
+    .qty-main { font-size: 16px; font-weight: 800; color: #0F2A28; display: flex; align-items: baseline; gap: 4px; }
+    .qty-unit { font-size: 11px; font-weight: 500; color: #4D6260; }
+    .qty-bar { height: 5px; background: #CFE0D9; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+    .qty-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+    .qty-bar-fill.green { background: linear-gradient(90deg, #0E4B47, #7BBBB5); }
+    .qty-bar-fill.orange { background: linear-gradient(90deg, #e09010, #f8d070); }
+    .qty-bar-fill.red { background: linear-gradient(90deg, #c03030, #f08080); }
+    .qty-pct { font-size: 10px; font-weight: 600; margin-top: 2px; }
+    .qty-pct.green { color: #0E4B47; }
+    .qty-pct.orange { color: #c08010; }
+    .qty-pct.red { color: #c03030; }
+
+    .status-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; }
+    .status-badge .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .status-badge.disponible { background: #DCF0ED; color: #0E4B47; }
+    .status-badge.disponible .status-dot { background: #0E4B47; }
+    .status-badge.alerte { background: #fff8e8; color: #906010; }
+    .status-badge.alerte .status-dot { background: #f0a020; animation: pulse 1.5s infinite; }
+    .status-badge.rupture { background: #fef0f0; color: #b03030; }
+    .status-badge.rupture .status-dot { background: #d84040; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+    .actions-cell { display: flex; align-items: center; gap: 4px; }
+    .quick-btn {
+      width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid #B8D0C8;
+      background: #fff; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 13px; font-weight: 700; color: #0E4B47;
+      font-family: 'Inter', sans-serif; transition: all 0.15s;
+    }
+    .quick-btn:hover { background: #DCF0ED; border-color: #7BBBB5; transform: scale(1.05); }
+    .quick-btn.minus { color: #c03030; }
+    .quick-btn.minus:hover { background: #fef0f0; border-color: #f0c0c0; }
+    .qty-inline-input {
+      width: 52px; padding: 5px 4px; border-radius: 7px; border: 1.5px solid #B8D0C8;
+      font-size: 13px; font-weight: 700; font-family: 'Inter', sans-serif;
+      text-align: center; outline: none; background: #F8FBF9; transition: all 0.15s;
+    }
+    .qty-inline-input:focus { border-color: #0E4B47; background: #fff; }
+    .action-btn {
+      width: 30px; height: 30px; border-radius: 8px; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+    }
+    .action-btn.save { background: #0E4B47; color: #fff; }
+    .action-btn.save:hover { background: #0A3D3A; }
+    .action-btn.delete { background: #fef0f0; color: #c03030; border: 1px solid #f0c0c0; }
+    .action-btn.delete:hover { background: #fce0e0; }
+    .action-btn.history { background: #eef0ff; color: #4a50aa; border: 1px solid #c0c8f8; }
+    .action-btn.history:hover { background: #dde4ff; }
+
+    /* ═══ GRID VIEW ═══ */
+    .grid-view { display: none; }
+    .grid-view.active { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+    .grid-card {
+      background: #fff; border: 1.5px solid #B8D0C8; border-radius: 16px;
+      padding: 0; overflow: hidden; transition: all 0.2s;
+      animation: cardIn 0.35s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    @keyframes cardIn { from { opacity:0; transform: translateY(10px) scale(0.97); } }
+    .grid-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .grid-card.alert { border-color: #f0d898; }
+    .grid-card.rupture { border-color: #f0b0b0; }
+    .grid-stripe { height: 4px; }
+    .grid-stripe.green { background: linear-gradient(90deg, #0E4B47, #7BBBB5); }
+    .grid-stripe.orange { background: linear-gradient(90deg, #f0a020, #f8d070); }
+    .grid-stripe.red { background: linear-gradient(90deg, #d84040, #f0a0a0); }
+    .grid-inner { padding: 16px; }
+    .grid-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .grid-product-name { font-size: 15px; font-weight: 700; color: #0F2A28; }
+    .grid-qty-big { font-size: 28px; font-weight: 800; letter-spacing: -1px; text-align: center; margin: 8px 0; }
+    .grid-qty-big.green { color: #0E4B47; }
+    .grid-qty-big.orange { color: #c08010; }
+    .grid-qty-big.red { color: #c03030; }
+    .grid-unit { font-size: 12px; font-weight: 500; color: #4D6260; }
+    .grid-bar { height: 6px; background: #CFE0D9; border-radius: 4px; margin: 8px 0 12px; overflow: hidden; }
+    .grid-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+    .grid-details { display: flex; justify-content: space-between; font-size: 11px; color: #4D6260; margin-bottom: 10px; }
+    .grid-actions { display: flex; gap: 6px; }
+    .grid-actions .quick-btn { flex: 1; height: 34px; font-size: 14px; }
+    .grid-actions .action-btn { flex: 0; width: 34px; height: 34px; }
+
+    /* ═══ HISTORY PANEL ═══ */
+    .history-panel {
+      position: fixed; right: -420px; top: 0; bottom: 0; width: 400px;
+      background: #fff; border-left: 1.5px solid #B8D0C8; z-index: 200;
+      box-shadow: -8px 0 32px rgba(0,0,0,0.08); transition: right 0.3s cubic-bezier(0.22,1,0.36,1);
+      display: flex; flex-direction: column;
+    }
+    .history-panel.open { right: 0; }
+    .history-header {
+      padding: 20px; border-bottom: 1.5px solid #B8D0C8;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .history-title { font-size: 16px; font-weight: 700; color: #0F2A28; }
+    .history-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #4D6260; padding: 4px; }
+    .history-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .history-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #CFE0D9; }
+    .history-item:last-child { border-bottom: none; }
+    .history-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+    .history-dot.add { background: #0E4B47; }
+    .history-dot.remove { background: #c03030; }
+    .history-dot.restock { background: #2a50aa; }
+    .history-dot.auto { background: #f0a020; }
+    .history-content { flex: 1; }
+    .history-action { font-size: 13px; font-weight: 600; color: #0F2A28; }
+    .history-detail { font-size: 11px; color: #4D6260; margin-top: 2px; }
+    .history-time { font-size: 10px; color: #B8D0C8; margin-top: 4px; }
+    .history-empty { text-align: center; padding: 40px 20px; color: #B8D0C8; font-size: 13px; }
+
+    /* ═══ MODAL ═══ */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 300; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px); animation: fadeIn 0.15s;
+    }
+    @keyframes fadeIn { from{opacity:0;} }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 20px; padding: 28px; width: 100%;
+      max-width: 480px; box-shadow: 0 24px 60px rgba(0,0,0,0.15);
+      animation: modalIn 0.25s cubic-bezier(0.22,1,0.36,1);
+    }
+    @keyframes modalIn { from { opacity:0; transform: scale(0.93) translateY(10px); } }
+    .modal-title { font-size: 18px; font-weight: 800; color: #0F2A28; margin-bottom: 6px; }
+    .modal-sub { font-size: 12px; color: #4D6260; margin-bottom: 20px; }
+    .form-group { margin-bottom: 14px; }
+    .form-label { font-size: 11px; font-weight: 700; color: #4D6260; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 7px; display: block; }
+    .form-input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #B8D0C8; background: #F8FBF9; font-size: 13px; font-family: 'Inter', sans-serif; color: #0F2A28; outline: none; transition: all 0.15s; }
+    .form-input:focus { border-color: #0E4B47; background: #fff; }
+    .form-select { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #B8D0C8; background: #F8FBF9; font-size: 13px; font-family: 'Inter', sans-serif; color: #0F2A28; outline: none; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-btn { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 13px; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.15s; }
+    .modal-btn.primary { background: #0E4B47; color: #fff; }
+    .modal-btn.primary:hover { background: #0A3D3A; }
+    .modal-btn.secondary { background: #CFE0D9; color: #4D6260; }
+    .modal-btn.secondary:hover { background: #B8D0C8; }
+
+    /* Category picker */
+    .category-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+    .cat-btn {
+      font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 10px;
+      border: 1.5px solid #B8D0C8; background: #fff; color: #4D6260;
+      cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .cat-btn:hover { border-color: #7BBBB5; }
+    .cat-btn.active { background: #0E4B47; color: #B8D0C8; border-color: #0E4B47; }
+
+    /* ═══ RESTOCK MODAL ═══ */
+    .restock-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #CFE0D9; }
+    .restock-item:last-child { border-bottom: none; }
+    .restock-name { flex: 1; font-size: 13px; font-weight: 600; color: #0F2A28; }
+    .restock-current { font-size: 12px; color: #4D6260; min-width: 60px; }
+    .restock-input { width: 60px; padding: 6px 8px; border-radius: 8px; border: 1.5px solid #B8D0C8; font-size: 13px; font-weight: 700; font-family: 'Inter', sans-serif; text-align: center; outline: none; }
+    .restock-input:focus { border-color: #0E4B47; }
+
+    /* ═══ TOAST ═══ */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #0E4B47; color: #fff; padding: 12px 24px; border-radius: 12px;
+      font-size: 13px; font-weight: 600; z-index: 400;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 10px;
+      animation: toastIn 0.3s ease, toastOut 0.3s 2.5s forwards;
+    }
+    @keyframes toastIn { from { opacity:0; transform: translateX(-50%) translateY(20px); } }
+    @keyframes toastOut { to { opacity:0; transform: translateX(-50%) translateY(20px); } }
+    .toast-icon { font-size: 16px; }
+
+    .loading { text-align: center; padding: 60px; color: #4D6260; font-size: 13px; }
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-icon { width: 64px; height: 64px; border-radius: 16px; background: #F8FBF9; border: 2px solid #B8D0C8; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .empty-title { font-size: 15px; font-weight: 700; color: #3a5a3a; margin-bottom: 6px; }
+    .empty-sub { font-size: 12px; color: #4D6260; }
+
+    /* History backdrop */
+    .history-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.2); z-index: 150; }
+    .history-backdrop.open { display: block; }
+
+    /* ═══ ANALYTICS ═══ */
+    .analytics-section {
+      background: #fff; border: 1.5px solid #B8D0C8; border-radius: 16px;
+      margin-bottom: 20px; overflow: hidden;
+    }
+    .analytics-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px; cursor: pointer; transition: background 0.15s;
+      border-bottom: 1.5px solid transparent;
+      user-select: none;
+    }
+    .analytics-header:hover { background: #EEF5F2; }
+    .analytics-header.open { border-bottom-color: #B8D0C8; }
+    .analytics-icon { font-size: 20px; }
+    .analytics-title { font-size: 15px; font-weight: 700; color: #0F2A28; }
+    .analytics-sub { font-size: 11px; color: #4D6260; margin-top: 2px; }
+    .analytics-arrow { font-size: 18px; color: #4D6260; transition: transform 0.25s; }
+    .analytics-arrow.open { transform: rotate(180deg); }
+    .period-sel {
+      font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 8px;
+      border: 1.5px solid #B8D0C8; background: #F8FBF9; color: #4D6260;
+      font-family: 'Inter', sans-serif; outline: none; cursor: pointer;
+    }
+    .period-sel:focus { border-color: #0E4B47; }
+
+    .analytics-body { padding: 20px 22px 22px; display: none; }
+    .analytics-body.open { display: block; }
+
+    .chart-row { display: grid; gap: 16px; margin-bottom: 16px; }
+    .chart-row:last-child { margin-bottom: 0; }
+    .chart-row-1 { grid-template-columns: 1fr; }
+    .chart-row-2 { grid-template-columns: 2fr 1fr; }
+    .chart-row-3 { grid-template-columns: 1fr 1fr; }
+
+    .chart-card {
+      background: #EEF5F2; border: 1.5px solid #B8D0C8; border-radius: 14px;
+      padding: 18px; overflow: hidden;
+    }
+    .chart-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+    .chart-card-title { font-size: 13px; font-weight: 700; color: #0F2A28; }
+    .chart-card-sub { font-size: 10px; color: #4D6260; margin-top: 2px; }
+    .chart-wrap { position: relative; height: 240px; }
+    .chart-wrap.tall { height: 280px; }
+    .chart-wrap.short { height: 200px; }
+    .chart-donut-wrap { height: 220px; }
+    .chart-empty {
+      display: flex; align-items: center; justify-content: center;
+      height: 180px; font-size: 12px; color: #b0c8b0; font-weight: 500;
+      flex-direction: column; gap: 8px; text-align: center;
+    }
+    .chart-empty::before { content: ''; font-size: 28px; opacity: 0.4; }
+
+    .prod-toggles { display: flex; flex-wrap: wrap; gap: 5px; }
+    .prod-toggle {
+      font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+      border: 1.5px solid var(--color, #4D6260); background: transparent;
+      color: var(--color, #4D6260); cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all 0.15s; opacity: 0.4;
+    }
+    .prod-toggle.active { background: var(--color, #4D6260); color: #fff; opacity: 1; }
+
+    /* ═══ KPI MINI-CARDS analytics ═══ */
+    .analytics-kpi-bar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 18px; }
+    .kpi-card {
+      background: #fff; border: 1.5px solid #B8D0C8; border-radius: 12px;
+      padding: 12px 14px; text-align: center; position: relative; overflow: hidden;
+    }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .kpi-card.green::before { background: linear-gradient(90deg, #0E4B47, #7BBBB5); }
+    .kpi-card.blue::before { background: linear-gradient(90deg, #2a50aa, #70a0f0); }
+    .kpi-card.orange::before { background: linear-gradient(90deg, #c08010, #f8d070); }
+    .kpi-card.red::before { background: linear-gradient(90deg, #c03030, #f08080); }
+    .kpi-card.purple::before { background: linear-gradient(90deg, #8030aa, #e0b0f0); }
+    .kpi-card.teal::before { background: linear-gradient(90deg, #20aa80, #80e0c0); }
+    .kpi-label { font-size: 9px; font-weight: 700; color: #4D6260; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 5px; }
+    .kpi-val { font-size: 20px; font-weight: 800; color: #0F2A28; letter-spacing: -0.5px; line-height: 1; }
+    .kpi-sub { font-size: 9px; color: #b0c8b0; margin-top: 3px; }
+    .kpi-card.green .kpi-val { color: #0E4B47; }
+    .kpi-card.blue .kpi-val { color: #2a50aa; }
+    .kpi-card.orange .kpi-val { color: #c08010; }
+    .kpi-card.red .kpi-val { color: #c03030; }
+    .kpi-card.purple .kpi-val { color: #8030aa; }
+    .kpi-card.teal .kpi-val { color: #20aa80; }
+
+    /* Rotation meter */
+    .rotation-bar { height: 4px; background: #CFE0D9; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+    .rotation-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+    .rotation-fill.green { background: linear-gradient(90deg,#0E4B47,#7BBBB5); }
+    .rotation-fill.orange { background: linear-gradient(90deg,#c08010,#f8d070); }
+    .rotation-fill.red { background: linear-gradient(90deg,#c03030,#f08080); }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .stats-row { grid-template-columns: repeat(3, 1fr); }
+      .table-header, .table-row { grid-template-columns: 2fr 1fr 1fr 140px; }
+      .table-header > *:nth-child(3), .table-row > *:nth-child(3),
+      .table-header > *:nth-child(4), .table-row > *:nth-child(4) { display: none; }
+      .chart-row-2, .chart-row-3 { grid-template-columns: 1fr; }
+    }
+  
+  </style>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo" id="burger-anchor">
+      <span style="color:#B8D0C8">Commande</span><span style="color:#fff">IA</span>
+    </div>
+    <div class="page-badge">Gestion des stocks</div>
+  </div>
+  <div class="topbar-right">
+    <select class="resto-select" id="resto-select" onchange="loadStocks()">
+      <option value="">Sélectionner un restaurant</option>
+    </select>
+    <a href="/" class="back-btn">← Dashboard</a>
+  </div>
+</div>
+<script src="/burger-menu.js"></script>
+<div class="alert-banner" id="alert-banner">
+  <div class="alert-banner-icon" id="alert-icon">
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 3l7.5 13H2.5L10 3z" stroke="#906010" stroke-width="1.5" fill="none"/><path d="M10 9v3M10 14v1" stroke="#906010" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <div class="alert-banner-content">
+    <div class="alert-banner-title" id="alert-title"></div>
+    <div class="alert-banner-text" id="alert-text"></div>
+  </div>
+  <button class="alert-banner-close" onclick="this.parentElement.classList.remove('show')">&times;</button>
+</div>
+
+<div class="main">
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Gestion des stocks</div>
+      <div class="page-sub" id="page-sub">Suivi en temps réel · Sélectionne un restaurant</div>
+    </div>
+    <div class="header-actions">
+      <button class="export-btn" onclick="exportCSV()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export CSV
+      </button>
+      <button class="restock-all-btn" onclick="openRestockModal()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0111.5-2M14 8a6 6 0 01-11.5 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13 3v3h-3M3 13v-3h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Réapprovisionner
+      </button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card total">
+      <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="3" stroke="#0E4B47" stroke-width="1.5"/><path d="M6 10h8M6 7h5M6 13h6" stroke="#0E4B47" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+      <div class="stat-label">Total produits</div>
+      <div class="stat-val dark" id="stat-total">—</div>
+      <div class="stat-change neutral" id="stat-total-change">Aucune donnée</div>
+    </div>
+    <div class="stat-card dispo">
+      <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#0E4B47" stroke-width="1.5"/><path d="M7 10l2 2 4-4" stroke="#0E4B47" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="stat-label">Disponibles</div>
+      <div class="stat-val green" id="stat-dispo">—</div>
+      <div class="stat-change neutral" id="stat-dispo-pct">—</div>
+    </div>
+    <div class="stat-card alerte">
+      <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 3l7 12H3L10 3z" stroke="#c08010" stroke-width="1.5"/><path d="M10 9v2.5M10 13.5v.5" stroke="#c08010" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <div class="stat-label">En alerte</div>
+      <div class="stat-val orange" id="stat-alerte">—</div>
+      <div class="stat-change neutral" id="stat-alerte-info">—</div>
+    </div>
+    <div class="stat-card rupture">
+      <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#c03030" stroke-width="1.5"/><path d="M7 7l6 6M13 7l-6 6" stroke="#c03030" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <div class="stat-label">Rupture</div>
+      <div class="stat-val red" id="stat-rupture">—</div>
+      <div class="stat-change neutral" id="stat-rupture-info">—</div>
+    </div>
+    <div class="stat-card valeur">
+      <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="3" y="5" width="14" height="10" rx="2" stroke="#2a50aa" stroke-width="1.5"/><path d="M7 10h6M10 8v4" stroke="#2a50aa" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+      <div class="stat-label">Taux remplissage</div>
+      <div class="stat-val blue" id="stat-fill">—</div>
+      <div class="stat-change neutral" id="stat-fill-info">Stock moyen</div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS CHARTS -->
+  <div class="analytics-section" id="analytics-section">
+    <div class="analytics-header" id="analytics-header" onclick="toggleAnalytics()">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="analytics-icon"></span>
+        <div>
+          <div class="analytics-title">Analytics — Vue graphique</div>
+          <div class="analytics-sub">Évolution, consommation, ruptures &amp; réapprovisionnements</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <select class="period-sel" id="period-select" onchange="refreshCharts()" onclick="event.stopPropagation()">
+          <option value="7">7 jours</option>
+          <option value="14" selected>14 jours</option>
+          <option value="30">30 jours</option>
+        </select>
+        <div class="analytics-arrow" id="analytics-arrow">▾</div>
+      </div>
+    </div>
+    <div class="analytics-body" id="analytics-body">
+
+      <!-- KPI Bar -->
+      <div class="analytics-kpi-bar" id="analytics-kpi-bar">
+        <div class="kpi-card green"><div class="kpi-label">Commandes</div><div class="kpi-val" id="kpi-orders">—</div><div class="kpi-sub" id="kpi-orders-sub">sur la période</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Chiffre d'affaires</div><div class="kpi-val" id="kpi-ca">—</div><div class="kpi-sub">total ventes</div></div>
+        <div class="kpi-card teal"><div class="kpi-label">Panier moyen</div><div class="kpi-val" id="kpi-avg">—</div><div class="kpi-sub">par commande</div></div>
+        <div class="kpi-card orange"><div class="kpi-label">Refusées</div><div class="kpi-val" id="kpi-refused">—</div><div class="kpi-sub" id="kpi-refused-pct">ruptures &amp; autres</div></div>
+        <div class="kpi-card purple"><div class="kpi-label">Produit #1</div><div class="kpi-val" style="font-size:12px;padding-top:4px;" id="kpi-top-product">—</div><div class="kpi-sub" id="kpi-top-qty"></div></div>
+        <div class="kpi-card red"><div class="kpi-label">Ingrédients</div><div class="kpi-val" id="kpi-ingredients">—</div><div class="kpi-sub" id="kpi-ing-sub">en stock</div></div>
+      </div>
+
+      <!-- Ligne 1 : Évolution multi-courbes (pleine largeur) -->
+      <div class="chart-row chart-row-1">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title"><span data-icon="trend_up"></span> Évolution du stock dans le temps</div>
+              <div class="chart-card-sub">Niveau de chaque ingrédient jour par jour — cliquer sur un produit pour l'afficher/masquer</div>
+            </div>
+            <div id="product-toggles" class="prod-toggles"></div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="chart-evolution"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Ligne 2 : Activité + Distribution -->
+      <div class="chart-row chart-row-2">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title"><span data-icon="box"></span> Consommation vs Réapprovisionnement</div>
+              <div class="chart-card-sub">Unités par jour · barre rouge = sorti · barre bleue = entré · ligne verte = bilan</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-activity"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title"><span data-icon="cookie"></span> Distribution actuelle</div>
+              <div class="chart-card-sub">Répartition des statuts de stock</div>
+            </div>
+          </div>
+          <div class="chart-donut-wrap"><canvas id="chart-distribution"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Ligne 3 : Top consommés + Événements par produit -->
+      <div class="chart-row chart-row-3">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title"><span data-icon="flame"></span> Top ingrédients consommés</div>
+              <div class="chart-card-sub">Classement par quantité déduite sur la période</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-top-consumed"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title"><span data-icon="zap"></span> Événements par produit</div>
+              <div class="chart-card-sub">Consommations, réapprovisionnements &amp; ruptures</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-events"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ─── SECTION VENTES ─── -->
+      <div style="font-size:11px;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:1px;margin:20px 0 12px;padding-top:16px;border-top:1.5px solid #B8D0C8;">
+        <span data-icon="chart_bar"></span> Ventes &amp; Chiffre d'affaires
+      </div>
+
+      <!-- Ligne 4 : CA journalier + Commandes/jour -->
+      <div class="chart-row chart-row-1">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title"><span data-icon="wallet"></span> Chiffre d'affaires &amp; commandes journaliers</div>
+              <div class="chart-card-sub">Revenus (€) en barres · nombre de commandes en ligne · sur place vs à emporter</div>
+            </div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="chart-ca-daily"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Ligne 5 : Top produits vendus + Répartition CA par catégorie -->
+      <div class="chart-row chart-row-2">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title"><span data-icon="trophy"></span> Top produits vendus</div>
+              <div class="chart-card-sub">Quantités vendues + chiffre d'affaires généré par produit</div>
+            </div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="chart-top-products"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title"><span data-icon="pizza"></span> CA par catégorie</div>
+              <div class="chart-card-sub">Répartition des revenus : Sandwich, Boisson, Accompagnement, Dessert</div>
+            </div>
+          </div>
+          <div class="chart-donut-wrap" style="height:260px;"><canvas id="chart-ca-cat"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Ligne 6 : Taux de rotation des ingrédients -->
+      <div class="chart-row chart-row-1">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title"><span data-icon="refresh"></span> Taux de rotation des ingrédients</div>
+              <div class="chart-card-sub">% utilisé vs stock initial · rouge = quasi épuisé · vert = bien approvisionné</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="chart-rotation"></canvas></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <div class="view-toggles">
+        <button class="view-btn active" onclick="setView('table', this)">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Liste
+        </button>
+        <button class="view-btn" onclick="setView('grid', this)">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+          Grille
+        </button>
+      </div>
+      <div class="filter-pills">
+        <button class="pill active" onclick="setFilter('all', this)">Tous</button>
+        <button class="pill" onclick="setFilter('Disponible', this)"><span class="pill-dot" style="background:#0E4B47"></span>OK</button>
+        <button class="pill" onclick="setFilter('Alerte', this)"><span class="pill-dot" style="background:#f0a020"></span>Alerte</button>
+        <button class="pill" onclick="setFilter('Rupture', this)"><span class="pill-dot" style="background:#d84040"></span>Rupture</button>
+      </div>
+    </div>
+    <div class="search-box">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#4D6260" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#4D6260" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" placeholder="Rechercher un produit..." id="search-input" oninput="renderStocks()">
+    </div>
+  </div>
+
+  <!-- TABLE VIEW -->
+  <div class="table-card" id="table-view">
+    <div class="table-header">
+      <div>Produit</div>
+      <div>Stock actuel</div>
+      <div title="Quantité max/de référence — à mettre à jour si le stock actuel la dépasse">Initial (max) ⓘ</div>
+      <div>Seuil alerte</div>
+      <div>Statut</div>
+      <div>Actions</div>
+    </div>
+    <div id="stocks-list"><div class="loading">Sélectionne un restaurant pour voir ses stocks.</div></div>
+  </div>
+
+  <!-- GRID VIEW -->
+  <div class="grid-view" id="grid-view"></div>
+</div>
+
+<!-- HISTORY PANEL -->
+<div class="history-backdrop" id="history-backdrop" onclick="closeHistory()"></div>
+<div class="history-panel" id="history-panel">
+  <div class="history-header">
+    <div class="history-title">Historique mouvements</div>
+    <button class="history-close" onclick="closeHistory()">&times;</button>
+  </div>
+  <div class="history-body" id="history-body">
+    <div class="history-empty">Aucun mouvement enregistré</div>
+  </div>
+</div>
+
+
+<!-- MODAL RESTOCK -->
+<div class="modal-overlay" id="modal-restock">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-title">Réapprovisionnement rapide</div>
+    <div class="modal-sub">Remettre à niveau les produits en alerte ou rupture</div>
+    <div id="restock-list" style="max-height:340px;overflow-y:auto;"></div>
+    <div class="modal-footer">
+      <button class="modal-btn secondary" onclick="closeRestockModal()">Annuler</button>
+      <button class="modal-btn primary" onclick="executeRestock()">Réapprovisionner tout</button>
+    </div>
+  </div>
+</div>
+
+<script src="/permissions.js"></script>
+<script src="/icons.js"></script>
+<script>
+window.addEventListener('load', () => { try { window.ICONS && window.ICONS.replaceEmojisGlobal && window.ICONS.replaceEmojisGlobal(); } catch(e) {} });
+// ═══ AUTH (système central de hiérarchie) ═══
+if (typeof requireAuth === 'function') requireAuth();
+const user = sessionStorage.getItem('user');
+if (!user) window.location.href = '/login.html';
+const currentUser = JSON.parse(user || '{}');
+const isAdmin = currentUser.role === 'Admin';
+
+// ═══ STATE ═══
+let stocks = [];
+let selectedRestoId = '';
+let selectedRestoNom = '';
+let activeFilter = 'all';
+let activeView = 'table';
+let selectedCategory = 'ingredient';
+let stockHistory = []; // Local history tracking
+let menuByIngredient = {}; // { nomIngredient.toLowerCase() → [nomProduit, ...] }
+let analyticsData = null; // données de ventes / CA
+
+// ═══ SOCKET.IO SYNC ═══
+let stockSocket = null;
+let isSyncingStocks = false;
+try {
+  stockSocket = io(window.location.origin);
+  stockSocket.on('connect', () => {
+    const rid = selectedRestoId || (isAdmin ? '' : currentUser.restaurantId);
+    if (rid) stockSocket.emit('join-restaurant', { restaurantId: rid });
+  });
+  stockSocket.on('stocks-broadcast', (data) => {
+    if (data.restaurantId !== selectedRestoId || isSyncingStocks) return;
+    // Refresh stocks silently when another user modifies a stock
+    const who = data.updatedBy || 'un collègue';
+    isSyncingStocks = true;
+    loadStocks().finally(() => { isSyncingStocks = false; });
+    showToast(`<span data-icon="refresh"></span> Stocks mis à jour par ${who}`);
+  });
+} catch(e) { console.warn('Stocks socket indisponible'); }
+
+// Re-join restaurant room after restaurant selection
+function joinStocksRoom(rid) {
+  if (stockSocket && rid) stockSocket.emit('join-restaurant', { restaurantId: rid });
+}
+
+function buildMenuByIngredient(menuItems) {
+  menuByIngredient = {};
+  (menuItems || []).forEach(p => {
+    if (!p.ingredients) return;
+    p.ingredients.split(/[,;\n]+/).forEach(ing => {
+      const key = ing.trim().toLowerCase();
+      if (!key) return;
+      if (!menuByIngredient[key]) menuByIngredient[key] = [];
+      if (!menuByIngredient[key].includes(p.nom)) menuByIngredient[key].push(p.nom);
+    });
+  });
+}
+
+function buildProductLinks(produitName) {
+  const key = (produitName || '').toLowerCase().trim();
+  const prods = menuByIngredient[key];
+  if (!prods || !prods.length) return '';
+  return `<div class="product-links"><span class="product-link-label"><span data-icon="link"></span>&nbsp;</span>${prods.map(n => `<span class="product-link-badge">${n}</span>`).join('')}</div>`;
+}
+
+// ═══ LOAD ═══
+async function loadRestaurants() {
+  const sel = document.getElementById('resto-select');
+
+  if (!isAdmin && currentUser.restaurantId) {
+    // Non-admin : masquer le sélecteur, charger directement son restaurant
+    sel.style.display = 'none';
+    selectedRestoId = currentUser.restaurantId;
+    selectedRestoNom = currentUser.restaurant || 'Mon restaurant';
+    // Afficher le nom du restaurant à la place du sélecteur
+    const badge = document.createElement('div');
+    badge.style.cssText = 'font-size:12px;font-weight:600;color:#B8D0C8;padding:7px 14px;background:rgba(255,255,255,0.08);border-radius:8px;border:1px solid rgba(123,187,181,0.25);';
+    badge.textContent = selectedRestoNom;
+    sel.parentElement.insertBefore(badge, sel);
+    loadStocks();
+    return;
+  }
+
+  // Admin : charger la liste de tous les restaurants
+  const res = await fetch('/admin/restaurants');
+  const data = await res.json();
+  data.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.id; opt.textContent = r.nom;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadStocks() {
+  if (isAdmin) {
+    const sel = document.getElementById('resto-select');
+    selectedRestoId = sel.value;
+    selectedRestoNom = sel.options[sel.selectedIndex]?.text || '';
+  }
+  if (!selectedRestoId) return;
+  joinStocksRoom(selectedRestoId);
+  document.getElementById('stocks-list').innerHTML = '<div class="loading">Chargement...</div>';
+  document.getElementById('page-sub').textContent = 'Suivi en temps réel · ' + selectedRestoNom;
+  loadHistory();
+  const period = getPeriod();
+  const [stockRes, menuRes, analyticsRes] = await Promise.all([
+    fetch('/stocks/' + selectedRestoId),
+    fetch('/mon-menu/' + selectedRestoId),
+    fetch(`/analytics?restaurantId=${selectedRestoId}&days=${period}`)
+  ]);
+  stocks = await stockRes.json();
+  buildMenuByIngredient(menuRes.ok ? await menuRes.json() : []);
+  analyticsData = analyticsRes.ok ? await analyticsRes.json() : null;
+  renderStocks();
+  updateAlerts();
+  refreshCharts();
+}
+
+// ═══ FILTERS & VIEW ═══
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderStocks();
+}
+function setView(v, btn) {
+  activeView = v;
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('table-view').style.display = v === 'table' ? 'block' : 'none';
+  document.getElementById('grid-view').className = v === 'grid' ? 'grid-view active' : 'grid-view';
+  renderStocks();
+}
+function setCat(btn, cat) {
+  selectedCategory = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ═══ HELPERS ═══
+function getColor(s) { return s.statut === 'Rupture' ? 'red' : s.statut === 'Alerte' ? 'orange' : 'green'; }
+function getPct(s) { return s.quantiteInitiale ? Math.max(0, Math.round((s.quantiteActuelle / s.quantiteInitiale) * 100)) : 0; }
+// Pourcentage plafonné à 100% pour la barre et les stats
+function getPctCapped(s) { return Math.min(100, getPct(s)); }
+function getEmoji(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('pain') || n.includes('bun')) return '<span data-icon="bread"></span>';
+  if (n.includes('viande') || n.includes('steak') || n.includes('poulet') || n.includes('chicken') || n.includes('boeuf')) return '<span data-icon="utensils"></span>';
+  if (n.includes('salade') || n.includes('laitue') || n.includes('tomate') || n.includes('oignon') || n.includes('légume')) return '<span data-icon="salad"></span>';
+  if (n.includes('coca') || n.includes('fanta') || n.includes('eau') || n.includes('jus') || n.includes('boisson') || n.includes('sprite')) return '<span data-icon="wine"></span>';
+  if (n.includes('sauce') || n.includes('ketchup') || n.includes('mayo')) return '<span data-icon="box"></span>';
+  if (n.includes('frite') || n.includes('fries')) return '<span data-icon="utensils"></span>';
+  if (n.includes('fromage') || n.includes('cheese')) return '<span data-icon="utensils"></span>';
+  if (n.includes('emballage') || n.includes('carton') || n.includes('sac') || n.includes('serviette')) return '<span data-icon="box"></span>';
+  return '<span data-icon="pin"></span>';
+}
+
+// ═══ RENDER ═══
+function renderStocks() {
+  const search = (document.getElementById('search-input')?.value || '').toLowerCase();
+  let filtered = stocks;
+  if (activeFilter !== 'all') filtered = filtered.filter(s => s.statut === activeFilter);
+  if (search) filtered = filtered.filter(s => (s.produit || '').toLowerCase().includes(search));
+
+  // Stats
+  const total = stocks.length;
+  const dispo = stocks.filter(s => s.statut === 'Disponible').length;
+  const alerte = stocks.filter(s => s.statut === 'Alerte').length;
+  const rupture = stocks.filter(s => s.statut === 'Rupture').length;
+  const avgFill = total ? Math.round(stocks.reduce((a, s) => a + getPctCapped(s), 0) / total) : 0;
+
+  document.getElementById('stat-total').textContent = total || '—';
+  document.getElementById('stat-dispo').textContent = total ? dispo : '—';
+  document.getElementById('stat-alerte').textContent = total ? alerte : '—';
+  document.getElementById('stat-rupture').textContent = total ? rupture : '—';
+  document.getElementById('stat-fill').textContent = total ? avgFill + '%' : '—';
+
+  document.getElementById('stat-total-change').textContent = total ? total + ' références' : 'Aucune donnée';
+  document.getElementById('stat-dispo-pct').textContent = total ? Math.round(dispo/total*100) + '% du stock' : '—';
+  document.getElementById('stat-alerte-info').textContent = alerte ? 'À réapprovisionner' : 'Aucune alerte';
+  document.getElementById('stat-alerte-info').className = 'stat-change ' + (alerte ? 'down' : 'up');
+  document.getElementById('stat-rupture-info').textContent = rupture ? 'Action immédiate requise' : 'Aucune rupture';
+  document.getElementById('stat-rupture-info').className = 'stat-change ' + (rupture ? 'down' : 'up');
+  document.getElementById('stat-fill-info').textContent = total ? 'Moyenne de remplissage' : 'Stock moyen';
+
+  // TABLE VIEW
+  const list = document.getElementById('stocks-list');
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="4" y="4" width="20" height="20" rx="4" stroke="#7BBBB5" stroke-width="1.5"/><path d="M10 14h8M14 10v8" stroke="#7BBBB5" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <div class="empty-title">${stocks.length ? 'Aucun résultat' : 'Aucun produit en stock'}</div>
+      <div class="empty-sub">${stocks.length ? 'Modifie le filtre ou la recherche' : 'Les produits de ton menu apparaîtront ici automatiquement'}</div>
+    </div>`;
+  } else {
+    list.innerHTML = '';
+    filtered.forEach((s, i) => {
+      const pct = getPct(s);
+      const color = getColor(s);
+      const emoji = getEmoji(s.produit);
+      const rowClass = s.statut === 'Alerte' ? 'alert-row' : s.statut === 'Rupture' ? 'rupture-row' : '';
+      const row = document.createElement('div');
+      row.className = 'table-row ' + rowClass;
+      row.style.animationDelay = (i * 0.03) + 's';
+      row.innerHTML = `
+        <div class="product-cell">
+          <div class="product-icon ${color === 'red' ? '' : color === 'orange' ? '' : 'food'}" style="background:${color === 'red' ? '#fef0f0' : color === 'orange' ? '#fff8e8' : '#f0f7e8'}">
+            <span style="font-size:18px">${emoji}</span>
+          </div>
+          <div>
+            <div class="product-name">${s.produit}</div>
+            <div class="product-meta">
+              <span>${s.unite || 'unité'}</span> · <span>Màj: ${s.derniereMaj || '—'}</span>
+            </div>
+            ${buildProductLinks(s.produit)}
+          </div>
+        </div>
+        <div class="qty-cell">
+          <div class="qty-main">${s.quantiteActuelle ?? 0}<span class="qty-unit">${s.unite || ''}</span></div>
+          <div class="qty-bar"><div class="qty-bar-fill ${color}" style="width:${Math.min(100,pct)}%"></div></div>
+          <div class="qty-pct ${color}" title="${pct > 100 ? 'Stock dépasse la quantité initiale — mets à jour le champ Initial' : ''}">${pct > 100 ? '≫ initial' : pct + '%'}</div>
+        </div>
+        <div class="qty-main" style="font-size:13px;color:#4D6260;">${s.quantiteInitiale ?? '—'}</div>
+        <div class="qty-main" style="font-size:13px;color:#4D6260;">${s.seuilAlerte ?? '—'}</div>
+        <div><span class="status-badge ${(s.statut||'').toLowerCase()}"><span class="status-dot"></span>${s.statut || '—'}</span></div>
+        <div class="actions-cell">
+          <button class="quick-btn minus" onclick="quickAdjust('${s.id}',-1,${s.seuilAlerte||5})" title="-1">−</button>
+          <input class="qty-inline-input" id="qty-${s.id}" type="number" value="${s.quantiteActuelle ?? 0}" min="0" />
+          <button class="quick-btn" onclick="quickAdjust('${s.id}',1,${s.seuilAlerte||5})" title="+1">+</button>
+          <button class="action-btn save" onclick="saveQty('${s.id}',${s.seuilAlerte||5})" title="Sauvegarder">
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="action-btn history" onclick="showHistory('${s.id}','${(s.produit||'').replace(/'/g,"\\'")}')" title="Historique">
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7 4v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </button>
+          <button class="action-btn delete" onclick="supprimerStock('${s.id}')" title="Supprimer">
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+        </div>`;
+      list.appendChild(row);
+    });
+  }
+
+  // GRID VIEW
+  const grid = document.getElementById('grid-view');
+  grid.innerHTML = '';
+  filtered.forEach((s, i) => {
+    const pct = getPct(s);
+    const color = getColor(s);
+    const emoji = getEmoji(s.produit);
+    const card = document.createElement('div');
+    card.className = 'grid-card' + (s.statut === 'Alerte' ? ' alert' : '') + (s.statut === 'Rupture' ? ' rupture' : '');
+    card.style.animationDelay = (i * 0.04) + 's';
+    card.innerHTML = `
+      <div class="grid-stripe ${color}"></div>
+      <div class="grid-inner">
+        <div class="grid-top">
+          <div class="grid-product-name">${emoji} ${s.produit}</div>
+          <span class="status-badge ${(s.statut||'').toLowerCase()}"><span class="status-dot"></span>${s.statut}</span>
+        </div>
+        ${buildProductLinks(s.produit)}
+        <div class="grid-qty-big ${color}">${s.quantiteActuelle ?? 0}<span class="grid-unit"> ${s.unite || ''}</span></div>
+        <div class="grid-bar"><div class="grid-bar-fill qty-bar-fill ${color}" style="width:${pct}%"></div></div>
+        <div class="grid-details">
+          <span>Initial: ${s.quantiteInitiale ?? '—'}</span>
+          <span>Seuil: ${s.seuilAlerte ?? '—'}</span>
+          <span>${pct}%</span>
+        </div>
+        <div class="grid-actions">
+          <button class="quick-btn minus" onclick="quickAdjust('${s.id}',-5,${s.seuilAlerte||5})">−5</button>
+          <button class="quick-btn minus" onclick="quickAdjust('${s.id}',-1,${s.seuilAlerte||5})">−1</button>
+          <button class="quick-btn" onclick="quickAdjust('${s.id}',1,${s.seuilAlerte||5})">+1</button>
+          <button class="quick-btn" onclick="quickAdjust('${s.id}',5,${s.seuilAlerte||5})">+5</button>
+          <button class="action-btn delete" onclick="supprimerStock('${s.id}')">
+            <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+// ═══ ALERTS ═══
+function updateAlerts() {
+  const banner = document.getElementById('alert-banner');
+  const ruptures = stocks.filter(s => s.statut === 'Rupture');
+  const alertes = stocks.filter(s => s.statut === 'Alerte');
+
+  if (ruptures.length) {
+    banner.className = 'alert-banner critical show';
+    document.getElementById('alert-title').textContent = `${ruptures.length} produit(s) en rupture de stock !`;
+    document.getElementById('alert-text').textContent = ruptures.map(r => r.produit).join(', ');
+    document.getElementById('alert-icon').innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#c03030" stroke-width="1.5"/><path d="M7 7l6 6M13 7l-6 6" stroke="#c03030" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  } else if (alertes.length) {
+    banner.className = 'alert-banner warning show';
+    document.getElementById('alert-title').textContent = `${alertes.length} produit(s) bientôt en rupture`;
+    document.getElementById('alert-text').textContent = alertes.map(a => a.produit + ' (' + a.quantiteActuelle + ' restants)').join(', ');
+    document.getElementById('alert-icon').innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 3l7.5 13H2.5L10 3z" stroke="#906010" stroke-width="1.5"/><path d="M10 9v3M10 14v1" stroke="#906010" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  } else {
+    banner.className = 'alert-banner';
+  }
+}
+
+// ═══ ACTIONS ═══
+async function quickAdjust(id, delta, seuil) {
+  const s = stocks.find(x => x.id === id);
+  if (!s) return;
+  const newQty = Math.max(0, (s.quantiteActuelle || 0) + delta);
+  const input = document.getElementById('qty-' + id);
+  if (input) input.value = newQty;
+
+  // Add to history
+  addHistory(s.produit, delta > 0 ? 'add' : 'remove', Math.abs(delta), newQty, id);
+
+  await fetch('/stocks/' + id, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quantite: newQty, seuilAlerte: seuil, restaurantId: selectedRestoId, updatedBy: currentUser.nom || 'Employé' })
+  });
+  showToast(delta > 0 ? `+${delta} ${s.produit}` : `${delta} ${s.produit}`);
+  loadStocks();
+}
+
+async function saveQty(id, seuil) {
+  const input = document.getElementById('qty-' + id);
+  const qty = parseFloat(input.value);
+  const s = stocks.find(x => x.id === id);
+  const oldQty = s ? s.quantiteActuelle : 0;
+  const diff = qty - oldQty;
+
+  if (s && diff !== 0) {
+    addHistory(s.produit, diff > 0 ? 'restock' : 'remove', Math.abs(diff), qty, id);
+  }
+
+  await fetch('/stocks/' + id, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quantite: qty, seuilAlerte: seuil, restaurantId: selectedRestoId, updatedBy: currentUser.nom || 'Employé' })
+  });
+  showToast('Stock mis à jour');
+  loadStocks();
+}
+
+async function supprimerStock(id) {
+  if (!confirm('Supprimer ce produit du stock ?')) return;
+  const s = stocks.find(x => x.id === id);
+  if (s) addHistory(s.produit, 'remove', s.quantiteActuelle, 0, id);
+  await fetch('/stocks/' + id, { method: 'DELETE' });
+  showToast('Produit supprimé');
+  loadStocks();
+}
+
+async function ajouterStock() {
+  const nom = document.getElementById('s-nom').value.trim();
+  if (!nom || !selectedRestoId) { alert('Nom requis et restaurant sélectionné'); return; }
+  const qty = document.getElementById('s-qty').value || 0;
+  await fetch('/stocks', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      produit: nom, quantite: qty,
+      seuilAlerte: document.getElementById('s-seuil').value || 5,
+      unite: document.getElementById('s-unite').value,
+      restaurant: selectedRestoNom, restaurantId: selectedRestoId
+    })
+  });
+  addHistory(nom, 'add', parseFloat(qty), parseFloat(qty), null);
+  closeAddModal();
+  showToast('Produit ajouté : ' + nom);
+  loadStocks();
+}
+
+// ═══ RESTOCK ═══
+function openRestockModal() {
+  if (!selectedRestoId) { alert("Sélectionne d'abord un restaurant"); return; }
+  const lowStock = stocks.filter(s => s.statut === 'Alerte' || s.statut === 'Rupture');
+  const list = document.getElementById('restock-list');
+  if (!lowStock.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:#4D6260;font-size:13px;">Tous les stocks sont OK ! Aucun réapprovisionnement nécessaire.</div>';
+  } else {
+    list.innerHTML = lowStock.map(s => `
+      <div class="restock-item">
+        <span style="font-size:16px">${getEmoji(s.produit)}</span>
+        <div class="restock-name">${s.produit}</div>
+        <div class="restock-current" style="color:${s.statut==='Rupture'?'#c03030':'#c08010'}">${s.quantiteActuelle} / ${s.quantiteInitiale}</div>
+        <input class="restock-input" id="restock-${s.id}" type="number" value="${s.quantiteInitiale}" data-id="${s.id}" data-seuil="${s.seuilAlerte||5}" />
+      </div>
+    `).join('');
+  }
+  document.getElementById('modal-restock').classList.add('open');
+}
+
+async function executeRestock() {
+  const inputs = document.querySelectorAll('.restock-input');
+  let count = 0;
+  for (const input of inputs) {
+    const id = input.dataset.id;
+    const seuil = parseFloat(input.dataset.seuil);
+    const qty = parseFloat(input.value);
+    if (!id || isNaN(qty)) continue;
+    const s = stocks.find(x => x.id === id);
+    if (s) addHistory(s.produit, 'restock', qty - (s.quantiteActuelle||0), qty, id);
+    await fetch('/stocks/' + id, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quantite: qty, seuilAlerte: seuil, restaurantId: selectedRestoId, updatedBy: currentUser.nom || 'Employé' })
+    });
+    count++;
+  }
+  closeRestockModal();
+  showToast(`${count} produit(s) réapprovisionné(s)`);
+  loadStocks();
+}
+
+function closeRestockModal() { document.getElementById('modal-restock').classList.remove('open'); }
+
+// ═══ HISTORY ═══
+function addHistory(product, type, qty, newTotal, stockId) {
+  stockHistory.unshift({
+    product, type, qty, newTotal, stockId,
+    time: new Date().toLocaleString('fr-FR'),
+    timestamp: Date.now()
+  });
+  if (stockHistory.length > 200) stockHistory = stockHistory.slice(0, 200);
+  // Save to localStorage
+  try { localStorage.setItem('stock-history-' + selectedRestoId, JSON.stringify(stockHistory)); } catch(e) {}
+}
+
+function loadHistory() {
+  try {
+    const saved = localStorage.getItem('stock-history-' + selectedRestoId);
+    if (saved) stockHistory = JSON.parse(saved);
+  } catch(e) { stockHistory = []; }
+}
+
+function showHistory(stockId, productName) {
+  loadHistory();
+  const filtered = stockId ? stockHistory.filter(h => h.stockId === stockId || h.product === productName) : stockHistory;
+  const body = document.getElementById('history-body');
+  
+  if (!filtered.length) {
+    body.innerHTML = `<div class="history-empty">
+      <div style="font-size:32px;margin-bottom:12px;"><span data-icon="clipboard"></span></div>
+      Aucun mouvement enregistré${productName ? ' pour ' + productName : ''}
+    </div>`;
+  } else {
+    body.innerHTML = filtered.slice(0, 50).map(h => {
+      const typeLabel = h.type === 'add' ? 'Ajout' : h.type === 'remove' ? 'Retrait' : h.type === 'restock' ? 'Réappro.' : h.type === 'auto' ? 'Auto (commande)' : 'Modif.';
+      const sign = h.type === 'remove' ? '−' : '+';
+      return `<div class="history-item">
+        <div class="history-dot ${h.type}"></div>
+        <div class="history-content">
+          <div class="history-action">${typeLabel} — ${h.product}</div>
+          <div class="history-detail">${sign}${h.qty} → Nouveau total: ${h.newTotal}</div>
+          <div class="history-time">${h.time}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('history-panel').classList.add('open');
+  document.getElementById('history-backdrop').classList.add('open');
+}
+
+function closeHistory() {
+  document.getElementById('history-panel').classList.remove('open');
+  document.getElementById('history-backdrop').classList.remove('open');
+}
+
+// ═══ EXPORT CSV ═══
+function exportCSV() {
+  if (!stocks.length) { alert('Aucun stock à exporter'); return; }
+  const headers = ['Produit', 'Quantité actuelle', 'Quantité initiale', 'Seuil alerte', 'Unité', 'Statut', 'Dernière MAJ'];
+  const rows = stocks.map(s => [s.produit, s.quantiteActuelle, s.quantiteInitiale, s.seuilAlerte, s.unite, s.statut, s.derniereMaj]);
+  const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `stocks_${selectedRestoNom}_${new Date().toLocaleDateString('fr-FR')}.csv`;
+  a.click();
+  showToast('Export CSV téléchargé');
+}
+
+// ═══ MODALS ═══
+function openAddModal() {
+  if (!selectedRestoId) { alert("Sélectionne d'abord un restaurant"); return; }
+  document.getElementById('modal-add').classList.add('open');
+}
+function closeAddModal() {
+  document.getElementById('modal-add').classList.remove('open');
+  document.getElementById('s-nom').value = '';
+  document.getElementById('s-qty').value = '';
+  document.getElementById('s-seuil').value = '';
+}
+
+// ═══ TOAST ═══
+function showToast(text) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span class="toast-icon"><span data-icon="check"></span></span>${text}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ═══ ANALYTICS / CHARTS ═══
+let chartEvolution = null, chartActivity = null, chartDistribution = null;
+let chartTopConsumed = null, chartEvents = null;
+
+function toggleAnalytics() {
+  const body = document.getElementById('analytics-body');
+  const arrow = document.getElementById('analytics-arrow');
+  const header = document.getElementById('analytics-header');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.classList.toggle('open', !isOpen);
+  header.classList.toggle('open', !isOpen);
+  if (!isOpen) setTimeout(refreshCharts, 50); // render after expand animation
+}
+
+function getPeriod() { return parseInt(document.getElementById('period-select')?.value || '14'); }
+
+function getLastNDays(n) {
+  const days = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    days.push(d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
+  }
+  return days;
+}
+function getDayKey(ts) {
+  return new Date(ts).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+}
+function getDayStart(n, period) {
+  const d = new Date(); d.setDate(d.getDate() - (period - 1 - n));
+  d.setHours(0, 0, 0, 0); return d.getTime();
+}
+
+function getProdColors() {
+  return [
+    { b: '#0E4B47', bg: 'rgba(14,75,71,0.12)' },
+    { b: '#2a50aa', bg: 'rgba(42,80,170,0.12)' },
+    { b: '#c08010', bg: 'rgba(192,128,16,0.12)' },
+    { b: '#8030aa', bg: 'rgba(128,48,170,0.12)' },
+    { b: '#20aa80', bg: 'rgba(32,170,128,0.12)' },
+    { b: '#c03030', bg: 'rgba(192,48,48,0.12)' },
+    { b: '#5060d0', bg: 'rgba(80,96,208,0.12)' },
+    { b: '#aa6020', bg: 'rgba(170,96,32,0.12)' },
+  ];
+}
+
+const chartDefaults = {
+  tooltipBg: 'rgba(26,42,26,0.92)',
+  gridColor: 'rgba(0,0,0,0.045)',
+  tickFont: { size: 11, family: 'Inter' },
+  tickColor: '#4D6260',
+};
+
+// ── Chart 1 : Évolution multi-lignes ────────────────
+function renderEvolutionChart() {
+  const period = getPeriod();
+  const days = getLastNDays(period);
+  const startTS = getDayStart(0, period);
+  const canvas = document.getElementById('chart-evolution');
+  if (!canvas) return;
+  if (chartEvolution) { chartEvolution.destroy(); chartEvolution = null; }
+
+  const periodHist = stockHistory.filter(h => h.timestamp >= startTS);
+
+  // Top 8 products by activity
+  const activity = {};
+  periodHist.forEach(h => { activity[h.product] = (activity[h.product] || 0) + 1; });
+  let topProds = Object.entries(activity).sort((a,b) => b[1]-a[1]).slice(0, 8).map(e => e[0]);
+  if (!topProds.length) topProds = stocks.slice(0, 6).map(s => s.produit);
+  if (!topProds.length) {
+    canvas.closest('.chart-wrap').innerHTML = '<div class="chart-empty">Aucune donnée d\'historique disponible</div>'; return;
+  }
+
+  const colors = getProdColors();
+  const datasets = topProds.map((prod, idx) => {
+    const c = colors[idx % colors.length];
+    const stockItem = stocks.find(s => s.produit === prod);
+    const prodHist = periodHist.filter(h => h.product === prod).sort((a,b) => a.timestamp - b.timestamp);
+    const data = days.map((_, di) => {
+      const dayStart = getDayStart(di, period);
+      const dayEnd = dayStart + 86400000;
+      const todayEntries = prodHist.filter(h => h.timestamp >= dayStart && h.timestamp < dayEnd);
+      if (todayEntries.length) return todayEntries[todayEntries.length - 1].newTotal ?? null;
+      const before = prodHist.filter(h => h.timestamp < dayStart);
+      if (before.length) return before[before.length - 1].newTotal ?? null;
+      // No history yet: show current level only for today
+      return di === days.length - 1 ? (stockItem?.quantiteActuelle ?? null) : null;
+    });
+    return {
+      label: prod, data,
+      borderColor: c.b, backgroundColor: c.bg,
+      borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7,
+      tension: 0.35, fill: false, spanGaps: true,
+    };
+  });
+
+  // Build toggle buttons
+  const toggleContainer = document.getElementById('product-toggles');
+  if (toggleContainer) {
+    toggleContainer.innerHTML = topProds.map((p, i) =>
+      `<button class="prod-toggle active" style="--color:${colors[i % colors.length].b}" onclick="toggleLine(this,${i})">${p}</button>`
+    ).join('');
+  }
+
+  // Annotation zones for ruptures (shaded red areas)
+  chartEvolution = new Chart(canvas, {
+    type: 'line',
+    data: { labels: days, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: chartDefaults.tooltipBg, titleColor: '#B8D0C8', bodyColor: '#fff', padding: 12,
+          callbacks: {
+            title: ctx => `<span data-icon="calendar"></span> ${ctx[0].label}`,
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y ?? '—'} unités`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: chartDefaults.gridColor }, ticks: { font: chartDefaults.tickFont, color: chartDefaults.tickColor } },
+        y: { grid: { color: chartDefaults.gridColor }, ticks: { font: chartDefaults.tickFont, color: chartDefaults.tickColor }, beginAtZero: true,
+          title: { display: true, text: 'Quantité', font: { size: 10, family: 'Inter' }, color: '#b0c8b0' }
+        }
+      }
+    }
+  });
+}
+
+function toggleLine(btn, idx) {
+  if (!chartEvolution) return;
+  const meta = chartEvolution.getDatasetMeta(idx);
+  meta.hidden = !meta.hidden;
+  btn.classList.toggle('active');
+  chartEvolution.update();
+}
+
+// ── Chart 2 : Activité barres + ligne bilan ──────────
+function renderActivityChart() {
+  const period = getPeriod();
+  const days = getLastNDays(period);
+  const startTS = getDayStart(0, period);
+  const canvas = document.getElementById('chart-activity');
+  if (!canvas) return;
+  if (chartActivity) { chartActivity.destroy(); chartActivity = null; }
+  const periodHist = stockHistory.filter(h => h.timestamp >= startTS);
+
+  const consumed = days.map(day =>
+    periodHist.filter(h => getDayKey(h.timestamp) === day && (h.type === 'remove' || h.type === 'auto'))
+      .reduce((s, h) => s + (h.qty || 0), 0)
+  );
+  const restocked = days.map(day =>
+    periodHist.filter(h => getDayKey(h.timestamp) === day && (h.type === 'restock' || h.type === 'add'))
+      .reduce((s, h) => s + (h.qty || 0), 0)
+  );
+  const net = days.map((_, i) => restocked[i] - consumed[i]);
+
+  if (consumed.every(v=>v===0) && restocked.every(v=>v===0)) {
+    canvas.closest('.chart-wrap').innerHTML = '<div class="chart-empty">Aucune activité enregistrée sur la période</div>'; return;
+  }
+
+  chartActivity = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: days,
+      datasets: [
+        { label: 'Consommé', data: consumed, backgroundColor: 'rgba(192,48,48,0.72)', borderColor: '#c03030', borderWidth: 1.5, borderRadius: 5 },
+        { label: 'Réapprovisionné', data: restocked, backgroundColor: 'rgba(42,80,170,0.72)', borderColor: '#2a50aa', borderWidth: 1.5, borderRadius: 5 },
+        { label: 'Bilan net', data: net, type: 'line', borderColor: '#0E4B47', backgroundColor: 'transparent',
+          borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, tension: 0.4, yAxisID: 'y' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10, family: 'Inter' }, color: '#4D6260', boxWidth: 10, padding: 14 } },
+        tooltip: { backgroundColor: chartDefaults.tooltipBg, titleColor: '#B8D0C8', bodyColor: '#fff', padding: 12 }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: chartDefaults.tickColor, maxRotation: 45 } },
+        y: { grid: { color: chartDefaults.gridColor }, ticks: { font: chartDefaults.tickFont, color: chartDefaults.tickColor }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+// ── Chart 3 : Donut distribution ─────────────────────
+function renderDistributionChart() {
+  const canvas = document.getElementById('chart-distribution');
+  if (!canvas) return;
+  if (chartDistribution) { chartDistribution.destroy(); chartDistribution = null; }
+  const dispo = stocks.filter(s => s.statut === 'Disponible').length;
+  const alerte = stocks.filter(s => s.statut === 'Alerte').length;
+  const rupture = stocks.filter(s => s.statut === 'Rupture').length;
+  if (!stocks.length) {
+    canvas.closest('.chart-donut-wrap').innerHTML = '<div class="chart-empty">Aucun stock</div>'; return;
+  }
+  const total = stocks.length;
+  chartDistribution = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: ['Disponible', 'Alerte', 'Rupture'],
+      datasets: [{ data: [dispo, alerte, rupture],
+        backgroundColor: ['rgba(14,75,71,0.8)', 'rgba(192,128,16,0.8)', 'rgba(192,48,48,0.8)'],
+        borderColor: ['#0E4B47', '#c08010', '#c03030'],
+        borderWidth: 2.5, hoverBorderWidth: 3.5,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '66%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10, family: 'Inter' }, color: '#4D6260', boxWidth: 10, padding: 10 } },
+        tooltip: {
+          backgroundColor: chartDefaults.tooltipBg, titleColor: '#B8D0C8', bodyColor: '#fff', padding: 10,
+          callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed/total*100)}%)` }
+        }
+      }
+    },
+    plugins: [{
+      id: 'centerLabel',
+      afterDraw(chart) {
+        const { ctx, chartArea: { width, height, top, left } } = chart;
+        const cx = left + width / 2, cy = top + height / 2;
+        ctx.save();
+        ctx.font = `800 26px Inter, sans-serif`; ctx.fillStyle = '#0F2A28';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(total, cx, cy - 9);
+        ctx.font = `500 10px Inter, sans-serif`; ctx.fillStyle = '#4D6260';
+        ctx.fillText('produits', cx, cy + 10);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+// ── Chart 4 : Top consommés (barres horizontales) ────
+function renderTopConsumedChart() {
+  const startTS = getDayStart(0, getPeriod());
+  const canvas = document.getElementById('chart-top-consumed');
+  if (!canvas) return;
+  if (chartTopConsumed) { chartTopConsumed.destroy(); chartTopConsumed = null; }
+  const periodHist = stockHistory.filter(h => h.timestamp >= startTS);
+  const consumed = {};
+  periodHist.forEach(h => {
+    if (h.type === 'remove' || h.type === 'auto') consumed[h.product] = (consumed[h.product] || 0) + (h.qty || 0);
+  });
+  const sorted = Object.entries(consumed).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  if (!sorted.length) {
+    canvas.closest('.chart-wrap').innerHTML = '<div class="chart-empty">Aucune consommation enregistrée</div>'; return;
+  }
+  const palette = ['rgba(192,48,48,0.78)','rgba(192,80,16,0.78)','rgba(192,128,16,0.78)','rgba(128,48,170,0.78)','rgba(42,80,170,0.78)','rgba(32,128,96,0.78)','rgba(14,75,71,0.78)','rgba(170,80,32,0.78)'];
+  chartTopConsumed = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e => e[0]),
+      datasets: [{ label: 'Unités consommées', data: sorted.map(e => e[1]),
+        backgroundColor: sorted.map((_, i) => palette[i % palette.length]),
+        borderRadius: 6, borderSkipped: false }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: chartDefaults.tooltipBg, titleColor: '#B8D0C8', bodyColor: '#fff', padding: 10,
+          callbacks: { label: ctx => ` ${ctx.parsed.x} unités déduites` }
+        }
+      },
+      scales: {
+        x: { grid: { color: chartDefaults.gridColor }, ticks: { font: chartDefaults.tickFont, color: chartDefaults.tickColor }, beginAtZero: true },
+        y: { grid: { display: false }, ticks: { font: { size: 11, family: 'Inter' }, color: '#0F2A28' } }
+      }
+    }
+  });
+}
+
+// ── Chart 5 : Événements par produit (barres groupées) ─
+function renderEventsChart() {
+  const startTS = getDayStart(0, getPeriod());
+  const canvas = document.getElementById('chart-events');
+  if (!canvas) return;
+  if (chartEvents) { chartEvents.destroy(); chartEvents = null; }
+  const periodHist = stockHistory.filter(h => h.timestamp >= startTS);
+  const products = {};
+  periodHist.forEach(h => {
+    if (!products[h.product]) products[h.product] = { conso: 0, restock: 0, ruptures: 0 };
+    if (h.type === 'remove' || h.type === 'auto') {
+      products[h.product].conso++;
+      if ((h.newTotal ?? 1) === 0) products[h.product].ruptures++;
+    }
+    if (h.type === 'restock' || h.type === 'add') products[h.product].restock++;
+  });
+  const sorted = Object.entries(products).sort((a,b) => (b[1].conso + b[1].restock) - (a[1].conso + a[1].restock)).slice(0, 8);
+  if (!sorted.length) {
+    canvas.closest('.chart-wrap').innerHTML = '<div class="chart-empty">Aucun événement enregistré</div>'; return;
+  }
+  chartEvents = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e => e[0]),
+      datasets: [
+        { label: 'Consommations', data: sorted.map(e => e[1].conso), backgroundColor: 'rgba(192,48,48,0.72)', borderRadius: 4 },
+        { label: 'Réapprovisionnements', data: sorted.map(e => e[1].restock), backgroundColor: 'rgba(42,80,170,0.72)', borderRadius: 4 },
+        { label: 'Ruptures atteintes', data: sorted.map(e => e[1].ruptures), backgroundColor: 'rgba(192,128,16,0.72)', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10, family: 'Inter' }, color: '#4D6260', boxWidth: 10, padding: 12 } },
+        tooltip: { backgroundColor: chartDefaults.tooltipBg, titleColor: '#B8D0C8', bodyColor: '#fff', padding: 10 }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 9, family: 'Inter' }, color: chartDefaults.tickColor, maxRotation: 35 } },
+        y: { grid: { color: chartDefaults.gridColor }, ticks: { font: chartDefaults.tickFont, color: chartDefaults.tickColor }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+// ── KPI Bar ───────────────────────────────────────────
+function updateKpis() {
+  const a = analyticsData;
+  const rupture = stocks.filter(s => s.statut === 'Rupture').length;
+  const alerte  = stocks.filter(s => s.statut === 'Alerte').length;
+
+  document.getElementById('kpi-orders').textContent = a ? a.totalOrders : '—';
+  document.getElementById('kpi-orders-sub').textContent = a ? `dont ${a.refusedOrders} refusées` : 'sur la période';
+  document.getElementById('kpi-ca').textContent = a ? a.totalRevenue.toFixed(2) + '€' : '—';
+  document.getElementById('kpi-avg').textContent = a ? a.avgOrderValue.toFixed(2) + '€' : '—';
+  document.getElementById('kpi-refused').textContent = a ? a.refusedOrders : '—';
+  const refPct = a && a.totalOrders ? Math.round(a.refusedOrders / a.totalOrders * 100) : 0;
+  document.getElementById('kpi-refused-pct').textContent = a ? refPct + '% des commandes' : 'ruptures & autres';
+  if (a && a.topProducts && a.topProducts.length) {
+    document.getElementById('kpi-top-product').textContent = a.topProducts[0].nom;
+    document.getElementById('kpi-top-qty').textContent = a.topProducts[0].qty + ' vendus · ' + a.topProducts[0].revenue.toFixed(2) + '€';
+  }
+  document.getElementById('kpi-ingredients').textContent = stocks.length;
+  document.getElementById('kpi-ing-sub').textContent = rupture + ' rupture · ' + alerte + ' alerte';
+}
+
+// ── Chart 6 : CA & commandes journaliers ─────────────
+let chartCaDaily = null;
+function renderCaDailyChart() {
+  const canvas = document.getElementById('chart-ca-daily');
+  if (!canvas) return;
+  if (chartCaDaily) { chartCaDaily.destroy(); chartCaDaily = null; }
+  if (!analyticsData) { canvas.closest('.chart-wrap').innerHTML = '<div class="chart-empty">Aucune donnée de ventes</div>'; return; }
+
+  const { revenueByDay, ordersByDay, surPlaceByDay } = analyticsData;
+  const labels = Object.keys(revenueByDay).sort();
+  const ca     = labels.map(d => Math.round(revenueByDay[d] * 100) / 100);
+  const cmds   = labels.map(d => ordersByDay[d] || 0);
+  const sp     = labels.map(d => surPlaceByDay[d] || 0);
+  const emport = labels.map((d, i) => cmds[i] - sp[i]);
+  const fmtDate = d => { const [y,m,j] = d.split('-'); return j+'/'+m; };
+
+  if (ca.every(v => v === 0) && cmds.every(v => v === 0)) {
+    canvas.closest('.chart-wrap').innerHTML = '<div class="chart-empty">Aucune vente enregistrée</div>'; return;
+  }
+
+  chartCaDaily = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels.map(fmtDate),
+      datasets: [
+        { label: 'Sur place', data: sp, backgroundColor: 'rgba(192,128,16,0.7)', borderRadius: 4, stack: 'cmds', yAxisID: 'yRight' },
+        { label: 'À emporter', data: emport, backgroundColor: 'rgba(42,80,170,0.7)', borderRadius: 4, stack: 'cmds', yAxisID: 'yRight' },
+        { label: 'CA (€)', data: ca, type: 'line', borderColor: '#0E4B47', backgroundColor: 'rgba(14,75,71,0.08)',
+          borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7, tension: 0.4, fill: true, yAxisID: 'yLeft' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10, family: 'Inter' }, color: '#4D6260', boxWidth: 10, padding: 14 } },
+        tooltip: { backgroundColor: chartDefaults.tooltipBg, titleColor: '#B8D0C8', bodyColor: '#fff', padding: 12,
+          callbacks: { label: ctx => ctx.dataset.yAxisID === 'yLeft' ? ` CA: ${ctx.parsed.y.toFixed(2)}€` : ` ${ctx.dataset.label}: ${ctx.parsed.y} commande(s)` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: chartDefaults.tickColor } },
+        yLeft: { position: 'left', grid: { color: chartDefaults.gridColor }, ticks: { font: chartDefaults.tickFont, color: '#0E4B47', callback: v => v + '€' }, beginAtZero: true },
+        yRight: { position: 'right', grid: { display: false }, ticks: { font: chartDefaults.tickFont, color: chartDefaults.tickColor }, beginAtZero: true, stacked: true }
+      }
+    }
+  });
+}
+
+// ── Chart 7 : Top produits vendus (barres horizontales doubles) ─
+let chartTopProducts = null;
+function renderTopProductsChart() {
+  const canvas = document.getElementById('chart-top-products');
+  if (!canvas) return;
+  if (chartTopProducts) { chartTopProducts.destroy(); chartTopProducts = null; }
+  if (!analyticsData || !analyticsData.topProducts.length) {
+    canvas.closest('.chart-wrap').innerHTML = '<div class="chart-empty">Aucune vente enregistrée</div>'; return;
+  }
+
+  const top = analyticsData.topProducts.slice(0, 8);
+  const palette = ['rgba(14,75,71,0.8)','rgba(42,80,170,0.8)','rgba(192,128,16,0.8)','rgba(128,48,170,0.8)','rgba(192,48,48,0.8)','rgba(32,128,96,0.8)','rgba(170,80,32,0.8)','rgba(80,96,208,0.8)'];
+
+  chartTopProducts = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: top.map(p => p.nom),
+      datasets: [
+        { label: 'Quantité vendue', data: top.map(p => p.qty), backgroundColor: top.map((_,i) => palette[i % palette.length]),
+          borderRadius: 5, yAxisID: 'yQty' },
+        { label: 'CA généré (€)', data: top.map(p => p.revenue), type: 'line',
+          borderColor: '#2a50aa', backgroundColor: 'rgba(42,80,170,0.06)',
+          borderWidth: 2, pointRadius: 5, pointHoverRadius: 8, tension: 0.3, fill: true, yAxisID: 'yCA' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10, family: 'Inter' }, color: '#4D6260', boxWidth: 10, padding: 12 } },
+        tooltip: { backgroundColor: chartDefaults.tooltipBg, titleColor: '#B8D0C8', bodyColor: '#fff', padding: 10,
+          callbacks: { label: ctx => ctx.dataset.yAxisID === 'yCA' ? ` CA: ${ctx.parsed.y.toFixed(2)}€` : ` Vendu: ${ctx.parsed.y} unité(s)` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: '#0F2A28', maxRotation: 30 } },
+        yQty: { position: 'left', grid: { color: chartDefaults.gridColor }, ticks: { font: chartDefaults.tickFont, color: chartDefaults.tickColor }, beginAtZero: true },
+        yCA: { position: 'right', grid: { display: false }, ticks: { font: chartDefaults.tickFont, color: '#2a50aa', callback: v => v + '€' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+// ── Chart 8 : CA par catégorie (donut) ────────────────
+let chartCaCat = null;
+function renderCaCatChart() {
+  const canvas = document.getElementById('chart-ca-cat');
+  if (!canvas) return;
+  if (chartCaCat) { chartCaCat.destroy(); chartCaCat = null; }
+  if (!analyticsData) { canvas.closest('[style]').innerHTML = '<div class="chart-empty">Aucune donnée</div>'; return; }
+
+  const cat = analyticsData.revenueByCategory;
+  const labels = Object.keys(cat).filter(k => cat[k] > 0);
+  const data   = labels.map(k => Math.round(cat[k] * 100) / 100);
+  const total  = data.reduce((s,v) => s + v, 0);
+
+  if (!total) { canvas.closest('[style]').innerHTML = '<div class="chart-empty">Aucune vente enregistrée</div>'; return; }
+
+  const colors = { Sandwich: '#0E4B47', Boisson: '#2a50aa', Accompagnement: '#c08010', Dessert: '#8030aa', Autre: '#4D6260' };
+
+  chartCaCat = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: labels.map(l => colors[l] || '#4D6260'),
+        borderColor: '#fff', borderWidth: 3, hoverOffset: 8 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10, family: 'Inter' }, color: '#4D6260', boxWidth: 10, padding: 10 } },
+        tooltip: { backgroundColor: chartDefaults.tooltipBg, titleColor: '#B8D0C8', bodyColor: '#fff', padding: 10,
+          callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(2)}€ (${Math.round(ctx.parsed/total*100)}%)` }
+        }
+      }
+    },
+    plugins: [{
+      id: 'centerCA',
+      afterDraw(chart) {
+        const { ctx, chartArea: { width, height, top, left } } = chart;
+        const cx = left + width/2, cy = top + height/2;
+        ctx.save();
+        ctx.font = `800 18px Inter,sans-serif`; ctx.fillStyle = '#0F2A28';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(total.toFixed(2) + '€', cx, cy - 8);
+        ctx.font = `500 10px Inter,sans-serif`; ctx.fillStyle = '#4D6260';
+        ctx.fillText('chiffre d\'affaires', cx, cy + 10);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+// ── Chart 9 : Taux de rotation des ingrédients ────────
+let chartRotation = null;
+function renderRotationChart() {
+  const canvas = document.getElementById('chart-rotation');
+  if (!canvas) return;
+  if (chartRotation) { chartRotation.destroy(); chartRotation = null; }
+
+  // Calculer le taux = (initial - actuel) / initial * 100
+  const withData = stocks
+    .filter(s => s.quantiteInitiale > 0)
+    .map(s => ({
+      nom: s.produit,
+      pct: Math.min(100, Math.round((1 - s.quantiteActuelle / s.quantiteInitiale) * 100)),
+      statut: s.statut,
+      actuel: s.quantiteActuelle,
+      initial: s.quantiteInitiale
+    }))
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 12);
+
+  if (!withData.length) {
+    canvas.closest('.chart-wrap').innerHTML = '<div class="chart-empty">Stock initial non défini pour ces ingrédients</div>'; return;
+  }
+
+  const getBarColor = pct => pct >= 80 ? 'rgba(192,48,48,0.8)' : pct >= 50 ? 'rgba(192,128,16,0.8)' : 'rgba(14,75,71,0.8)';
+
+  chartRotation = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: withData.map(s => s.nom),
+      datasets: [
+        { label: 'Taux d\'utilisation (%)', data: withData.map(s => s.pct),
+          backgroundColor: withData.map(s => getBarColor(s.pct)),
+          borderRadius: 5, borderSkipped: false },
+        { label: 'Stock restant', data: withData.map(s => s.actuel),
+          type: 'line', borderColor: '#2a50aa', backgroundColor: 'transparent',
+          borderWidth: 1.5, pointRadius: 4, pointHoverRadius: 6, tension: 0.3, yAxisID: 'yQty' }
+      ]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10, family: 'Inter' }, color: '#4D6260', boxWidth: 10, padding: 12 } },
+        tooltip: {
+          backgroundColor: chartDefaults.tooltipBg, titleColor: '#B8D0C8', bodyColor: '#fff', padding: 10,
+          callbacks: {
+            label: ctx => ctx.dataset.yAxisID === 'yQty'
+              ? ` Stock restant: ${ctx.parsed.x} unités`
+              : ` Utilisé: ${ctx.parsed.x}% (${withData[ctx.dataIndex].initial - withData[ctx.dataIndex].actuel} / ${withData[ctx.dataIndex].initial})`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: chartDefaults.gridColor }, ticks: { font: chartDefaults.tickFont, color: chartDefaults.tickColor }, beginAtZero: true, max: 100, title: { display: true, text: '% consommé', font: { size: 10, family: 'Inter' }, color: '#b0c8b0' } },
+        y: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: '#0F2A28' } },
+        yQty: { display: false, beginAtZero: true }
+      }
+    }
+  });
+}
+
+function refreshCharts() {
+  const isOpen = document.getElementById('analytics-body')?.classList.contains('open');
+  if (!isOpen) return;
+  updateKpis();
+  renderEvolutionChart();
+  renderActivityChart();
+  renderDistributionChart();
+  renderTopConsumedChart();
+  renderEventsChart();
+  renderCaDailyChart();
+  renderTopProductsChart();
+  renderCaCatChart();
+  renderRotationChart();
+}
+
+// ═══ INIT ═══
+loadRestaurants();
+setInterval(() => { if (selectedRestoId) loadStocks(); }, 60000);
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+</body>
+</html>

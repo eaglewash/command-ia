@@ -1,0 +1,683 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vocal IA Avancé – Commande-IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:100vh}
+.topbar{background:#0E4B47;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.tl{display:flex;align-items:center;gap:16px}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:1.1rem}
+.logo-icon{width:32px;height:32px;background:#0E4B47;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.page-badge{background:rgba(255,255,255,.12);color:#c8e6c9;font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:20px}
+.tr{display:flex;align-items:center;gap:12px}
+.back-btn{background:rgba(255,255,255,.1);color:#fff;text-decoration:none;padding:7px 16px;border-radius:8px;font-size:.85rem;font-weight:500;transition:background .2s}
+.back-btn:hover{background:rgba(255,255,255,.2)}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-family:'Inter',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:#0E4B47;color:#fff}.btn-primary:hover{background:#2d5509}
+.btn-secondary{background:#fff;color:#1a2e1a;border:1.5px solid #B8D0C8}.btn-secondary:hover{background:#f5f9f2}
+.btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.3)}.btn-ghost:hover{background:rgba(255,255,255,.1)}
+
+.main{padding:24px;max-width:1400px;margin:0 auto}
+.vgrid{display:grid;grid-template-columns:1fr 420px;gap:20px}
+.card{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;overflow:hidden}
+.card-head{padding:16px 20px;border-bottom:1.5px solid #B8D0C8;display:flex;align-items:center;justify-content:space-between}
+.card-head h2{font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-body{padding:20px}
+
+/* Main vocal zone */
+.vocal-zone{background:linear-gradient(135deg,#0f2d0f,#0E4B47);border-radius:16px;padding:40px 32px;text-align:center;position:relative;overflow:hidden;margin-bottom:20px}
+.vocal-zone::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 60%,rgba(74,138,26,.15) 0%,transparent 70%)}
+.waveform{display:flex;align-items:center;justify-content:center;gap:4px;height:64px;margin:20px 0}
+.wave-bar{width:4px;border-radius:2px;background:rgba(255,255,255,.3);transition:height .1s}
+.wave-bar.active{background:#fff}
+.mic-btn{width:88px;height:88px;border-radius:50%;background:#0E4B47;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0 auto;transition:all .3s;position:relative;z-index:1}
+.mic-btn:hover{background:#2d5509;transform:scale(1.05)}
+.mic-btn.recording{background:#dc2626;animation:pulse-mic 1.5s infinite}
+@keyframes pulse-mic{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}50%{box-shadow:0 0 0 24px rgba(220,38,38,0)}}
+.mic-ring{position:absolute;inset:-12px;border-radius:50%;border:2px solid rgba(74,138,26,.4)}
+.mic-ring2{position:absolute;inset:-24px;border-radius:50%;border:2px solid rgba(74,138,26,.2)}
+.vocal-status{color:rgba(255,255,255,.7);font-size:.88rem;margin-top:16px}
+.vocal-status strong{color:#fff}
+.vocal-transcript{background:rgba(255,255,255,.08);border-radius:10px;padding:14px 16px;margin-top:16px;min-height:48px;font-size:.95rem;color:#fff;text-align:left;font-style:italic;border:1px solid rgba(255,255,255,.15)}
+.cursor-blink{display:inline-block;width:2px;height:14px;background:#0E4B47;margin-left:2px;animation:blink 1s infinite;vertical-align:middle}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* NLP entities */
+.nlp-panel{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;padding:20px}
+.nlp-title{font-size:.85rem;font-weight:700;color:#4b5563;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
+.entity-list{display:flex;flex-direction:column;gap:8px}
+.entity-row{display:flex;align-items:center;gap:10px;background:#f5f9f2;border-radius:8px;padding:10px 12px}
+.entity-type{font-size:.7rem;font-weight:800;padding:2px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+.et-item{background:#dbeafe;color:#1d4ed8}
+.et-qty{background:#dcfce7;color:#166534}
+.et-mod{background:#fef3c7;color:#92400e}
+.et-table{background:#f3e8ff;color:#7c3aed}
+.et-time{background:#fee2e2;color:#dc2626}
+.entity-val{font-weight:700;font-size:.9rem;color:#1a2e1a;flex:1}
+.entity-conf{font-size:.75rem;color:#6b7280;font-weight:600}
+.conf-bar{height:4px;border-radius:2px;background:#e5e7eb;width:60px;overflow:hidden}
+.conf-fill{height:100%;background:#0E4B47;border-radius:2px}
+
+/* Parsed order preview */
+.order-preview{background:#f5f9f2;border:1.5px solid #B8D0C8;border-radius:12px;padding:16px;margin-top:12px}
+.op-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.op-title{font-size:.9rem;font-weight:700;color:#1a2e1a}
+.op-table{font-size:.82rem;color:#6b7280}
+.op-items{display:flex;flex-direction:column;gap:8px}
+.op-item{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #B8D0C8}
+.op-item-name{font-weight:600;font-size:.88rem}
+.op-item-mod{font-size:.75rem;color:#d97706;margin-top:2px}
+.op-qty{font-weight:800;font-size:1rem;color:#0E4B47}
+.op-actions{display:flex;gap:8px;margin-top:12px}
+.confidence-badge{display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;border-radius:8px;padding:4px 10px;font-size:.78rem;font-weight:700}
+
+/* History & stats */
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EEF5F2}
+.stat-row:last-child{border-bottom:none}
+.stat-lbl{font-size:.85rem;color:#4b5563;font-weight:500}
+.stat-val{font-size:.88rem;font-weight:800;color:#1a2e1a}
+
+.hist-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #EEF5F2}
+.hist-item:last-child{border-bottom:none}
+.hist-icon{font-size:1.1rem;flex-shrink:0;margin-top:2px}
+.hist-cmd{font-weight:600;font-size:.85rem;color:#1a2e1a}
+.hist-result{font-size:.75rem;color:#0E4B47;margin-top:2px}
+.hist-time{font-size:.72rem;color:#9ca3af;white-space:nowrap;margin-left:auto}
+
+/* Quick commands */
+.qcmd-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qcmd{background:#f5f9f2;border:1.5px solid #B8D0C8;border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
+.qcmd:hover{border-color:#0E4B47;background:#ecfdf5}
+.qcmd-text{font-size:.8rem;font-weight:600;color:#1a2e1a;line-height:1.3}
+.qcmd-icon{font-size:1.1rem;flex-shrink:0}
+
+/* Language/model selector */
+.model-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.model-option{border:2px solid #B8D0C8;border-radius:10px;padding:12px;cursor:pointer;transition:all .2s}
+.model-option.selected{border-color:#0E4B47;background:#EEF5F2}
+.model-option h4{font-size:.85rem;font-weight:700;margin-bottom:2px}
+.model-option p{font-size:.75rem;color:#6b7280}
+.model-badge{background:#dcfce7;color:#166534;font-size:.7rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:4px}
+
+.snackbar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#0E4B47;color:#fff;padding:12px 24px;border-radius:10px;font-size:.88rem;font-weight:600;z-index:2000;transition:transform .3s}
+.snackbar.show{transform:translateX(-50%) translateY(0)}
+
+  </style>
+<script src="/icons.js"></script>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tl">
+    <div class="logo">
+      <div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+      Commande-IA
+    </div>
+    <span class="page-badge"><span data-icon="mic"></span> Vocal IA Avancé</span>
+  </div>
+  <div class="tr">
+    <a href="/index.html" class="back-btn">← Dashboard</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="vgrid">
+    <!-- LEFT: Main vocal interface -->
+    <div>
+      <!-- Vocal zone -->
+      <div class="vocal-zone">
+        <div class="mic-ring"></div>
+        <div class="mic-ring2"></div>
+        <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+        <div class="waveform" id="waveform">
+          <!-- bars injected by JS -->
+        </div>
+        <div class="vocal-status" id="vocal-status">Cliquez sur le micro pour dicter une commande</div>
+        <div class="vocal-transcript" id="transcript"><span style="color:rgba(255,255,255,.3);font-style:normal">Ex: "Table 5, un filet de boeuf saignant, sans sel, et deux verres de bordeaux"</span></div>
+      </div>
+
+      <!-- NLP result -->
+      <div class="nlp-panel" id="nlp-panel">
+        <div class="nlp-title"><span data-icon="cpu"></span> Analyse NLP — Entités détectées</div>
+        <div class="entity-list" id="entity-list">
+          <div style="text-align:center;color:#9ca3af;font-size:.85rem;padding:16px">En attente d'une commande vocale...</div>
+        </div>
+        <div id="order-preview-container"></div>
+      </div>
+
+      <!-- Quick commands (generated from real menu) -->
+      <div class="card" style="margin-top:16px">
+        <div class="card-head"><h2><span data-icon="zap"></span> Commandes rapides</h2><span style="font-size:.78rem;color:#6b7280">Basées sur votre menu</span></div>
+        <div class="card-body">
+          <div class="qcmd-grid" id="qcmd-grid">
+            <div style="font-size:.8rem;color:#9ca3af;padding:8px">Chargement du menu…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Config + history -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <!-- Model selector -->
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="cpu"></span> Modèle IA</h2></div>
+        <div class="card-body">
+          <div class="model-grid">
+            <div class="model-option selected" onclick="selectModel(this)"><h4>Rapide<span class="model-badge">actif</span></h4><p>Latence ~200ms. Idéal service intense</p></div>
+            <div class="model-option" onclick="selectModel(this)"><h4>Précis</h4><p>Latence ~600ms. Meilleure compréhension</p></div>
+            <div class="model-option" onclick="selectModel(this)"><h4>Multilingue</h4><p>FR/EN/ES/IT/DE simultanés</p></div>
+            <div class="model-option" onclick="selectModel(this)"><h4>Custom</h4><p>Entraîné sur votre menu</p></div>
+          </div>
+          <div style="font-size:.78rem;color:#6b7280;margin-top:4px"><span data-icon="circle_dot"></span> Connecté · Commande-IA</div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="chart_bar"></span> Statistiques vocales</h2><span style="font-size:.75rem;color:#6b7280">Session</span></div>
+        <div class="card-body">
+          <div class="stat-row"><span class="stat-lbl">Commandes vocales</span><span class="stat-val" id="stat-total">0</span></div>
+          <div class="stat-row"><span class="stat-lbl">Reconnues</span><span class="stat-val" id="stat-ok" style="color:#0E4B47">0</span></div>
+          <div class="stat-row"><span class="stat-lbl">Non reconnues</span><span class="stat-val" id="stat-err" style="color:#d97706">0</span></div>
+          <div class="stat-row"><span class="stat-lbl">Menu disponible</span><span class="stat-val" id="stat-menu">—</span></div>
+          <div class="stat-row"><span class="stat-lbl">Microphone</span><span class="stat-val" id="stat-mic">—</span></div>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="clock"></span> Historique vocal</h2></div>
+        <div class="card-body" style="padding:0 20px 8px">
+          <div id="hist-list"></div>
+        </div>
+      </div>
+
+      <!-- Vocabulary customization -->
+      <div class="card">
+        <div class="card-head"><h2>📝 Vocabulaire personnalisé</h2><button class="btn btn-secondary" style="font-size:.72rem;padding:4px 10px" onclick="addVocab()">+ Ajouter</button></div>
+        <div class="card-body">
+          <p style="font-size:.8rem;color:#6b7280;margin-bottom:10px">Mots-clés spécifiques à votre restaurant</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="vocab-tags"></div>
+          <style>.vocab-tag{background:#f5f9f2;border:1px solid #B8D0C8;border-radius:6px;padding:3px 10px;font-size:.78rem;font-weight:600;color:#0E4B47;cursor:pointer}.vocab-tag:hover{background:#dcfce7}</style>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="snackbar" id="snackbar"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const ORIGIN = window.location.origin;
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (!user.email) window.location.href = '/login.html';
+const isAdmin = user.role === 'Admin';
+let currentRestaurantId = isAdmin ? null : (user.restaurantId || null);
+
+// ── STATE ──
+let menuItems = [];
+let recording = false;
+let waveInterval, recognition;
+let pendingOrder = null;
+const SESSION = { total: 0, ok: 0, err: 0 };
+const HISTORY = [];
+
+// Number words to digits
+const NUM_WORDS = { un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,neuf:9,dix:10,vingt:20 };
+
+// ── WAVEFORM ──
+const wf = document.getElementById('waveform');
+const bars = [];
+for (let i = 0; i < 28; i++) {
+  const b = document.createElement('div');
+  b.className = 'wave-bar'; b.style.height = '8px';
+  wf.appendChild(b); bars.push(b);
+}
+function animateWave() {
+  bars.forEach(b => { b.classList.add('active'); b.style.height = (8 + Math.random() * 48) + 'px'; });
+}
+function stopWave() {
+  bars.forEach(b => { b.classList.remove('active'); b.style.height = '8px'; });
+}
+
+// ── ADMIN SELECTOR ──
+async function loadAdminRestaurants() {
+  try {
+    const r = await fetch(ORIGIN + '/admin/restaurants');
+    if (!r.ok) return;
+    const data = await r.json();
+    // Insert selector in topbar
+    const sel = document.createElement('select');
+    sel.style.cssText = 'font-size:.85rem;padding:6px 10px;border-radius:8px;border:1.5px solid #B8D0C8;font-family:Inter,sans-serif;outline:none;cursor:pointer;margin-right:8px';
+    sel.innerHTML = '<option value="">— Restaurant —</option>';
+    (data.restaurants || data).forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id || r.restaurantId;
+      opt.textContent = r.nom || r.name;
+      sel.appendChild(opt);
+    });
+    sel.onchange = () => { currentRestaurantId = sel.value || null; loadMenu(); };
+    document.querySelector('.tr').prepend(sel);
+  } catch(e) {}
+}
+
+// ── LOAD MENU ──
+async function loadMenu() {
+  if (!currentRestaurantId) {
+    if (!isAdmin) {
+      document.getElementById('stat-menu').textContent = 'Non configuré';
+    }
+    return;
+  }
+  try {
+    const r = await fetch(`${ORIGIN}/mon-menu/${currentRestaurantId}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const raw = data.menu || data.items || data;
+    menuItems = (Array.isArray(raw) ? raw : []).map(item => ({
+      id: item.id || item._id || '',
+      nom: (item.nom || item.name || item.Nom || '').toLowerCase(),
+      nomOriginal: item.nom || item.name || item.Nom || '',
+      categorie: item.categorie || item.category || '',
+      prix: parseFloat(item.prix || item.price || 0),
+      disponible: item.disponible !== false,
+    })).filter(i => i.nom);
+    document.getElementById('stat-menu').textContent = menuItems.length + ' plats';
+    buildQuickCommands();
+  } catch(e) {
+    document.getElementById('stat-menu').textContent = 'Erreur chargement';
+  }
+}
+
+// ── WEB SPEECH API ──
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const hasSpeech = !!SpeechRecognition;
+document.getElementById('stat-mic').textContent = hasSpeech ? 'Disponible' : 'Non supporté';
+
+function toggleRecording() {
+  if (recording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+function startRecording() {
+  if (!hasSpeech) {
+    showSnack('<span data-icon="alert"></span> La reconnaissance vocale n\'est pas supportée dans ce navigateur');
+    return;
+  }
+  recording = true;
+  const btn = document.getElementById('mic-btn');
+  btn.classList.add('recording');
+  document.getElementById('vocal-status').innerHTML = '<strong><span data-icon="circle_dot"></span> Enregistrement en cours...</strong> Parlez maintenant';
+  document.getElementById('transcript').innerHTML = '<span class="cursor-blink"></span>';
+  document.getElementById('entity-list').innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:.85rem;padding:16px">En attente de la parole...</div>';
+  document.getElementById('order-preview-container').innerHTML = '';
+  waveInterval = setInterval(animateWave, 100);
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'fr-FR';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onresult = (event) => {
+    let interim = '', final = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const t = event.results[i][0].transcript;
+      if (event.results[i].isFinal) final += t;
+      else interim += t;
+    }
+    document.getElementById('transcript').textContent = final || interim;
+    if (final) processTranscript(final.trim(), event.results[0][0].confidence || 0.9);
+  };
+  recognition.onerror = (e) => {
+    stopRecording();
+    if (e.error === 'not-allowed') showSnack('<span data-icon="alert"></span> Microphone refusé — autorisez l\'accès dans votre navigateur');
+    else document.getElementById('vocal-status').textContent = 'Erreur : ' + e.error;
+    SESSION.err++; updateStats();
+  };
+  recognition.onend = () => { if (recording) stopRecording(); };
+  recognition.start();
+}
+
+function stopRecording() {
+  recording = false;
+  document.getElementById('mic-btn').classList.remove('recording');
+  clearInterval(waveInterval);
+  stopWave();
+  if (recognition) { try { recognition.stop(); } catch(e) {} }
+  document.getElementById('vocal-status').textContent = 'Cliquez sur le micro pour dicter une commande';
+}
+
+// ── NLP PROCESSING ──
+function processTranscript(text, confidence) {
+  SESSION.total++;
+  const lower = text.toLowerCase();
+
+  // Extract table number
+  const tableMatch = lower.match(/table\s+(\d+|\w+)/i) || lower.match(/terrasse\s+(\d+|\w+)/i) || lower.match(/comptoir/i);
+  let table = 'Comptoir';
+  if (tableMatch) {
+    const word = tableMatch[1] || '';
+    const num = NUM_WORDS[word] || parseInt(word) || word;
+    table = tableMatch[0].includes('terrasse') ? 'Terrasse ' + num : (tableMatch[0].includes('comptoir') ? 'Comptoir' : 'Table ' + num);
+  }
+
+  // Extract quantities + items
+  const recognized = [];
+  const mods = [];
+
+  // Look for number + item patterns
+  const qtyRegex = /(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s+([\w\s'àâäéèêëîïôùûü-]+?)(?=,|et |sans |bien |$)/gi;
+  let qtyMatch;
+  while ((qtyMatch = qtyRegex.exec(lower)) !== null) {
+    const qty = NUM_WORDS[qtyMatch[1].toLowerCase()] || parseInt(qtyMatch[1]) || 1;
+    const phrase = qtyMatch[2].trim();
+    const found = findMenuMatch(phrase);
+    if (found) recognized.push({ item: found, qty });
+  }
+
+  // Also try to match menu items mentioned without qty
+  if (!recognized.length) {
+    menuItems.forEach(item => {
+      if (lower.includes(item.nom) && item.disponible) {
+        recognized.push({ item, qty: 1 });
+      }
+    });
+  }
+
+  // Extract modifiers
+  const modWords = ['sans ','bien cuit','saignant','rosé','à point','extra ','peu cuit'];
+  modWords.forEach(m => { if (lower.includes(m)) mods.push(m.trim()); });
+
+  // Build entities for display
+  const entities = [];
+  entities.push({ type: 'et-table', label: 'TABLE', val: table, conf: tableMatch ? 97 : 60 });
+  recognized.forEach(r => {
+    entities.push({ type: 'et-qty', label: 'QTÉ', val: r.qty + '<span data-icon="x"></span>', conf: 99 });
+    entities.push({ type: 'et-item', label: 'PLAT', val: r.item.nomOriginal, conf: Math.round(85 + Math.random() * 12) });
+  });
+  mods.forEach(m => entities.push({ type: 'et-mod', label: 'MODIF', val: m, conf: Math.round(80 + Math.random() * 15) }));
+
+  if (recognized.length > 0) {
+    SESSION.ok++;
+    const conf = Math.round(confidence * 100);
+    document.getElementById('vocal-status').innerHTML = `<span data-icon="check_circle"></span> Commande reconnue — <strong>Confiance: ${conf}%</strong>`;
+    const order = {
+      table,
+      items: recognized.map(r => ({ name: r.item.nomOriginal, qty: r.qty, mod: mods.join(' · '), price: r.item.prix, id: r.item.id }))
+    };
+    pendingOrder = order;
+    renderEntities(entities);
+    renderOrderPreview(order);
+    HISTORY.unshift({ icon: '<span data-icon="mic"></span>', cmd: text, result: recognized.length + ' plat(s) reconnu(s)', time: 'à l\'instant', ok: true });
+  } else {
+    SESSION.err++;
+    document.getElementById('vocal-status').innerHTML = '<span data-icon="alert"></span> Plats non reconnus dans le menu — réessayez';
+    renderEntities(entities);
+    document.getElementById('order-preview-container').innerHTML = '<div style="background:#fff8e8;border:1px solid #e8d080;border-radius:10px;padding:12px 14px;margin-top:12px;font-size:.82rem;color:#906010">Aucun plat reconnu. Vérifiez que les plats sont bien dans votre menu, ou ajoutez des mots-clés dans le vocabulaire personnalisé.</div>';
+    HISTORY.unshift({ icon: '<span data-icon="x"></span>', cmd: text, result: 'Non reconnu', time: 'à l\'instant', ok: false });
+  }
+
+  updateStats();
+  renderHistory();
+}
+
+function findMenuMatch(phrase) {
+  // Try exact match first, then partial
+  const custom = getCustomVocab();
+  // Check custom vocab remapping
+  for (const [alias, target] of Object.entries(custom)) {
+    if (phrase.includes(alias.toLowerCase())) {
+      const found = menuItems.find(i => i.nom.includes(target.toLowerCase()));
+      if (found) return found;
+    }
+  }
+  // Fuzzy: find menu item whose name has most words in common with phrase
+  let best = null, bestScore = 0;
+  menuItems.forEach(item => {
+    const words = item.nom.split(' ').filter(w => w.length > 2);
+    const score = words.filter(w => phrase.includes(w)).length;
+    if (score > bestScore || (score === bestScore && score > 0 && item.nom.length < (best?.nom.length || 999))) {
+      bestScore = score;
+      best = item;
+    }
+  });
+  return bestScore > 0 ? best : null;
+}
+
+// ── RENDER HELPERS ──
+function renderEntities(entities) {
+  document.getElementById('entity-list').innerHTML = entities.map(e => `
+    <div class="entity-row">
+      <span class="entity-type ${e.type}">${e.label}</span>
+      <span class="entity-val">${e.val}</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="conf-bar"><div class="conf-fill" style="width:${e.conf}%"></div></div>
+        <span class="entity-conf">${e.conf}%</span>
+      </div>
+    </div>`).join('');
+}
+
+function renderOrderPreview(order) {
+  document.getElementById('order-preview-container').innerHTML = `
+    <div class="order-preview">
+      <div class="op-head">
+        <div class="op-title"><span data-icon="clipboard"></span> Commande reconstituée</div>
+        <div class="op-table">${order.table}</div>
+      </div>
+      <div class="op-items">
+        ${order.items.map(i => `<div class="op-item">
+          <div>
+            <div class="op-item-name">${i.name}</div>
+            ${i.mod ? `<div class="op-item-mod">${i.mod}</div>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            ${i.price ? `<span style="font-size:.85rem;color:#6b7280">${i.price.toFixed(2)}€</span>` : ''}
+            <span class="op-qty">${i.qty}<span data-icon="x"></span></span>
+          </div>
+        </div>`).join('')}
+      </div>
+      <div class="op-actions">
+        <button class="btn btn-primary" style="flex:1;font-size:.82rem" onclick="confirmOrder()"><span data-icon="check_circle"></span> Confirmer en cuisine</button>
+        <button class="btn btn-secondary" style="font-size:.82rem" onclick="clearOrder()"><span data-icon="trash"></span> Effacer</button>
+      </div>
+    </div>`;
+}
+
+function buildQuickCommands() {
+  const available = menuItems.filter(i => i.disponible);
+  if (!available.length) return;
+  // Pick 4 random items from menu
+  const picks = available.sort(() => Math.random() - 0.5).slice(0, 4);
+  const tables = ['Table 3', 'Table 5', 'Table 7', 'Terrasse 2'];
+  const grid = document.getElementById('qcmd-grid');
+  grid.innerHTML = picks.map((item, i) => {
+    const qty = [1,2,1,3][i];
+    const qtyWord = ['un','deux','un','trois'][i];
+    const text = `${tables[i]}, ${qtyWord} ${item.nomOriginal}`;
+    return `<div class="qcmd" onclick="simulateVoice(${JSON.stringify(text)})">
+      <div class="qcmd-icon"><span data-icon="mic"></span></div>
+      <div class="qcmd-text">${text}</div>
+    </div>`;
+  }).join('');
+  // Add fixed system commands
+  grid.innerHTML += `
+    <div class="qcmd" onclick="simulateVoice('Table 2 demande l addition')"><div class="qcmd-icon"><span data-icon="receipt"></span></div><div class="qcmd-text">Table 2 demande l'addition</div></div>
+    <div class="qcmd" onclick="simulateVoice('Annuler la dernière commande table 6')"><div class="qcmd-icon"><span data-icon="x"></span></div><div class="qcmd-text">Annuler la dernière commande table 6</div></div>`;
+}
+
+function simulateVoice(text) {
+  if (recording) return;
+  recording = true;
+  const btn = document.getElementById('mic-btn');
+  btn.classList.add('recording');
+  document.getElementById('vocal-status').innerHTML = '<strong><span data-icon="mic"></span> Simulation en cours...</strong>';
+  document.getElementById('transcript').textContent = '';
+  document.getElementById('entity-list').innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:.85rem;padding:16px">Analyse NLP...</div>';
+  document.getElementById('order-preview-container').innerHTML = '';
+  waveInterval = setInterval(animateWave, 100);
+
+  let i = 0;
+  const iv = setInterval(() => {
+    document.getElementById('transcript').textContent = text.slice(0, i++);
+    if (i > text.length) {
+      clearInterval(iv);
+      clearInterval(waveInterval);
+      stopWave();
+      btn.classList.remove('recording');
+      recording = false;
+      processTranscript(text, 0.95);
+    }
+  }, 30);
+}
+
+// ── ORDER CONFIRMATION ──
+let socket;
+function getSocket() {
+  if (!socket) socket = io(ORIGIN);
+  return socket;
+}
+
+function confirmOrder() {
+  if (!pendingOrder) return;
+  const order = {
+    ...pendingOrder,
+    restaurantId: currentRestaurantId,
+    source: 'ai',
+    num: Math.floor(Math.random() * 900 + 100),
+    ts: Date.now()
+  };
+  try {
+    getSocket().emit('new-order', order);
+  } catch(e) {}
+  showSnack('<span data-icon="check_circle"></span> Commande transmise en cuisine — ' + pendingOrder.table);
+  pendingOrder = null;
+  document.getElementById('order-preview-container').innerHTML = '';
+  document.getElementById('entity-list').innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:.85rem;padding:16px">En attente d\'une commande vocale...</div>';
+  document.getElementById('transcript').innerHTML = '<span style="color:rgba(255,255,255,.3);font-style:normal">Ex: "Table 5, un filet de boeuf saignant, sans sel"</span>';
+}
+
+function clearOrder() {
+  pendingOrder = null;
+  document.getElementById('order-preview-container').innerHTML = '';
+  document.getElementById('entity-list').innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:.85rem;padding:16px">En attente d\'une commande vocale...</div>';
+}
+
+// ── HISTORY ──
+function renderHistory() {
+  const list = document.getElementById('hist-list');
+  if (!HISTORY.length) {
+    list.innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:.8rem;padding:16px">Aucune commande vocale cette session</div>';
+    return;
+  }
+  list.innerHTML = HISTORY.slice(0, 8).map(h => `
+    <div class="hist-item">
+      <div class="hist-icon">${h.icon}</div>
+      <div>
+        <div class="hist-cmd">${h.cmd.slice(0, 50)}${h.cmd.length > 50 ? '…' : ''}</div>
+        <div class="hist-result">${h.result}</div>
+      </div>
+      <div class="hist-time">${h.time}</div>
+    </div>`).join('');
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = SESSION.total;
+  document.getElementById('stat-ok').textContent = SESSION.ok;
+  document.getElementById('stat-err').textContent = SESSION.err;
+}
+
+// ── CUSTOM VOCABULARY ──
+const vocabKey = () => 'vocal_vocab_' + (currentRestaurantId || 'default');
+function getCustomVocab() {
+  try { return JSON.parse(localStorage.getItem(vocabKey()) || '{}'); } catch(e) { return {}; }
+}
+function loadVocab() {
+  const vocab = getCustomVocab();
+  const container = document.getElementById('vocab-tags');
+  const words = Object.keys(vocab);
+  if (!words.length) {
+    container.innerHTML = '<span style="font-size:.78rem;color:#9ca3af">Aucun mot-clé — cliquez + Ajouter</span>';
+    return;
+  }
+  container.innerHTML = words.map(w => `<span class="vocab-tag" onclick="removeVocab('${w}')" title="Cliquer pour supprimer">${w}</span>`).join('');
+}
+function addVocab() {
+  const alias = prompt('Alias vocal (ex: "filet") :');
+  if (!alias) return;
+  const target = prompt('Nom du plat dans le menu :');
+  if (!target) return;
+  const vocab = getCustomVocab();
+  vocab[alias.trim().toLowerCase()] = target.trim();
+  localStorage.setItem(vocabKey(), JSON.stringify(vocab));
+  loadVocab();
+  showSnack('📝 Vocabulaire ajouté : "' + alias + '" → ' + target);
+}
+function removeVocab(w) {
+  if (!confirm('Supprimer "' + w + '" du vocabulaire ?')) return;
+  const vocab = getCustomVocab();
+  delete vocab[w];
+  localStorage.setItem(vocabKey(), JSON.stringify(vocab));
+  loadVocab();
+}
+
+function selectModel(el) {
+  const options = [...document.querySelectorAll('.model-option')];
+  options.forEach(m => { m.classList.remove('selected'); m.querySelector('h4 .model-badge')?.remove(); });
+  el.classList.add('selected');
+  const badge = document.createElement('span');
+  badge.className = 'model-badge'; badge.textContent = 'actif';
+  el.querySelector('h4').appendChild(badge);
+  // Sauvegarder l'index du modèle sélectionné
+  const idx = options.indexOf(el);
+  localStorage.setItem('vocalModel', idx);
+  showSnack('<span data-icon="cpu"></span> Modèle IA changé');
+}
+
+function restoreModel() {
+  const saved = localStorage.getItem('vocalModel');
+  if (saved === null) return; // par défaut : premier élément déjà sélectionné
+  const options = [...document.querySelectorAll('.model-option')];
+  const idx = parseInt(saved, 10);
+  if (isNaN(idx) || !options[idx]) return;
+  // Réinitialiser
+  options.forEach(m => { m.classList.remove('selected'); m.querySelector('h4 .model-badge')?.remove(); });
+  // Sélectionner le bon
+  options[idx].classList.add('selected');
+  const badge = document.createElement('span');
+  badge.className = 'model-badge'; badge.textContent = 'actif';
+  options[idx].querySelector('h4').appendChild(badge);
+}
+
+function showSnack(msg) {
+  const s = document.getElementById('snackbar');
+  s.innerHTML = msg; s.classList.add('show');
+  setTimeout(() => s.classList.remove('show'), 3200);
+}
+
+// ── INIT ──
+renderHistory();
+loadVocab();
+restoreModel();
+if (isAdmin) loadAdminRestaurants();
+else loadMenu();
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src="/permissions.js"></script>
+<script>if (typeof requireAuth === 'function') requireAuth();</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

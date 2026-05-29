@@ -1,0 +1,818 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Bienvenue — CommandeIA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif&family=Caveat:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="/icons.js"></script>
+  
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --sable:#EEF5F2;--paper:#F8FBF9;--paper-warm:#D6E8E0;
+      --forest:#0E4B47;--forest-deep:#063532;
+      --terracotta:#E36C5B;--miel:#F2C14E;--miel-soft:#F8E5B0;
+      --ink:#0F2A28;--ink-soft:#253F3B;--ink-mute:#4D6260;
+      --line:#B8D0C8;--line-soft:#CFE0D9;
+      --good:#2D8A6E;--good-soft:#BFE3D2;
+      --danger:#C04450;--danger-soft:#F2C9CD;
+      --warn:#D17338;--warn-soft:#F6D9BD;
+    }
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--sable);color:var(--ink);min-height:100vh}
+
+    /* ── TOP BAR ── */
+    .topbar{background:var(--paper);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px}
+    .logo{font-size:15px;font-weight:700;color:var(--ink)}
+    .logo span{color:var(--terracotta)}
+    .skip-link{font-size:12px;font-weight:500;color:var(--ink-soft);background:transparent;border:1px solid var(--line);padding:6px 14px;border-radius:8px;cursor:pointer;text-decoration:none;font-family:'Inter',sans-serif}
+    .skip-link:hover{background:var(--line-soft)}
+
+    /* ── WIZARD CONTAINER ── */
+    .wizard{max-width:640px;margin:0 auto;padding:32px 20px 80px}
+
+    /* ── STEP INDICATOR ── */
+    .step-indicator{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+    .step-dots{display:flex;gap:6px;align-items:center}
+    .dot{height:8px;border-radius:999px;background:var(--line);transition:all .3s ease}
+    .dot.done{width:8px;background:var(--good)}
+    .dot.active{width:24px;background:var(--forest)}
+    .dot.future{width:8px}
+    .step-counter{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-mute)}
+
+    /* ── CARD ── */
+    .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;box-shadow:0 1px 0 rgba(15,42,40,.02),0 8px 32px -16px rgba(15,42,40,.14);overflow:hidden}
+
+    /* ── SCREENS ── */
+    .screen{display:none}
+    .screen.active{display:block}
+
+    /* ── STEP 1: BIENVENUE ── */
+    .welcome{display:flex;flex-direction:column;align-items:center;text-align:center;padding:44px 32px;gap:18px;position:relative}
+    .welcome-skip{position:absolute;top:16px;right:16px;font-family:'Caveat',cursive;font-size:15px;color:var(--terracotta);cursor:pointer}
+    .welcome-pixel{animation:cp-bob 2.6s ease-in-out infinite}
+    .welcome-salut{font-family:'Caveat',cursive;font-size:24px;color:var(--terracotta);line-height:1}
+    .welcome-h1{font-family:'Instrument Serif',Georgia,serif;font-size:36px;font-weight:400;color:var(--ink);line-height:1.1;max-width:380px}
+    .hl{position:relative;display:inline-block;font-family:'Instrument Serif',Georgia,serif}
+    .hl::after{content:'';position:absolute;left:-2px;right:-2px;bottom:2px;top:52%;background:var(--miel);opacity:.55;border-radius:3px;z-index:0;transform:rotate(-.6deg)}
+    .hl>span{position:relative;z-index:1}
+    .welcome-p{font-size:14px;color:var(--ink-soft);line-height:1.55;max-width:320px}
+    .welcome-btns{display:flex;gap:10px;margin-top:6px}
+
+    /* ── STEP FORM PAGES ── */
+    .step-body{padding:26px 28px 22px}
+    .step-kicker{font-family:'Caveat',cursive;font-size:17px;color:var(--terracotta);line-height:1}
+    .step-title{font-family:'Instrument Serif',Georgia,serif;font-size:28px;font-weight:400;color:var(--ink);margin-top:4px;margin-bottom:20px}
+    .step-content{margin-bottom:4px}
+    .step-footer{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-top:1px solid var(--line-soft);gap:10px}
+    .footer-right{display:flex;gap:8px;align-items:center}
+
+    /* ── BUTTONS ── */
+    .btn-primary{background:var(--forest);color:var(--paper);border:none;padding:11px 22px;border-radius:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background .12s,transform .1s}
+    .btn-primary:hover{background:var(--forest-deep);transform:translateY(-1px)}
+    .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+    .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink-mute);padding:11px 18px;border-radius:12px;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer}
+    .btn-ghost:hover{background:var(--line-soft);border-color:var(--ink-soft)}
+    .btn-back{background:transparent;color:var(--ink-soft);border:none;padding:10px 4px;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer}
+    .btn-back:hover{color:var(--ink)}
+    .btn-add-sm{background:var(--forest);color:var(--paper);border:none;padding:8px 16px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif}
+    .btn-add-sm:hover{background:var(--forest-deep)}
+
+    /* ── FORM ELEMENTS ── */
+    .fg{margin-bottom:15px}
+    .fl{font-size:11px;font-weight:600;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block}
+    .fi{width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--paper);font-size:18px;font-family:'Instrument Serif',Georgia,serif;color:var(--ink);outline:none;transition:border-color .15s}
+    .fi:focus{border-color:var(--forest);background:#fff}
+    .fi::placeholder{font-family:'Inter',sans-serif;font-size:13px;color:var(--ink-mute)}
+    select.fi,textarea.fi{font-family:'Inter',sans-serif;font-size:13px}
+    textarea.fi{resize:vertical;min-height:68px}
+    .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .frow3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px}
+
+    /* ── CUISINE CHIPS ── */
+    .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+    .chip{padding:7px 14px;border-radius:999px;font-size:12px;font-weight:500;cursor:pointer;background:var(--paper);color:var(--ink);border:1px solid var(--line);transition:all .15s}
+    .chip.sel{background:var(--forest);color:var(--paper);border-color:var(--forest)}
+    .chip:hover:not(.sel){background:var(--line-soft)}
+
+    /* ── HORAIRES ── */
+    .hrow{display:grid;grid-template-columns:90px 1fr 1fr 72px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft)}
+    .hrow:last-child{border-bottom:none}
+    .hlabel{font-size:13px;font-weight:600;color:var(--forest);font-family:'Inter',sans-serif}
+    .hcheck{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-mute)}
+    .hcheck input{width:15px;height:15px;accent-color:var(--forest);cursor:pointer}
+    input.fi-sm{width:100%;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--paper);font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--ink);outline:none}
+    input.fi-sm:focus{border-color:var(--forest)}
+    input.fi-sm:disabled{opacity:.4;background:var(--line-soft)}
+
+    /* ── PANEL IMPORT ── */
+    .panel-import-zone{border:2px dashed var(--line);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:16px;background:var(--paper)}
+    .panel-import-zone:hover{border-color:var(--forest);background:var(--sable)}
+    .panel-import-zone.has-file{border-color:var(--good);border-style:solid;background:var(--good-soft);padding:0;overflow:hidden}
+    .panel-preview{width:100%;max-height:340px;object-fit:contain;display:block;border-radius:12px}
+    .panel-preview-pdf{width:100%;height:340px;border:none;border-radius:12px}
+    .panel-label{font-size:12px;font-weight:600;color:var(--forest);margin-top:6px}
+    .panel-sub{font-size:11px;color:var(--ink-mute);margin-top:3px}
+
+    /* ── PRODUCTS ── */
+    .produit-item{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+    .produit-ph{width:34px;height:34px;border-radius:8px;background:repeating-linear-gradient(45deg,var(--line-soft),var(--line-soft) 3px,var(--line) 3px,var(--line) 6px);flex-shrink:0}
+    .produit-nom{font-family:'Instrument Serif',Georgia,serif;font-size:17px;color:var(--ink);line-height:1.1}
+    .produit-detail{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-mute);margin-top:2px}
+    .btn-del{margin-left:auto;font-size:11px;color:var(--danger);cursor:pointer;padding:5px 10px;border-radius:999px;border:1px solid var(--danger-soft);background:var(--danger-soft);font-family:'Inter',sans-serif;font-weight:600}
+    .add-form{background:var(--sable);border:1.5px dashed var(--line);border-radius:14px;padding:18px;margin-top:12px}
+    .add-form-title{font-family:'Caveat',cursive;font-size:17px;color:var(--forest);margin-bottom:14px}
+    .empty-note{font-size:13px;color:var(--ink-mute);padding:8px 0}
+
+    /* ── ALLERGÈNES ── */
+    .allerg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px}
+    .ac{font-size:11px;padding:5px 8px;border-radius:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);cursor:pointer;text-align:center;transition:all .12s}
+    .ac.sel{background:var(--danger-soft);border-color:var(--danger);color:var(--danger);font-weight:600}
+
+    /* ── CHANNELS ── */
+    .channel{padding:14px 16px;border-radius:14px;border:1px solid var(--line);border-left:4px solid var(--line);display:flex;align-items:center;gap:14px;margin-bottom:8px;background:var(--paper-warm);opacity:.9;transition:all .2s}
+    .channel.on{background:var(--paper);border-color:var(--good);border-left-color:var(--good);opacity:1}
+    .ch-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif',Georgia,serif;font-size:18px;color:var(--ink-mute);background:var(--line-soft);flex-shrink:0}
+    .channel.on .ch-icon{background:var(--good-soft);color:var(--good)}
+    .ch-name{font-family:'Instrument Serif',Georgia,serif;font-size:18px;color:var(--ink)}
+    .ch-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-mute);margin-top:2px}
+    .ch-toggle{margin-left:auto;width:38px;height:22px;border-radius:999px;background:var(--line);border:none;cursor:pointer;position:relative;padding:2px;display:flex;align-items:center;flex-shrink:0;transition:background .2s}
+    .ch-toggle.on{background:var(--good);justify-content:flex-end}
+    .ch-thumb{width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+
+    /* ── ASTUCE BOX ── */
+    .astuce{background:var(--miel-soft);border:1px dashed var(--miel);border-radius:12px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;margin-top:14px}
+    .astuce-text{font-size:12.5px;color:var(--ink);line-height:1.45}
+
+    /* ── STEP 6: BRAVO ── */
+    .bravo{display:flex;flex-direction:column;align-items:center;text-align:center;padding:44px 32px;gap:18px;position:relative;overflow:hidden}
+    .bravo-kicker{font-family:'Caveat',cursive;font-size:28px;color:var(--terracotta)}
+    .bravo-h1{font-family:'Instrument Serif',Georgia,serif;font-size:40px;font-weight:400;color:var(--ink);line-height:1.05;max-width:360px}
+    .bravo-p{font-size:14px;color:var(--ink-soft);line-height:1.5;max-width:340px}
+    .badges{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+    .badge{padding:6px 16px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.5px}
+    .bdg-pts{background:var(--terracotta);color:#fff}
+    .bdg-lvl{background:var(--forest);color:#fff}
+    .bdg-next{background:var(--paper);border:1px solid var(--line);color:var(--ink-soft);font-size:11.5px;font-weight:400}
+
+    /* ── CHEF PIXEL ANIMATIONS ── */
+    @keyframes cp-bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
+    @keyframes cp-blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(0.08)}}
+    @keyframes cp-steam{0%{transform:translateY(0) scale(1);opacity:.65}100%{transform:translateY(-15px) scale(1.4);opacity:0}}
+    .cp-bob{animation:cp-bob 2.6s ease-in-out infinite;display:inline-block}
+    .cp-eye{transform-origin:center;animation:cp-blink 4.2s ease-in-out infinite}
+    .cp-steam{animation:cp-steam 2.2s ease-out infinite;transform-origin:center bottom}
+
+    /* ── MISC ── */
+    .pill-ok{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--good-soft);color:var(--good);border:1px solid var(--good)}
+    .saving{display:inline-block;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .confetti{position:absolute;border-radius:2px;pointer-events:none}
+  </style>
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">Commande<span>IA</span></div>
+  <a href="/admin.html" class="skip-link">Passer l'intro →</a>
+</div>
+
+<div class="wizard">
+
+  <!-- STEP INDICATOR (caché à l'étape 1) -->
+  <div class="step-indicator" id="si" style="display:none">
+    <div class="step-dots" id="sdots"></div>
+    <div class="step-counter" id="sctr"></div>
+  </div>
+
+  <!-- ────────────────────────────────────────────── -->
+  <!-- STEP 1 · Bienvenue                            -->
+  <!-- ────────────────────────────────────────────── -->
+  <div class="screen active" id="s1">
+    <div class="card">
+      <div class="welcome">
+        <a href="/admin.html" class="welcome-skip">passer ↗</a>
+
+        <div class="cp-bob" id="pixel-welcome"></div>
+
+        <div class="welcome-salut" id="welcome-salut">Salut 👋</div>
+
+        <h1 class="welcome-h1">
+          On va vous aider à démarrer en
+          <span class="hl"><span>5 minutes</span></span>
+        </h1>
+
+        <p class="welcome-p">
+          6 étapes faciles — vous pouvez les sauter et y revenir quand vous voulez.
+          Chef Pixel vous accompagne pas à pas.
+        </p>
+
+        <div class="welcome-btns">
+          <button class="btn-primary" onclick="goStep(2)">C'est parti →</button>
+          <a href="/admin.html" class="btn-ghost">plus tard</a>
+        </div>
+      </div>
+
+      <div class="astuce" style="margin:0 24px 24px">
+        <div id="pixel-astuce-1"></div>
+        <div class="astuce-text">
+          <b>Astuce :</b> commencez par vos <i>best-sellers</i>.
+          L'IA déduira le reste depuis vos photos et menus PDF.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────── -->
+  <!-- STEP 2 · Ton resto en bref                    -->
+  <!-- ────────────────────────────────────────────── -->
+  <div class="screen" id="s2">
+    <div class="card">
+      <div class="step-body">
+        <div class="step-kicker">présentez-vous en 3 questions</div>
+        <div class="step-title">Votre resto, en bref</div>
+        <div class="step-content">
+
+          <div class="fg">
+            <label class="fl">Nom du restaurant</label>
+            <input class="fi" id="r-nom" readonly placeholder="Chargement…"/>
+          </div>
+
+          <div class="fg">
+            <label class="fl">Type de cuisine</label>
+            <div class="chips" id="cuisine-chips"></div>
+          </div>
+
+          <div class="frow">
+            <div class="fg">
+              <label class="fl">Adresse complète</label>
+              <input class="fi" id="r-adresse" placeholder="12 rue de la Paix, 75001 Paris"/>
+            </div>
+            <div class="fg">
+              <label class="fl">Numéro Twilio</label>
+              <input class="fi" id="r-twilio" placeholder="+33 1 00 00 00 00"/>
+            </div>
+          </div>
+
+          <div class="astuce">
+            <div id="pixel-astuce-2"></div>
+            <div class="astuce-text">
+              <b>Bon à savoir :</b> vous pourrez tout modifier plus tard depuis les Réglages.
+              On a juste besoin d'amorcer.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step-footer">
+        <button class="btn-back" onclick="goStep(1)">← retour</button>
+        <div class="footer-right">
+          <button class="btn-primary" onclick="goStep(3)">Continuer →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────── -->
+  <!-- STEP 3 · Horaires                             -->
+  <!-- ────────────────────────────────────────────── -->
+  <div class="screen" id="s3">
+    <div class="card">
+      <div class="step-body">
+        <div class="step-kicker">les heures de service</div>
+        <div class="step-title">Horaires d'ouverture</div>
+        <div class="step-content" id="horaires-container"></div>
+
+        <div class="astuce" style="margin-top:16px">
+          <div id="pixel-astuce-3"></div>
+          <div class="astuce-text">
+            <b>Astuce :</b> l'IA vocale utilisera ces horaires pour savoir quand décrocher.
+            Approximatif au départ, c'est OK.
+          </div>
+        </div>
+      </div>
+      <div class="step-footer">
+        <button class="btn-back" onclick="goStep(2)">← retour</button>
+        <div class="footer-right">
+          <button class="btn-ghost" onclick="goStep(4)">passer</button>
+          <button class="btn-primary" onclick="goStep(4)">Continuer →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────── -->
+  <!-- STEP 4 · Tes 5 plats stars                    -->
+  <!-- ────────────────────────────────────────────── -->
+  <div class="screen" id="s4">
+    <div class="card">
+      <div class="step-body">
+        <div class="step-kicker">cap mental : 5, pas 50</div>
+        <div class="step-title" id="plats-title">Ajoutez vos plats stars</div>
+        <div class="step-content">
+
+          <!-- Zone import carte/menu papier -->
+          <input type="file" id="panel-file-input" accept=".pdf,.jpg,.jpeg,.png,.webp" style="display:none" onchange="handlePanelImport(this)"/>
+          <div class="panel-import-zone" id="panel-import-zone" onclick="document.getElementById('panel-file-input').click()">
+            <div style="font-size:28px;margin-bottom:8px">📄</div>
+            <div class="panel-label">Importer la carte du restaurant</div>
+            <div class="panel-sub">PDF ou photo (jpg, png) — s'affiche ici pour vous aider à saisir les plats</div>
+          </div>
+
+          <div id="produits-list"><div class="empty-note">Aucun plat ajouté — commencez ci-dessous.</div></div>
+
+          <div class="add-form">
+            <div class="add-form-title">+ Ajouter un plat</div>
+            <div class="frow3">
+              <div class="fg">
+                <label class="fl">Nom du plat</label>
+                <input class="fi" id="p-nom" placeholder="Burger maison"/>
+              </div>
+              <div class="fg">
+                <label class="fl">Catégorie</label>
+                <select class="fi" id="p-cat">
+                  <option>Sandwich</option><option>Plat</option>
+                  <option>Pizza</option><option>Salade</option>
+                  <option>Dessert</option><option>Boisson</option>
+                  <option>Accompagnement</option><option>Menu</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label class="fl">Prix (€)</label>
+                <input class="fi" id="p-prix" type="number" step="0.5" placeholder="14.00"/>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="fl">Composition / Ingrédients</label>
+              <textarea class="fi" id="p-ingredients" placeholder="Pain brioché, steak haché, salade, tomate, sauce maison…"></textarea>
+            </div>
+            <div class="fg">
+              <label class="fl">Ingrédients retirables</label>
+              <input class="fi" id="p-retirables" placeholder="tomate, oignon, sauce"/>
+            </div>
+            <div class="fg">
+              <label class="fl">Temps de préparation (min)</label>
+              <input class="fi" id="p-temps" type="number" placeholder="8" style="width:120px"/>
+            </div>
+            <div class="fg">
+              <label class="fl">Allergènes présents</label>
+              <div class="allerg-grid" id="allerg-grid"></div>
+            </div>
+            <div class="fg" style="margin-top:10px;margin-bottom:4px">
+              <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;color:var(--ink)">
+                <input type="checkbox" id="p-stock" checked
+                  style="width:16px;height:16px;accent-color:var(--forest);cursor:pointer;flex-shrink:0"/>
+                <span>Ajouter les ingrédients au stock automatiquement</span>
+              </label>
+              <div style="font-size:11px;color:var(--ink-mute);margin-top:3px;margin-left:25px">
+                Chaque ingrédient listé sera créé dans votre stock avec une quantité initiale à définir.
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+              <button class="btn-add-sm" onclick="ajouterPlat()">Ajouter ce plat</button>
+            </div>
+          </div>
+
+          <div class="astuce" style="margin-top:14px">
+            <div id="pixel-astuce-4"></div>
+            <div class="astuce-text">
+              <b>Astuce :</b> commencez par 3 best-sellers. Vous pourrez compléter la carte depuis
+              Carte & Menu après la configuration.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step-footer">
+        <button class="btn-back" onclick="goStep(3)">← retour</button>
+        <div class="footer-right">
+          <button class="btn-ghost" onclick="goStep(5)">passer</button>
+          <button class="btn-primary" onclick="goStep(5)">Continuer →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────── -->
+  <!-- STEP 5 · Canaux de commande                   -->
+  <!-- ────────────────────────────────────────────── -->
+  <div class="screen" id="s5">
+    <div class="card">
+      <div class="step-body">
+        <div class="step-kicker">centralisez tout en un seul écran</div>
+        <div class="step-title">Branchez vos canaux</div>
+        <div class="step-content">
+
+          <div id="channels-list"></div>
+
+          <div class="astuce">
+            <div id="pixel-astuce-5"></div>
+            <div class="astuce-text">
+              <b>C'est ici la magie :</b> toutes vos commandes — Uber, Deliveroo, site, téléphone —
+              arrivent dans le même flux KDS. Plus jamais de tablette qui sonne dans le coin.
+            </div>
+          </div>
+
+          <div style="margin-top:14px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+            <span style="font-family:'Caveat',cursive;font-size:16px;color:var(--terracotta);white-space:nowrap">gain estimé</span>
+            <div style="flex:1;font-size:13px;color:var(--ink-soft)">
+              3 canaux actifs = <b style="color:var(--good)">~2h économisées</b> par service en gestion manuelle
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step-footer">
+        <button class="btn-back" onclick="goStep(4)">← retour</button>
+        <div class="footer-right">
+          <button class="btn-primary" onclick="goStep(6)">Continuer →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────────────────────── -->
+  <!-- STEP 6 · Bravo !                              -->
+  <!-- ────────────────────────────────────────────── -->
+  <div class="screen" id="s6">
+    <div class="card">
+      <div class="bravo" id="bravo-content">
+        <!-- confetti injectés par JS -->
+
+        <div class="cp-bob" id="pixel-bravo"></div>
+
+        <div>
+          <div class="bravo-kicker" id="bravo-kicker">Bravo 🎉</div>
+          <h1 class="bravo-h1">
+            Votre resto est
+            <span class="hl"><span>prêt à servir</span></span>
+          </h1>
+        </div>
+
+        <p class="bravo-p">
+          Les données sont sauvegardées. Continuez sur <b>Carte & Menu</b> pour compléter
+          votre carte, ajouter des photos, des variantes et des suppléments.
+        </p>
+
+        <div class="welcome-btns" id="bravo-btns">
+          <button class="btn-primary" id="btn-finaliser" onclick="finaliser()">Sauvegarder & Continuer →</button>
+          <a href="/admin.html" class="btn-ghost">Voir le dashboard</a>
+        </div>
+
+        <div class="badges">
+          <span class="badge bdg-pts">+50 pts</span>
+          <span class="badge bdg-lvl">Lvl 1 · Explorateur</span>
+          <span class="badge bdg-next">débloque Lvl 2 en envoyant 10 commandes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wizard -->
+
+<script src="/permissions.js"></script>
+<script>if (typeof requireAuth === 'function') requireAuth();</script>
+<script src="/burger-menu.js"></script>
+<script>
+/* ── AUTH ── */
+(function(){
+  const u = sessionStorage.getItem('user');
+  if (!u) { window.location.href = '/login.html?redirect=/admin.html'; return; }
+  const cu = JSON.parse(u);
+  if (cu.role !== 'Admin') { window.location.href = '/'; return; }
+  window._user = cu;
+})();
+
+const params    = new URLSearchParams(location.search);
+const restId    = params.get('restaurantId');
+const restNom   = decodeURIComponent(params.get('nom') || 'votre restaurant');
+
+/* ── CHEF PIXEL SVG ── */
+function pixelSVG(size, mood) {
+  mood = mood || 'happy';
+  const pan = '#0E4B47', yolk = '#F2C14E', white = '#F8FBF9', terra = '#E36C5B', ink = '#0F2A28';
+  const eyes = {
+    happy: `<circle class="cp-eye" cx="38" cy="46" r="2.4" fill="${ink}"/>
+            <circle class="cp-eye" cx="58" cy="46" r="2.4" fill="${ink}" style="animation-delay:.05s"/>`,
+    thinking: `<path d="M35 46 Q38 43 41 46" stroke="${ink}" stroke-width="2" stroke-linecap="round" fill="none"/>
+               <path d="M55 46 Q58 43 61 46" stroke="${ink}" stroke-width="2" stroke-linecap="round" fill="none"/>`,
+    alert: `<circle cx="38" cy="44" r="3.2" fill="${white}" stroke="${ink}" stroke-width="1.2"/>
+            <circle cx="38" cy="44.5" r="1.6" fill="${ink}"/>
+            <circle cx="58" cy="44" r="3.2" fill="${white}" stroke="${ink}" stroke-width="1.2"/>
+            <circle cx="58" cy="44.5" r="1.6" fill="${ink}"/>`
+  }[mood] || '';
+  const mouth = {
+    happy: `<path d="M42 58 Q48 64 54 58" stroke="${ink}" stroke-width="2" stroke-linecap="round" fill="none"/>`,
+    thinking: `<line x1="44" y1="60" x2="52" y2="60" stroke="${ink}" stroke-width="2" stroke-linecap="round"/>`,
+    alert: `<ellipse cx="48" cy="60" rx="3" ry="4" fill="${ink}"/>`
+  }[mood] || '';
+  return `<svg viewBox="0 0 96 96" width="${size}" height="${size}" style="overflow:visible;display:block">
+    <g opacity=".6">
+      <circle class="cp-steam" cx="40" cy="14" r="3" fill="#C0D8D4" style="animation-delay:0s"/>
+      <circle class="cp-steam" cx="50" cy="10" r="2.5" fill="#C0D8D4" style="animation-delay:.7s"/>
+      <circle class="cp-steam" cx="58" cy="14" r="3" fill="#C0D8D4" style="animation-delay:1.4s"/>
+    </g>
+    <rect x="78" y="44" width="20" height="6" rx="3" fill="${pan}"/>
+    <rect x="92" y="42" width="6" height="10" rx="2" fill="#063532"/>
+    <circle cx="48" cy="52" r="32" fill="${pan}"/>
+    <circle cx="48" cy="52" r="26" fill="${white}"/>
+    <circle cx="48" cy="52" r="22" fill="${yolk}" opacity=".3"/>
+    <circle cx="48" cy="52" r="17" fill="${yolk}"/>
+    ${eyes}
+    <circle cx="34" cy="56" r="3" fill="${terra}" opacity=".35"/>
+    <circle cx="62" cy="56" r="3" fill="${terra}" opacity=".35"/>
+    ${mouth}
+  </svg>`;
+}
+
+function miniPixel() {
+  return `<svg viewBox="0 0 96 96" width="26" height="26" style="overflow:visible;display:block;flex-shrink:0">
+    <circle cx="48" cy="52" r="32" fill="#0E4B47"/>
+    <circle cx="48" cy="52" r="26" fill="#F8FBF9"/>
+    <circle cx="48" cy="52" r="17" fill="#F2C14E"/>
+    <circle class="cp-eye" cx="38" cy="46" r="2.2" fill="#0F2A28"/>
+    <circle class="cp-eye" cx="58" cy="46" r="2.2" fill="#0F2A28" style="animation-delay:.05s"/>
+    <path d="M42 58 Q48 63 54 58" stroke="#0F2A28" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </svg>`;
+}
+
+/* ── INIT PIXELS ── */
+document.getElementById('pixel-welcome').innerHTML = pixelSVG(120,'happy');
+['pixel-astuce-1','pixel-astuce-2','pixel-astuce-3','pixel-astuce-4','pixel-astuce-5']
+  .forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = miniPixel(); });
+document.getElementById('pixel-bravo').innerHTML = pixelSVG(140,'happy');
+
+/* ── WELCOME NAME ── */
+if (window._user) {
+  const nom = window._user.nom || window._user.email || '';
+  if (nom) document.getElementById('welcome-salut').textContent = 'Salut ' + nom.split(' ')[0] + ' 👋';
+  document.getElementById('bravo-kicker').textContent = 'Bravo ' + (nom.split(' ')[0] || 'Chef') + ' 🎉';
+}
+document.getElementById('r-nom').value = restNom;
+
+/* ── CUISINE CHIPS ── */
+const cuisines = ['Bistrot','Brasserie','Pizzeria','Asiatique','Burger','Gastro','Café','Fast food','Autre'];
+let selectedCuisine = null;
+const chipsEl = document.getElementById('cuisine-chips');
+cuisines.forEach(c => {
+  const btn = document.createElement('div');
+  btn.className = 'chip';
+  btn.textContent = c;
+  btn.onclick = () => {
+    document.querySelectorAll('#cuisine-chips .chip').forEach(x => x.classList.remove('sel'));
+    btn.classList.add('sel');
+    selectedCuisine = c;
+  };
+  chipsEl.appendChild(btn);
+});
+
+/* ── HORAIRES ── */
+const JOURS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+const hc = document.getElementById('horaires-container');
+JOURS.forEach(j => {
+  const row = document.createElement('div');
+  row.className = 'hrow';
+  row.innerHTML = `
+    <span class="hlabel">${j}</span>
+    <input class="fi-sm" id="h-${j}-o" placeholder="09:00"/>
+    <input class="fi-sm" id="h-${j}-c" placeholder="22:00"/>
+    <label class="hcheck"><input type="checkbox" id="h-${j}-x" onchange="toggleJ('${j}')"> Fermé</label>`;
+  hc.appendChild(row);
+});
+function toggleJ(j) {
+  const closed = document.getElementById('h-'+j+'-x').checked;
+  ['o','c'].forEach(k => {
+    const el = document.getElementById('h-'+j+'-'+k);
+    el.disabled = closed;
+    if(closed) el.value = '';
+  });
+}
+function getHoraires() {
+  const h = {};
+  JOURS.forEach(j => {
+    const closed = document.getElementById('h-'+j+'-x').checked;
+    const o = document.getElementById('h-'+j+'-o').value;
+    const c = document.getElementById('h-'+j+'-c').value;
+    h[j] = closed ? 'Fermé' : ((o||'?')+' - '+(c||'?'));
+  });
+  return JSON.stringify(h);
+}
+
+/* ── ALLERGÈNES ── */
+const ALLERGENES = ['Gluten','Lactose','Oeufs','Arachides','Noix','Soja','Poisson','Crustacés','Céleri','Moutarde','Sésame','Sulfites','Lupin','Mollusques'];
+let selAllerg = [];
+const ag = document.getElementById('allerg-grid');
+ALLERGENES.forEach(a => {
+  const el = document.createElement('div');
+  el.className = 'ac';
+  el.textContent = a;
+  el.onclick = () => {
+    el.classList.toggle('sel');
+    selAllerg = el.classList.contains('sel')
+      ? [...selAllerg, a]
+      : selAllerg.filter(x => x !== a);
+  };
+  ag.appendChild(el);
+});
+
+/* ── IMPORT PANEL CARTE ── */
+function handlePanelImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const zone = document.getElementById('panel-import-zone');
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    zone.classList.add('has-file');
+    if (file.type === 'application/pdf') {
+      zone.innerHTML = `
+        <div style="position:relative">
+          <iframe class="panel-preview-pdf" src="${e.target.result}"></iframe>
+          <button onclick="resetPanel(event)" style="position:absolute;top:8px;right:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--danger)">✕ Retirer</button>
+        </div>`;
+    } else {
+      zone.innerHTML = `
+        <div style="position:relative">
+          <img class="panel-preview" src="${e.target.result}" alt="Carte du restaurant"/>
+          <button onclick="resetPanel(event)" style="position:absolute;top:8px;right:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--danger)">✕ Retirer</button>
+        </div>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+function resetPanel(e) {
+  e.stopPropagation();
+  const zone = document.getElementById('panel-import-zone');
+  zone.classList.remove('has-file');
+  zone.innerHTML = `
+    <div style="font-size:28px;margin-bottom:8px">📄</div>
+    <div class="panel-label">Importer la carte du restaurant</div>
+    <div class="panel-sub">PDF ou photo (jpg, png) — s'affiche ici pour vous aider à saisir les plats</div>`;
+  zone.onclick = () => document.getElementById('panel-file-input').click();
+  document.getElementById('panel-file-input').value = '';
+}
+
+/* ── PRODUITS ── */
+let produits = [];
+function renderProduits() {
+  const list = document.getElementById('produits-list');
+  const count = produits.length;
+  document.getElementById('plats-title').textContent =
+    count ? `Vos ${count} plat${count>1?'s':''} ${count>=5?'✓':'('+count+'/5 min.)'}` : 'Ajoutez vos plats stars';
+  if (!count) { list.innerHTML = '<div class="empty-note">Aucun plat ajouté — commencez ci-dessous.</div>'; return; }
+  list.innerHTML = '';
+  produits.forEach((p,i) => {
+    const d = document.createElement('div');
+    d.className = 'produit-item';
+    d.innerHTML = `
+      <div class="produit-ph"></div>
+      <div style="flex:1;min-width:0">
+        <div class="produit-nom">${p.nom}</div>
+        <div class="produit-detail">${p.categorie} · ${p.prix ? p.prix+'€' : '—'}${p.allergenes.length?' · ⚠ '+p.allergenes.join(', '):''}</div>
+      </div>
+      <button class="btn-del" onclick="supprimerPlat(${i})">Retirer</button>`;
+    list.appendChild(d);
+  });
+}
+function ajouterPlat() {
+  const nom = document.getElementById('p-nom').value.trim();
+  if (!nom) { document.getElementById('p-nom').focus(); return; }
+  produits.push({
+    nom,
+    categorie: document.getElementById('p-cat').value,
+    prix: parseFloat(document.getElementById('p-prix').value)||0,
+    ingredients: document.getElementById('p-ingredients').value,
+    ingredientsRetirables: document.getElementById('p-retirables').value,
+    tempsPrepare: parseInt(document.getElementById('p-temps').value)||0,
+    allergenes: [...selAllerg],
+    restaurant: restNom,
+    restaurantId: restId,
+    syncStock: document.getElementById('p-stock')?.checked !== false
+  });
+  ['p-nom','p-prix','p-ingredients','p-retirables','p-temps'].forEach(id => document.getElementById(id).value='');
+  selAllerg = [];
+  document.querySelectorAll('.ac').forEach(c => c.classList.remove('sel'));
+  renderProduits();
+}
+function supprimerPlat(i) { produits.splice(i,1); renderProduits(); }
+
+/* ── CANAUX ── */
+const CHANNELS = [
+  { name:'Uber Eats',   sub:'connecté · API live',        on:true  },
+  { name:'Deliveroo',   sub:'connecté · API live',        on:true  },
+  { name:'Site web',    sub:'widget auto intégré',         on:true  },
+  { name:'Téléphone IA',sub:'à brancher · IA vocale',    on:false },
+  { name:'Just Eat',    sub:'à brancher',                  on:false },
+];
+const channelStates = CHANNELS.map(c => c.on);
+const cl = document.getElementById('channels-list');
+CHANNELS.forEach((ch,i) => {
+  const tile = document.createElement('div');
+  tile.className = 'channel' + (ch.on?' on':'');
+  tile.id = 'ch-'+i;
+  tile.innerHTML = `
+    <div class="ch-icon">${ch.name[0]}</div>
+    <div style="flex:1;min-width:0">
+      <div class="ch-name">${ch.name}</div>
+      <div class="ch-sub">${ch.sub}</div>
+    </div>
+    <button class="ch-toggle${ch.on?' on':''}" id="cht-${i}" onclick="toggleCh(${i})">
+      <div class="ch-thumb"></div>
+    </button>`;
+  cl.appendChild(tile);
+});
+function toggleCh(i) {
+  channelStates[i] = !channelStates[i];
+  const tile = document.getElementById('ch-'+i);
+  const toggle = document.getElementById('cht-'+i);
+  tile.classList.toggle('on', channelStates[i]);
+  toggle.classList.toggle('on', channelStates[i]);
+}
+
+/* ── CONFETTI ── */
+function spawnConfetti() {
+  const container = document.getElementById('bravo-content');
+  const colors = ['#E36C5B','#F2C14E','#2D8A6E','#0E4B47'];
+  const dots = [{x:16,y:20,s:7},{x:82,y:15,s:9},{x:10,y:62,s:6},{x:90,y:68,s:7},{x:28,y:10,s:5},{x:72,y:88,s:6},{x:50,y:8,s:4},{x:5,y:40,s:5},{x:95,y:45,s:6}];
+  dots.forEach((d,i) => {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.cssText = `left:${d.x}%;top:${d.y}%;width:${d.s}px;height:${d.s}px;background:${colors[i%colors.length]};transform:rotate(${i*28}deg)`;
+    container.prepend(el);
+  });
+}
+
+/* ── STEP NAVIGATION ── */
+const TOTAL = 6;
+function goStep(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  const si = document.getElementById('si');
+  if (n === 1) { si.style.display = 'none'; }
+  else {
+    si.style.display = 'flex';
+    renderDots(n);
+  }
+  if (n === 6) spawnConfetti();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function renderDots(current) {
+  const dotsEl = document.getElementById('sdots');
+  dotsEl.innerHTML = '';
+  for (let i=1; i<=TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot ' + (i < current ? 'done' : i === current ? 'active' : 'future');
+    dotsEl.appendChild(d);
+  }
+  document.getElementById('sctr').textContent = 'Étape ' + current + '/' + TOTAL;
+}
+
+/* ── FINALISER ── */
+async function finaliser() {
+  if (!restId) { alert('ID du restaurant manquant dans l\'URL'); return; }
+  const btn = document.getElementById('btn-finaliser');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="saving">⟳</span> Enregistrement…';
+
+  try {
+    await fetch('/admin/restaurants/' + restId + '/infos', {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        adresse: document.getElementById('r-adresse').value,
+        twilio:  document.getElementById('r-twilio').value,
+        horaires: getHoraires(),
+        typeCuisine: selectedCuisine || '',
+        onboarding: produits.length > 0 ? 'Complété' : 'En cours',
+        menuComplete: produits.length > 0
+      })
+    });
+
+    for (const p of produits) {
+      await fetch('/admin/menus', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ ...p, skipStockSync: !p.syncStock })
+      });
+    }
+  } catch(e) { console.warn('Erreur save:', e); }
+
+  btn.innerHTML = '✓ Enregistré !';
+  btn.style.background = 'var(--good)';
+
+  // Remplacer les boutons bravo par les vrais CTAs post-save
+  const bravobtns = document.getElementById('bravo-btns');
+  if (bravobtns) {
+    bravobtns.innerHTML = `
+      <a href="/menu-ia.html?restaurantId=${encodeURIComponent(restId || '')}&setup=1"
+         class="btn-primary" style="text-decoration:none">
+        ✦ Compléter la Carte & Menu →
+      </a>
+      <a href="/admin.html" class="btn-ghost">Tableau de bord</a>
+    `;
+  }
+}
+</script>
+
+<script>window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload()});</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+[
+  {
+    "id": "DEMO-1779488979653",
+    "prenom": "jean",
+    "nom": "dupont",
+    "email": "dhfvfy@gmail.com",
+    "restaurant": "mcdo",
+    "demoEmail": "mcdo@essai.demo",
+    "passwordHash": "b3ff4537d9b8f1ec0d2c82f38fa8c2d0116411efe77d1e1f757950dfd6e78ed2",
+    "statut": "connecté",
+    "rdvDate": "2026-08-08T15:30",
+    "rdvNotes": "",
+    "createdAt": "2026-05-22T22:29:39.653Z",
+    "lastLogin": "2026-05-29T10:42:50.663Z",
+    "loginCount": 8,
+    "password": "go1234"
+  }
+]

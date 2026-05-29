@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>CommandeIA · Cuisine vivante (hi-fi)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif&family=Caveat:wght@500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'Inter', system-ui, sans-serif; color: #1f1a14; }
+  * { box-sizing: border-box; }
+  .ab { position: relative; width: 100%; height: 100%; overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="theme.jsx"></script>
+<script type="text/babel" src="chef-pixel.jsx"></script>
+<script type="text/babel" src="screen-kds.jsx"></script>
+<script type="text/babel" src="screen-pixel.jsx"></script>
+<script type="text/babel" src="screens-misc.jsx"></script>
+<script type="text/babel" src="screen-c-extras.jsx"></script>
+<script type="text/babel" src="screen-onboarding-steps.jsx"></script>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "palette": "lagune",
+  "typo": "manuscrit",
+  "energy": "calme"
+}/*EDITMODE-END*/;
+
+// Energy → CSS animation-duration multiplier
+const ENERGY = { calme: 1.8, vivant: 1, effervescent: 0.55 };
+
+// Swatch builder for the palette picker (4-color stack)
+const swatch = (k) => {
+  const p = palettes[k];
+  return [p.sable, p.forest, p.terracotta, p.miel];
+};
+
+const App = () => {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  // Mutate shared theme/fonts BEFORE children render
+  React.useMemo(() => {
+    applyPalette(t.palette);
+    applyFontPair(t.typo);
+    document.documentElement.style.setProperty('--cv-energy', ENERGY[t.energy] ?? 1);
+    document.body.style.background = theme.sable;
+    document.body.style.color = theme.ink;
+  }, [t.palette, t.typo, t.energy]);
+
+  return (
+    <>
+      <style>{`
+        .ab *[style*="animation"] {
+          animation-duration: calc(1.6s * var(--cv-energy, 1)) !important;
+        }
+        .ab svg .cp-eye, .ab svg .cp-steam {
+          animation-duration: calc(3.6s * var(--cv-energy, 1)) !important;
+        }
+      `}</style>
+
+      <DesignCanvas key={`${t.palette}-${t.typo}`}>
+        <DCSection
+          id="hero"
+          title="C · Cuisine vivante"
+          subtitle="Le KDS n'est pas un dashboard — c'est un orchestre. Mascotte IA, mouvement, palette chaude.">
+          <DCArtboard id="kds" label="01 · KDS — flux vivant" width={1180} height={760}>
+            <ScreenKDS />
+          </DCArtboard>
+          <DCArtboard id="pixel" label="02 · Chef Pixel — assistant IA" width={580} height={760}>
+            <ScreenChefPixel />
+          </DCArtboard>
+          <DCArtboard id="pulse" label="03 · Pulse du service" width={580} height={760}>
+            <ScreenPulse />
+          </DCArtboard>
+          <DCArtboard id="detail" label="04 · Détail commande drill-in" width={560} height={760}>
+            <ScreenCommandeDetail />
+          </DCArtboard>
+          <DCArtboard id="etats" label="05 · États du service" width={980} height={760}>
+            <ScreenEtats />
+          </DCArtboard>
+          <DCArtboard id="debrief" label="06 · Débrief fin de service" width={640} height={760}>
+            <ScreenDebrief />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="onboarding"
+          title="D · Onboarding ludique"
+          subtitle="6 étapes guidées par Chef Pixel · micro-récompenses · skippable partout.">
+          <DCArtboard id="welcome" label="1/6 — Bienvenue" width={560} height={760}>
+            <ScreenOnboarding />
+          </DCArtboard>
+          <DCArtboard id="step2" label="2/6 — Ton resto en bref" width={560} height={760}>
+            <ScreenOnboard2 />
+          </DCArtboard>
+          <DCArtboard id="step3" label="3/6 — Tes 5 plats stars" width={560} height={760}>
+            <ScreenOnboard3 />
+          </DCArtboard>
+          <DCArtboard id="step4" label="4/6 — Canaux de commande" width={560} height={760}>
+            <ScreenOnboard4 />
+          </DCArtboard>
+          <DCArtboard id="step5" label="5/6 — Ton équipe" width={560} height={760}>
+            <ScreenOnboard5 />
+          </DCArtboard>
+          <DCArtboard id="step6" label="6/6 — Bravo !" width={560} height={760}>
+            <ScreenOnboard6 />
+          </DCArtboard>
+          <DCArtboard id="tour" label="Tour guidé in-app" width={640} height={760}>
+            <ScreenTourGuide />
+          </DCArtboard>
+          <DCArtboard id="notifs" label="Notifs sonores · bonus" width={580} height={760}>
+            <ScreenNotifs />
+          </DCArtboard>
+          <DCArtboard id="ba" label="Avant → Après — cartes" width={780} height={760}>
+            <ScreenAvantApres />
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+
+      <TweaksPanel title="Tweaks · ambiance">
+        <TweakSection label="Palette">
+          <TweakColor
+            label="Couleurs"
+            value={swatch(t.palette)}
+            options={Object.keys(palettes).map(k => swatch(k))}
+            onChange={(v) => {
+              const key = Object.keys(palettes).find(k => swatch(k).join() === v.join());
+              if (key) setTweak('palette', key);
+            }}
+          />
+          <div style={{ fontSize: 10.5, color: 'rgba(41,38,27,.6)', marginTop: -2, fontStyle: 'italic' }}>
+            {palettes[t.palette].name}
+          </div>
+        </TweakSection>
+
+        <TweakSection label="Voix typographique">
+          <TweakSelect
+            label="Pairing"
+            value={t.typo}
+            options={Object.entries(fontPairs).map(([v, p]) => ({ value: v, label: p.name }))}
+            onChange={(v) => setTweak('typo', v)}
+          />
+          <div style={{ fontSize: 10.5, color: 'rgba(41,38,27,.6)', marginTop: -2, fontStyle: 'italic' }}>
+            {t.typo === 'manuscrit'  && 'Serif + écriture manuscrite — chaleureux, restaurant de quartier'}
+            {t.typo === 'editorial'  && 'Fraunces partout — magazine, plus posé'}
+            {t.typo === 'brutaliste' && 'Grotesk + Mono — tech-forward, sans concession'}
+          </div>
+        </TweakSection>
+
+        <TweakSection label="Énergie">
+          <TweakRadio
+            label="Tempo"
+            value={t.energy}
+            options={['calme', 'vivant', 'effervescent']}
+            onChange={(v) => setTweak('energy', v)}
+          />
+          <div style={{ fontSize: 10.5, color: 'rgba(41,38,27,.6)', marginTop: -2, fontStyle: 'italic' }}>
+            multiplie la vitesse des animations (pulse, bob, flame…)
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

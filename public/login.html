@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connexion — Commande-IA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #fff;
+    }
+
+    /* ─── PANNEAU GAUCHE ─── */
+    .left-panel {
+      background: linear-gradient(160deg, #0B1F18 0%, #0F2E22 60%, #0D2620 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Grille de carrés en fond */
+    .left-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Lueur subtile en haut à droite */
+    .left-panel::after {
+      content: '';
+      position: absolute;
+      width: 320px; height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(90,181,90,.09), transparent 65%);
+      top: -80px; right: -80px;
+      pointer-events: none;
+    }
+
+    .left-top { position: relative; z-index: 1; flex: 1; }
+
+    .left-logo {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 56px;
+    }
+    .left-logo-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: #1a4a46;
+      border: 1px solid rgba(184,208,200,.2);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .left-logo-icon svg { width: 20px; height: 20px; }
+    .left-logo-text { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .left-logo-text span { color: #7BBBB5; }
+
+    .left-headline {
+      font-size: 36px; font-weight: 700; color: #fff;
+      line-height: 1.15; letter-spacing: -1.5px;
+      margin-bottom: 14px;
+    }
+    .left-headline span { color: #7BBBB5; }
+
+    .left-sub {
+      font-size: 14px; color: rgba(255,255,255,.4);
+      line-height: 1.7; max-width: 300px;
+    }
+
+    /* Points clés */
+    .left-features {
+      display: flex; flex-direction: column; gap: 12px;
+      margin-top: 40px;
+    }
+    .lf-item {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .lf-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: rgba(184,208,200,.07);
+      border: 1px solid rgba(184,208,200,.12);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .lf-icon svg { width: 15px; height: 15px; }
+    .lf-text { font-size: 13px; color: rgba(255,255,255,.5); }
+    .lf-text strong { color: rgba(255,255,255,.8); font-weight: 600; }
+
+    .left-bottom {
+      position: relative; z-index: 1;
+      border-top: 1px solid rgba(255,255,255,.07);
+      padding-top: 20px;
+    }
+    .left-version { font-size: 11px; color: rgba(255,255,255,.2); }
+
+    /* Lien retour site */
+    .back-to-site {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 500; color: rgba(255,255,255,.35);
+      text-decoration: none; margin-bottom: 32px;
+      transition: color .15s;
+    }
+    .back-to-site:hover { color: rgba(255,255,255,.7); }
+    .back-to-site svg { width: 14px; height: 14px; }
+
+    /* ─── PANNEAU DROIT ─── */
+    .right-panel {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 48px;
+      background: #F2EDE3;
+      position: relative;
+    }
+
+    /* Carte */
+    .login-card {
+      width: 100%; max-width: 360px;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 2px 0 rgba(0,0,0,.06), 0 8px 32px rgba(0,0,0,.08), 0 32px 64px rgba(0,0,0,.05);
+      padding: 32px;
+      position: relative; z-index: 1;
+    }
+
+    /* En-tête carte */
+    .card-header { margin-bottom: 24px; }
+    .card-greeting { font-size: 12px; color: #8aaa8a; font-weight: 500; margin-bottom: 4px; }
+    .card-title { font-size: 22px; font-weight: 700; color: #0F2A28; letter-spacing: -0.4px; }
+    .card-line {
+      width: 28px; height: 2px; border-radius: 2px;
+      background: linear-gradient(90deg, #0E4B47, #7BBBB5);
+      margin-top: 10px;
+    }
+
+    /* Compte récent */
+    .recent-account {
+      display: none; align-items: center; gap: 10px;
+      background: #f6faf2; border: 1.5px solid #d4e8b0;
+      border-radius: 10px; padding: 10px 12px;
+      margin-bottom: 16px; cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .recent-account:hover { border-color: #0E4B47; background: #eef6e4; }
+    .recent-account.show { display: flex; }
+    .ra-avatar {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: #0E4B47; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; flex-shrink: 0;
+    }
+    .ra-info { flex: 1; min-width: 0; }
+    .ra-name { font-size: 12px; font-weight: 600; color: #0F2A28; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ra-email { font-size: 11px; color: #9abaa0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ra-cta { font-size: 11px; font-weight: 700; color: #0E4B47; white-space: nowrap; }
+
+    /* Alerte */
+    .login-alert {
+      padding: 11px 13px; border-radius: 8px;
+      font-size: 13px; font-weight: 500;
+      margin-bottom: 16px; display: none;
+      animation: aIn .2s ease;
+    }
+    @keyframes aIn { from { opacity:0; transform:translateY(-3px); } to { opacity:1; transform:none; } }
+    .login-alert.error  { background: #fef0f0; color: #b03030; border: 1px solid #f0c0c0; display: block; }
+    .login-alert.warn   { background: #fff8ec; color: #8a5a00; border: 1px solid #f0d890; display: block; }
+    .login-alert.info   { background: #f0f6ff; color: #2050a0; border: 1px solid #c0d8f0; display: block; }
+
+    /* Champs */
+    .form-group { margin-bottom: 12px; }
+    .form-label {
+      font-size: 11px; font-weight: 600; color: #4D6260;
+      text-transform: uppercase; letter-spacing: 0.7px;
+      margin-bottom: 6px; display: block;
+    }
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%); color: #B8D0C8;
+      pointer-events: none; display: flex;
+    }
+    .input-icon svg { width: 15px; height: 15px; }
+    .form-input {
+      width: 100%; padding: 12px 40px 12px 38px;
+      border-radius: 9px; border: 1.5px solid #e0e8d8;
+      background: #f9fbf6; font-size: 14px;
+      font-family: 'Inter', sans-serif; color: #0F2A28;
+      outline: none; transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    .form-input:focus {
+      border-color: #0E4B47; background: #fff;
+      box-shadow: 0 0 0 3px rgba(14,75,71,.07);
+    }
+    .form-input:hover:not(:focus) { border-color: #c0d8a8; }
+    .form-input.shake { animation: shake .3s ease; }
+    @keyframes shake { 0%,100%{transform:none} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+
+    .input-right {
+      position: absolute; right: 10px; top: 50%;
+      transform: translateY(-50%);
+    }
+    .toggle-pwd {
+      background: none; border: none; cursor: pointer;
+      color: #B8D0C8; padding: 4px; border-radius: 5px;
+      transition: color .12s; display: flex;
+    }
+    .toggle-pwd:hover { color: #0E4B47; }
+
+    /* Caps lock */
+    .caps-warn {
+      display: none; align-items: center; gap: 5px;
+      font-size: 11px; color: #a06000; font-weight: 600;
+      margin-top: 4px;
+    }
+    .caps-warn.show { display: flex; }
+
+    /* Options */
+    .field-options { display: flex; justify-content: space-between; align-items: center; margin: 14px 0; }
+    .remember-me {
+      display: flex; align-items: center; gap: 7px;
+      cursor: pointer; font-size: 13px; color: #8aaa8a; user-select: none;
+    }
+    .remember-me input { width: 14px; height: 14px; accent-color: #0E4B47; cursor: pointer; }
+
+    /* Bouton */
+    .login-btn {
+      width: 100%; padding: 13px; border-radius: 9px; border: none;
+      background: linear-gradient(135deg, #1a4a20, #2d6b1a);
+      color: #fff; font-size: 14px; font-weight: 600;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+      transition: transform .15s, box-shadow .15s, opacity .15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 3px 12px rgba(30,80,20,.25);
+      position: relative; overflow: hidden;
+    }
+    .login-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.1), transparent);
+    }
+    .login-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(30,80,20,.32); }
+    .login-btn:active:not(:disabled) { transform: none; }
+    .login-btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; transform: none; }
+    .login-btn svg { width: 15px; height: 15px; }
+
+    /* Tentatives */
+    .attempts-info { display: none; text-align: center; margin-top: 10px; font-size: 12px; font-weight: 600; color: #a05020; }
+    .attempts-info.show { display: block; }
+    .lockout-countdown { font-size: 18px; font-weight: 800; color: #b03030; text-align: center; display: none; margin-top: 6px; }
+
+    /* Footer carte */
+    .card-footer {
+      text-align: center; margin-top: 20px;
+      font-size: 11px; color: #c0cfc0;
+    }
+    .card-footer a { color: #9ab09a; text-decoration: none; }
+    .card-footer a:hover { color: #0E4B47; }
+
+    /* Badge statut serveur */
+    .server-badge {
+      position: absolute; bottom: 24px; right: 24px; z-index: 2;
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(255,255,255,.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(14,75,71,.1);
+      padding: 6px 14px; border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    }
+    .sb-dot { width: 6px; height: 6px; border-radius: 50%; background: #5ab52a; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .sb-text { font-size: 11px; font-weight: 600; color: #4D6260; }
+
+    /* Overlay succès */
+    .success-overlay {
+      position: fixed; inset: 0;
+      background: rgba(10,24,8,.96);
+      z-index: 999; display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+    }
+    .success-overlay.show { display: flex; animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .so-check { width: 72px; height: 72px; margin-bottom: 20px; animation: popIn .4s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes popIn { 0%{transform:scale(0);opacity:0} 100%{transform:scale(1);opacity:1} }
+    .so-circle { stroke:#5ab52a; stroke-width:4; fill:none; stroke-dasharray:220; stroke-dashoffset:220; animation:drawCircle .55s ease .1s forwards; }
+    @keyframes drawCircle { to{stroke-dashoffset:0} }
+    .so-tick { stroke:#5ab52a; stroke-width:5; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:60; stroke-dashoffset:60; animation:drawTick .3s ease .6s forwards; }
+    @keyframes drawTick { to{stroke-dashoffset:0} }
+    .so-name { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -.4px; margin-bottom: 6px; }
+    .so-sub { font-size: 13px; color: rgba(255,255,255,.4); }
+    .so-bar { width: 180px; height: 2px; background: rgba(255,255,255,.1); border-radius: 2px; margin-top: 24px; overflow: hidden; }
+    .so-bar-fill { height: 100%; background: #5ab52a; border-radius: 2px; animation: soProgress 1.2s ease forwards; }
+    @keyframes soProgress { from{width:0} to{width:100%} }
+
+    @media (max-width: 768px) {
+      body { grid-template-columns: 1fr; }
+      .left-panel { display: none; }
+      .right-panel { padding: 24px; background: #fff; }
+      #pentagon-bg { display: none; }
+      .login-card { box-shadow: none; padding: 0; max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ PANNEAU GAUCHE ══ -->
+<div class="left-panel">
+
+  <div class="left-top">
+    <a href="/landing.html" class="back-to-site">
+      <svg viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Retour au site
+    </a>
+    <div class="left-logo">
+      <div class="left-logo-icon">
+        <svg viewBox="0 0 20 20" fill="none">
+          <path d="M3 6h14M3 10h9M3 14h11" stroke="#7BBBB5" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="left-logo-text">Commande<span>IA</span></div>
+    </div>
+
+    <div class="left-headline">La prise de<br>commande<br><span>réinventée.</span></div>
+    <div class="left-sub">Une IA qui décroche, comprend et envoie chaque commande en cuisine — sans erreur, 24h/24.</div>
+
+    <div class="left-features">
+      <div class="lf-item">
+        <div class="lf-icon">
+          <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#7BBBB5" stroke-width="1.3"/><path d="M5 8h6M5 5h6M5 11h4" stroke="#7BBBB5" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="lf-text"><strong>Dashboard</strong></div>
+      </div>
+      <div class="lf-item">
+        <div class="lf-icon">
+          <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="4" rx="1" stroke="#7BBBB5" stroke-width="1.3"/><rect x="2" y="8" width="12" height="4" rx="1" stroke="#7BBBB5" stroke-width="1.3"/></svg>
+        </div>
+        <div class="lf-text"><strong>Stocks</strong></div>
+      </div>
+      <div class="lf-item">
+        <div class="lf-icon">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M2 12L6 7l3 3 3-4 3 2" stroke="#7BBBB5" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="lf-text"><strong>Analyse & Rapports</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="left-bottom">
+    <div class="left-version">Commande-IA &nbsp;·&nbsp; v2.0 &nbsp;·&nbsp; © 2026</div>
+  </div>
+</div>
+
+<!-- ══ PANNEAU DROIT ══ -->
+<div class="right-panel">
+
+
+  <div class="login-card">
+
+    <div class="card-header">
+      <div class="card-greeting" id="card-greeting">Bienvenue</div>
+      <div class="card-title">Connexion</div>
+      <div class="card-line"></div>
+    </div>
+
+    <!-- Compte récent mémorisé -->
+    <div class="recent-account" id="recent-account" onclick="useRecentAccount()" title="Cliquer pour utiliser ce compte">
+      <div class="ra-avatar" id="ra-avatar">?</div>
+      <div class="ra-info">
+        <div class="ra-name" id="ra-name">—</div>
+        <div class="ra-email" id="ra-email">—</div>
+      </div>
+      <div class="ra-cta">Utiliser →</div>
+    </div>
+
+    <div class="login-alert" id="alert"></div>
+
+    <!-- Email -->
+    <div class="form-group">
+      <label class="form-label" for="email">Email</label>
+      <div class="input-wrap">
+        <span class="input-icon">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12v8H2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M2 4l6 4.5L14 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </span>
+        <input class="form-input" type="email" id="email" placeholder="votre@email.com" autocomplete="email" />
+      </div>
+    </div>
+
+    <!-- Mot de passe -->
+    <div class="form-group">
+      <label class="form-label" for="password">Mot de passe</label>
+      <div class="input-wrap">
+        <span class="input-icon">
+          <svg viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </span>
+        <input class="form-input" type="password" id="password" placeholder="••••••••"
+          onkeyup="checkCapsLock(event)" autocomplete="current-password" />
+        <span class="input-right">
+          <button class="toggle-pwd" type="button" onclick="togglePwd()" title="Afficher/masquer">
+            <svg id="eye-icon" viewBox="0 0 16 16" fill="none" width="15" height="15">
+              <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.3"/>
+              <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/>
+            </svg>
+          </button>
+        </span>
+      </div>
+      <div class="caps-warn" id="caps-warn">
+        <svg viewBox="0 0 12 12" fill="none" width="11" height="11"><path d="M6 1.5L11 6H8.5v4.5h-5V6H1L6 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        Majuscules activées
+      </div>
+    </div>
+
+    <button class="login-btn" id="login-btn" onclick="login()">
+      <svg viewBox="0 0 16 16" fill="none" width="15" height="15"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 5l3 3-3 3M13 8H6" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Se connecter
+    </button>
+
+    <div class="attempts-info" id="attempts-info"></div>
+    <div class="lockout-countdown" id="lockout-countdown"></div>
+
+    <div class="card-footer">
+      <a href="/landing.html">Site web</a> &nbsp;·&nbsp;
+      <a href="mailto:contact@commande-ia.com">Support</a>
+    </div>
+  </div>
+
+  <!-- Statut serveur -->
+  <div class="server-badge">
+    <div class="sb-dot" id="sb-dot"></div>
+    <div class="sb-text" id="sb-text">Vérification…</div>
+  </div>
+</div>
+
+<!-- ══ OVERLAY SUCCÈS ══ -->
+<div class="success-overlay" id="success-overlay">
+  <svg class="so-check" viewBox="0 0 72 72">
+    <circle class="so-circle" cx="36" cy="36" r="30"/>
+    <polyline class="so-tick" points="22,36 31,46 50,26"/>
+  </svg>
+  <div class="so-name" id="so-name">Bienvenue !</div>
+  <div class="so-sub">Redirection en cours…</div>
+  <div class="so-bar"><div class="so-bar-fill"></div></div>
+</div>
+
+<script>
+// ── Salutation selon l'heure ──
+(function () {
+  const h = new Date().getHours();
+  const g = h < 6 ? 'Bonne nuit' : h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
+  document.getElementById('card-greeting').textContent = g;
+})();
+
+// ── Statut serveur ──
+(async function checkServer() {
+  try {
+    const t0 = Date.now();
+    await fetch('/ping', { signal: AbortSignal.timeout(4000) });
+    const ms = Date.now() - t0;
+    document.getElementById('sb-dot').style.background = ms > 600 ? '#ffcc00' : '#5ab52a';
+    document.getElementById('sb-text').textContent = ms > 600 ? 'Latence élevée' : 'Système opérationnel';
+  } catch {
+    document.getElementById('sb-dot').style.background = '#ff5050';
+    document.getElementById('sb-text').textContent = 'Hors ligne';
+  }
+  setTimeout(checkServer, 30000);
+})();
+
+// ── Compte récent mémorisé ──
+const saved = (() => { try { return JSON.parse(localStorage.getItem('cia_remember')); } catch { return null; } })();
+if (saved?.email) {
+  document.getElementById('recent-account').classList.add('show');
+  document.getElementById('ra-name').textContent = saved.name || saved.email;
+  document.getElementById('ra-email').textContent = saved.email;
+  document.getElementById('ra-avatar').textContent = (saved.name || saved.email)[0].toUpperCase();
+  document.getElementById('email').value = saved.email;
+  setTimeout(() => document.getElementById('password').focus(), 80);
+}
+function useRecentAccount() { document.getElementById('password').focus(); }
+// ── Toggle mot de passe ──
+let pwdVisible = false;
+function togglePwd() {
+  pwdVisible = !pwdVisible;
+  document.getElementById('password').type = pwdVisible ? 'text' : 'password';
+  document.getElementById('eye-icon').innerHTML = pwdVisible
+    ? '<path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.3"/><line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>'
+    : '<path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/>';
+}
+
+// ── Caps lock ──
+function checkCapsLock(e) {
+  document.getElementById('caps-warn').classList.toggle('show', !!e.getModifierState?.('CapsLock'));
+}
+
+// ── Pré-remplissage URL ──
+const params = new URLSearchParams(window.location.search);
+const redirect = params.get('redirect') || '/';
+const urlEmail = params.get('email');
+if (urlEmail) { document.getElementById('email').value = urlEmail; document.getElementById('password').focus(); }
+if (sessionStorage.getItem('user')) window.location.href = redirect;
+
+// Message si session expirée (redirection depuis une page protégée)
+if (params.get('reason') === 'session_expired') {
+  setTimeout(() => showAlert('warn', 'Votre session a expiré — veuillez vous reconnecter.'), 100);
+}
+
+// ── Anti brute-force ──
+let failCount = 0, lockUntil = 0, lockInterval = null;
+function isLocked() { return Date.now() < lockUntil; }
+function recordFailure() {
+  failCount++;
+  const left = 5 - failCount;
+  const info = document.getElementById('attempts-info');
+  if (left > 0 && left <= 3) { info.className = 'attempts-info show'; info.textContent = `${left} tentative${left > 1 ? 's' : ''} restante${left > 1 ? 's' : ''} avant blocage`; }
+  if (failCount >= 5) {
+    lockUntil = Date.now() + 30000;
+    info.className = 'attempts-info show'; info.textContent = 'Compte bloqué temporairement';
+    document.getElementById('login-btn').disabled = true;
+    const countdown = document.getElementById('lockout-countdown');
+    countdown.style.display = 'block';
+    lockInterval = setInterval(() => {
+      const s = Math.ceil((lockUntil - Date.now()) / 1000);
+      if (s <= 0) {
+        clearInterval(lockInterval);
+        countdown.style.display = 'none';
+        document.getElementById('login-btn').disabled = false;
+        info.className = 'attempts-info';
+        failCount = 0;
+      } else countdown.textContent = `Réessayez dans ${s}s`;
+    }, 500);
+  }
+  ['email', 'password'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.add('shake');
+    setTimeout(() => el.classList.remove('shake'), 350);
+  });
+}
+
+// ── Connexion ──
+async function login() {
+  if (isLocked()) return;
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn      = document.getElementById('login-btn');
+  document.getElementById('alert').className = 'login-alert';
+
+  if (!email || !password) {
+    showAlert('error', 'Veuillez remplir tous les champs.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Connexion…';
+
+  try {
+    const res  = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+    const data = await res.json();
+
+    if (!res.ok) {
+      recordFailure();
+      showAlert('error', data.error || 'Identifiants incorrects.');
+      btn.disabled = isLocked();
+      resetBtn();
+      return;
+    }
+
+    failCount = 0;
+    sessionStorage.setItem('user', JSON.stringify(data.user));
+    try { localStorage.removeItem('permissions_matrix_v1'); } catch {}
+
+    const name = data.user.prenom || data.user.nom || 'Vous';
+    document.getElementById('so-name').textContent = 'Bienvenue, ' + name + ' !';
+    document.getElementById('success-overlay').classList.add('show');
+    setTimeout(() => { window.location.href = data.accountType === 'demo' ? '/landing.html' : redirect; }, 1300);
+
+  } catch {
+    showAlert('error', 'Erreur réseau — vérifiez la connexion.');
+    btn.disabled = false;
+    resetBtn();
+  }
+}
+
+function resetBtn() {
+  const btn = document.getElementById('login-btn');
+  btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" width="15" height="15"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 5l3 3-3 3M13 8H6" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Se connecter';
+}
+
+function showAlert(type, msg) {
+  const el = document.getElementById('alert');
+  el.className = 'login-alert ' + type;
+  el.textContent = msg;
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+</script>
+
+<script>window.addEventListener('pageshow', function(e) { if (e.persisted) window.location.reload(); });</script>
+</body>
+</html>

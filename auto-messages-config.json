@@ -1,0 +1,30 @@
+{
+  "global": {
+    "enabled": true
+  },
+  "categories": {
+    "checkin_fermeture": {
+      "enabled": true,
+      "minutesBeforeClose": 20
+    },
+    "random_journee": {
+      "enabled": true,
+      "minHour": 10,
+      "maxHour": 16
+    },
+    "rappel_admin": {
+      "enabled": true
+    },
+    "felicitation_ventes": {
+      "enabled": true,
+      "minCommandes": 8
+    },
+    "alerte_stock": {
+      "enabled": true
+    },
+    "comparaison_hier": {
+      "enabled": true
+    }
+  },
+  "restaurants": {}
+}

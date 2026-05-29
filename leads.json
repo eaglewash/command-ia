@@ -1,0 +1,33 @@
+[
+  {
+    "id": "LEAD-1779492374617",
+    "prenom": "fdjflnjf",
+    "nom": "despres",
+    "email": "qdespres7@gmail.com",
+    "tel": "637203567",
+    "restaurant": "mcdo",
+    "besoin": "💰 Obtenir les tarifs",
+    "message": "",
+    "createdAt": "2026-05-22T23:26:14.617Z"
+  },
+  {
+    "id": "LEAD-1779492302849",
+    "prenom": "sbdd",
+    "nom": "soinfiofni",
+    "email": "ncsivdnoi@gmail.com",
+    "tel": "063703567",
+    "restaurant": "mcdo",
+    "besoin": "💰 Obtenir les tarifs",
+    "message": "",
+    "createdAt": "2026-05-22T23:25:02.849Z"
+  },
+  {
+    "id": "LEAD-1779491666301",
+    "prenom": "quentin",
+    "nom": "despres",
+    "email": "quenitndfyhib@gmai.com",
+    "restaurant": "mcdo",
+    "demo": true,
+    "createdAt": "2026-05-22T23:14:26.301Z"
+  }
+]

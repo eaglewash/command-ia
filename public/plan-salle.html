@@ -1,0 +1,1928 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <title>Plan de Salle — Commande-IA</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #EEF5F2; min-height: 100vh; color: #111; overflow: hidden; }
+
+    /* ══ TOPBAR (identique dashboard) ══ */
+    .topbar { background: #0E4B47; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; height: 72px; gap: 24px; position: relative; z-index: 200; }
+    .topbar-left { display: flex; align-items: center; gap: 24px; flex-shrink: 0; }
+    .logo { font-size: 18px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; letter-spacing: -0.4px; position: relative; }
+    .logo-icon { width: 36px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.15s; border: 1px solid rgba(255,255,255,.2); }
+    .logo-icon:hover { background: rgba(255,255,255,.25); transform: scale(1.05); }
+    .logo-icon svg { width: 20px; height: 20px; }
+    .burger-menu { display: none; position: absolute; top: 52px; left: 0; width: 280px; background: #fff; border: 1.5px solid #B8D0C8; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 999; overflow: hidden; animation: menuIn .15s ease; max-height: calc(100vh - 70px); }
+    @keyframes menuIn { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform: translateY(0); } }
+    .burger-menu.open { display: block; }
+    .burger-menu-inner { padding: 8px 0; overflow-y: auto; max-height: calc(100vh - 80px); }
+    .burger-section { padding: 8px 16px 4px; font-size: 10px; font-weight: 700; color: #4D6260; text-transform: uppercase; letter-spacing: 1px; }
+    .burger-divider { height: 1px; background: #CFE0D9; margin: 6px 0; }
+    .menu-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; font-size: 13px; font-weight: 500; color: #0F2A28; cursor: pointer; transition: background .1s; text-decoration: none; }
+    .menu-item:hover { background: #F8FBF9; }
+    .menu-item.active { background: #EEF5F2; color: #0E4B47; font-weight: 600; }
+    .menu-item.danger { color: #B83C2C; }
+    .menu-item.danger:hover { background: #FCE8E5; }
+    .badge-live { font-size: 11px; font-weight: 600; background: rgba(255,255,255,.1); color: #B8D0C8; padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(123,187,181,.3); display: flex; align-items: center; gap: 6px; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #7BBBB5; animation: pulse 1.5s infinite; flex-shrink: 0; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+    .topbar-stats { display: flex; align-items: stretch; gap: 1px; background: rgba(255,255,255,.08); border-radius: 12px; overflow: hidden; padding: 1px; }
+    .stat-block { padding: 8px 18px; display: flex; flex-direction: column; align-items: center; gap: 3px; background: rgba(255,255,255,.05); border-radius: 10px; min-width: 72px; }
+    .stat-label { font-size: 9px; font-weight: 600; color: rgba(184,208,200,.7); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+    .stat-value { font-size: 22px; font-weight: 700; color: #fff; line-height: 1; }
+    .stat-value.accent { color: #B8D0C8; }
+    .stat-value.warn { color: #f0c060; }
+    .stat-value.danger { color: #f09090; }
+    .stat-value.sm { font-size: 14px; padding-top: 4px; color: #B8D0C8; }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .top-btn { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,.15); background: rgba(255,255,255,.08); color: #B8D0C8; cursor: pointer; font-weight: 600; font-family: 'Inter',sans-serif; transition: all .15s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .top-btn:hover { background: rgba(255,255,255,.18); color: #fff; }
+    .top-btn.primary { background: #0E4B47; border-color: #0E4B47; color: #fff; }
+    .top-btn.primary:hover { background: #0A3D3A; }
+    .tabs-wrap { display: flex; align-items: center; gap: 4px; }
+    .tab { font-size: 13px; padding: 7px 16px; border-radius: 7px; border: none; background: transparent; color: rgba(200,232,200,.6); cursor: pointer; font-weight: 500; font-family: 'Inter',sans-serif; transition: all .15s; white-space: nowrap; }
+    .tab:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .tab.active { background: #fff; color: #0F2A28; font-weight: 600; }
+
+    /* ══ TOOLBAR ══ */
+    .toolbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: #fff; border-bottom: 1.5px solid #B8D0C8; gap: 16px; flex-wrap: wrap; z-index: 10; position: relative; }
+    .toolbar-left { display: flex; align-items: center; gap: 8px; flex: 1; overflow-x: auto; }
+    .toolbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .room-tab { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; border: 1.5px solid #B8D0C8; background: #fff; color: #4D6260; cursor: pointer; font-size: 12px; font-weight: 600; font-family: 'Inter',sans-serif; transition: all .15s; white-space: nowrap; flex-shrink: 0; }
+    .room-tab:hover { border-color: #7BBBB5; background: #EEF5F2; }
+    .room-tab.active { background: #0E4B47; color: #B8D0C8; border-color: #0E4B47; }
+    .room-tab-count { font-size: 10px; opacity: .7; background: rgba(0,0,0,.08); padding: 1px 5px; border-radius: 8px; }
+    .room-tab.active .room-tab-count { background: rgba(255,255,255,.18); color: #fff; }
+    .room-icon-btn { background: none; border: none; cursor: pointer; font-size: 11px; opacity: .5; padding: 1px 2px; border-radius: 3px; transition: opacity .1s; line-height: 1; }
+    .room-icon-btn:hover { opacity: 1; }
+    .add-room-btn { display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 20px; border: 1.5px dashed #B8D0C8; background: transparent; color: #4D6260; cursor: pointer; font-size: 12px; font-weight: 600; font-family: 'Inter',sans-serif; transition: all .15s; flex-shrink: 0; }
+    .add-room-btn:hover { border-color: #0E4B47; color: #0E4B47; background: #EEF5F2; }
+    .tb-btn { font-size: 12px; padding: 7px 14px; border-radius: 9px; border: 1.5px solid #B8D0C8; background: #fff; color: #4D6260; cursor: pointer; font-weight: 600; font-family: 'Inter',sans-serif; transition: all .15s; }
+    .tb-btn:hover { border-color: #7BBBB5; color: #0E4B47; background: #EEF5F2; }
+    .tb-btn.active { background: #0E4B47; color: #B8D0C8; border-color: #0E4B47; }
+    .tb-btn.danger { border-color: #F8C4BE; color: #B83C2C; background: #FCE8E5; }
+    .tb-btn.danger:hover { background: #F8D5D0; }
+
+    /* ══ MAIN LAYOUT ══ */
+    .page-wrap { display: flex; flex-direction: column; height: calc(100vh - 72px); overflow: hidden; }
+    .main { display: grid; grid-template-columns: 1fr 300px; flex: 1; min-height: 0; overflow: hidden; }
+
+    /* ══ CANVAS AREA ══ */
+    .canvas-area { position: relative; overflow: hidden; background: #EEF5F2; }
+    .canvas-grid-bg { position: absolute; inset: 0; pointer-events: none;
+      background-image: linear-gradient(rgba(0,0,0,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.035) 1px,transparent 1px);
+      background-size: 40px 40px; }
+    .canvas-grid-bg.hidden { opacity: 0; }
+    #canvas { position: absolute; inset: 0; }
+    .canvas-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; gap: 14px; opacity: .4; }
+    .canvas-empty.hidden { display: none; }
+    .canvas-empty-icon { font-size: 3.5rem; }
+    .canvas-empty-text { font-size: 14px; font-weight: 600; color: #4D6260; text-align: center; line-height: 1.6; }
+
+    /* ══ TABLE BLOCKS ══ */
+    .tbl-block {
+      position: absolute; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border: 2.5px solid rgba(0,0,0,.18);
+      box-shadow: 0 2px 8px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.5);
+      transition: box-shadow .15s, border-color .15s, transform .1s;
+      font-family: 'Inter', sans-serif; user-select: none;
+    }
+    .tbl-block:hover { border-color: #0E4B47 !important; box-shadow: 0 4px 18px rgba(14,75,71,.25); z-index: 10; }
+    .tbl-block.selected { border-color: #0E4B47 !important; box-shadow: 0 0 0 3px rgba(14,75,71,.3), 0 4px 16px rgba(0,0,0,.15); z-index: 20; }
+    .tbl-block.status-free     { border-color: #0E4B47 !important; }
+    .tbl-block.status-occupied { border-color: #E36C5B !important; box-shadow: 0 2px 10px rgba(227,108,91,.2); }
+    .tbl-block.status-reserved { border-color: #F2C14E !important; box-shadow: 0 2px 10px rgba(242,193,78,.2); }
+    .tbl-block.status-cleaning { border-color: #8B5CF6 !important; box-shadow: 0 2px 10px rgba(139,92,246,.2); }
+    .tbl-block.edit-mode { cursor: move; }
+    /* Décor blocks */
+    .tbl-block.decor-item { border: 2.5px dashed rgba(0,0,0,.25); box-shadow: none; opacity: .88; }
+    .tbl-block.decor-item:hover { border-style: solid; opacity:1; }
+    .tbl-status-dot { position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+    .tbl-status-dot.free     { background: #0E4B47; }
+    .tbl-status-dot.occupied { background: #E36C5B; }
+    .tbl-status-dot.reserved { background: #F2C14E; }
+    .tbl-status-dot.cleaning { background: #8B5CF6; }
+    .tbl-icon { font-size: 1.4rem; line-height: 1; }
+    .tbl-name { font-size: 11px; font-weight: 800; color: #0F2A28; margin-top: 3px; text-align: center; word-break: break-word; max-width: 90%; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+    .tbl-cap { font-size: 9px; color: #6a8a6a; font-weight: 600; margin-top: 1px; }
+    .tbl-order { font-size: 8px; font-weight: 700; color: #B83C2C; background: rgba(255,255,255,.85); padding: 1px 5px; border-radius: 3px; margin-top: 2px; border: 1px solid rgba(176,48,48,.2); }
+    /* Resize handle */
+    .resize-handle { position: absolute; width: 12px; height: 12px; background: #0E4B47; border: 2px solid #fff; border-radius: 3px; cursor: se-resize; bottom: -6px; right: -6px; display: none; z-index: 30; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+    .tbl-block.selected .resize-handle { display: block; }
+    .rotate-handle { position: absolute; width: 12px; height: 12px; background: #1A6B66; border: 2px solid #fff; border-radius: 50%; cursor: grab; top: -16px; left: 50%; transform: translateX(-50%); display: none; z-index: 30; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+    .tbl-block.selected .rotate-handle { display: block; }
+
+    /* ══ DRAW TOOL ══ */
+    .canvas-area.draw-mode { cursor: crosshair !important; }
+    .canvas-area.draw-mode .tbl-block { pointer-events: none; }
+    #draw-svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:15; overflow:visible; }
+    .canvas-area.draw-mode #draw-svg { pointer-events: all; cursor: crosshair; }
+    .draw-path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .draw-path.selected-path { stroke-dasharray: 5 3; filter: drop-shadow(0 0 3px rgba(14,75,71,.5)); }
+
+    /* Sync indicator */
+    .sync-dot { width:8px;height:8px;border-radius:50%;background:#7BBBB5;display:inline-block;margin-right:5px;transition:background .3s; }
+    .sync-dot.syncing { background:#f0c060; animation: pulse 0.6s infinite; }
+    .sync-dot.error { background:#E36C5B; }
+
+    /* Edit tools bar */
+    .tools-bar { background:#fff; border-bottom:1.5px solid #B8D0C8; padding:0 20px; height:40px; display:none; align-items:center; gap:6px; }
+    .tools-bar.visible { display:flex; }
+    .tool-btn { padding:5px 12px; border:1.5px solid #B8D0C8; border-radius:7px; background:#F8FBF9; color:#3a5a3a; font-size:12px; font-weight:600; cursor:pointer; font-family:Inter,sans-serif; transition:all .15s; display:flex;align-items:center;gap:5px; }
+    .tool-btn:hover { border-color:#7BBBB5; background:#f0fdf0; }
+    .tool-btn.active { background:#0E4B47; color:#fff; border-color:#0E4B47; }
+    .tool-sep { width:1px;height:20px;background:#B8D0C8;margin:0 2px; }
+
+    /* Decor palette modal */
+    .decor-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    .decor-opt { padding:10px 5px; border:1.5px solid #B8D0C8; border-radius:10px; cursor:pointer; text-align:center; transition:all .15s; }
+    .decor-opt:hover { border-color:#0E4B47; background:#EEF5F2; }
+    .decor-opt-icon { font-size:1.5rem; }
+    .decor-opt-lbl { font-size:9px; font-weight:700; color:#4D6260; margin-top:3px; }
+
+    /* Draw color bar */
+    .draw-toolbar { display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#fff; border-radius:14px; box-shadow:0 4px 20px rgba(0,0,0,.15); padding:8px 14px; gap:8px; align-items:center; z-index:300; border:1.5px solid #B8D0C8; }
+    .draw-toolbar.visible { display:flex; }
+    .draw-color { width:22px;height:22px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all .12s;flex-shrink:0; }
+    .draw-color.active { border-color:#0E4B47;transform:scale(1.2); }
+    .draw-size { width:80px; accent-color:#0E4B47; }
+
+    /* ══ SIDE PANEL ══ */
+    .side-panel { background: #fff; border-left: 1.5px solid #B8D0C8; display: flex; flex-direction: column; overflow-y: auto; }
+    .side-panel::-webkit-scrollbar { width: 4px; }
+    .side-panel::-webkit-scrollbar-thumb { background: #B8D0C8; border-radius: 4px; }
+    .sp-head { padding: 14px 16px; border-bottom: 1.5px solid #B8D0C8; background: linear-gradient(135deg,#0E4B47,#0A3D3A); }
+    .sp-title { font-size: 14px; font-weight: 700; color: #fff; }
+    .sp-sub { font-size: 11px; color: #B8D0C8; margin-top: 2px; }
+    .sp-section { padding: 12px 16px; border-bottom: 1px solid #CFE0D9; }
+    .sp-section-title { font-size: 10px; font-weight: 700; color: #4D6260; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .sp-field { margin-bottom: 8px; }
+    .sp-label { font-size: 11px; font-weight: 600; color: #4D6260; margin-bottom: 3px; display: block; }
+    .sp-input { width: 100%; padding: 7px 10px; border: 1.5px solid #B8D0C8; border-radius: 8px; font-size: 12px; font-family: 'Inter',sans-serif; outline: none; transition: border-color .15s; color: #0F2A28; }
+    .sp-input:focus { border-color: #0E4B47; }
+    .sp-row { display: flex; gap: 8px; }
+    .sp-row .sp-field { flex: 1; }
+    .sp-btn { width: 100%; padding: 8px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; font-family: 'Inter',sans-serif; cursor: pointer; transition: all .15s; margin-bottom: 5px; }
+    .sp-btn.primary { background: #0E4B47; color: #fff; }
+    .sp-btn.primary:hover { background: #0A3D3A; }
+    .sp-btn.secondary { background: #F8FBF9; color: #4D6260; border: 1.5px solid #B8D0C8; }
+    .sp-btn.secondary:hover { border-color: #7BBBB5; }
+    .sp-btn.danger { background: #FCE8E5; color: #B83C2C; border: 1.5px solid #F8C4BE; }
+    .sp-btn.danger:hover { background: #F8D5D0; }
+
+    /* Status grid — gros boutons colorés */
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .status-opt { padding: 10px 4px; border-radius: 10px; border: 2px solid transparent; font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; transition: all .15s; display:flex;flex-direction:column;align-items:center;gap:3px; }
+    .status-opt .s-dot { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
+    .status-opt:hover { transform: scale(1.04); }
+    .status-opt.s-free  { background:#DCF0ED; color:#0E4B47; border-color:#7BBBB5; }
+    .status-opt.s-occ   { background:#FCE8E5; color:#B83C2C; border-color:#E36C5B; }
+    .status-opt.s-res   { background:#FEF7E0; color:#856A10; border-color:#F2C14E; }
+    .status-opt.s-clean { background:#F0E8FF; color:#5B21B6; border-color:#A78BFA; }
+    .status-opt.selected { box-shadow: 0 0 0 3px rgba(14,75,71,.25); }
+
+    /* Shape grid */
+    .shape-grid-inline { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+    .shape-grid-modal  { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+    .shape-opt { padding: 10px 6px; border: 1.5px solid #B8D0C8; border-radius: 10px; cursor: pointer; text-align: center; transition: all .15s; display:flex;flex-direction:column;align-items:center;gap:5px; }
+    .shape-opt:hover { border-color: #7BBBB5; background: #EEF5F2; }
+    .shape-opt.active { border-color: #0E4B47; background: #EEF5F2; box-shadow:0 0 0 2px rgba(14,75,71,.2); }
+    .shape-opt-preview { display:flex;align-items:center;justify-content:center;height:36px; }
+    .shape-opt-preview .sp { background:#0E4B47;opacity:.75;display:block; }
+    .shape-opt.active .shape-opt-preview .sp { opacity:1; }
+    .shape-opt-lbl { font-size: 9px; color: #4D6260; font-weight: 700; letter-spacing:.3px; }
+
+    /* Color swatches */
+    .color-swatches { display: flex; flex-wrap: wrap; gap: 5px; }
+    .swatch { width: 24px; height: 24px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; transition: all .15s; }
+    .swatch:hover { transform: scale(1.15); }
+    .swatch.active { border-color: #0E4B47; box-shadow: 0 0 0 2px rgba(14,75,71,.3); }
+
+    /* Stats bar (right panel) */
+    .stats-block { padding: 14px 16px; background: #F8FBF9; border-bottom: 1px solid #CFE0D9; }
+    .occ-bar-wrap { margin-top: 10px; }
+    .occ-bar-track { height: 8px; background: #B8D0C8; border-radius: 4px; overflow: hidden; margin: 6px 0; }
+    .occ-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+    .stats-detail { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+    .stats-row { display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
+    .stats-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+    .stats-count { font-size: 18px; font-weight: 800; line-height: 1; }
+    .stats-four { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .stats-card { background: #fff; border: 1.5px solid #B8D0C8; border-radius: 10px; padding: 8px 10px; text-align: center; }
+    .stats-card-n { font-size: 20px; font-weight: 800; line-height: 1; }
+    .stats-card-l { font-size: 9px; color: #4D6260; margin-top: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* Legend */
+    .legend-block { padding: 12px 16px; border-bottom: 1px solid #CFE0D9; }
+    .legend-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; color: #4D6260; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Empty state for side panel */
+    .sp-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 16px; color: #b0c8b0; font-size: 12px; text-align: center; gap: 8px; }
+
+    /* ══ MODALS ══ */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: 18px; width: 480px; max-width: 96vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,.18); animation: mi .2s cubic-bezier(.22,1,.36,1); }
+    @keyframes mi { from { opacity:0; transform: scale(.96) translateY(10px); } }
+    .modal-head { background: linear-gradient(135deg,#0E4B47,#0A3D3A); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1; }
+    .modal-title { font-size: 15px; font-weight: 800; color: #fff; }
+    .modal-close { background: none; border: none; color: rgba(255,255,255,.5); font-size: 22px; cursor: pointer; }
+    .modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-field { display: flex; flex-direction: column; gap: 5px; }
+    .modal-label { font-size: 12px; font-weight: 600; color: #4D6260; }
+    .modal-input { padding: 9px 12px; border: 1.5px solid #B8D0C8; border-radius: 8px; font-size: 13px; font-family: 'Inter',sans-serif; outline: none; transition: border-color .15s; color: #0F2A28; }
+    .modal-input:focus { border-color: #0E4B47; }
+    .modal-row { display: flex; gap: 12px; }
+    .modal-row .modal-field { flex: 1; }
+    .modal-footer { padding: 14px 20px; border-top: 1.5px solid #B8D0C8; display: flex; gap: 8px; position: sticky; bottom: 0; background: #fff; }
+    .modal-btn { flex: 1; padding: 11px; border-radius: 9px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
+    .modal-btn.pri { background: #0E4B47; color: #fff; }
+    .modal-btn.pri:hover { background: #0A3D3A; }
+    .modal-btn.sec { background: #F8FBF9; color: #4D6260; border: 1.5px solid #B8D0C8; }
+    .modal-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+    .modal-swatch { width: 26px; height: 26px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; transition: all .15s; }
+    .modal-swatch:hover { transform: scale(1.12); }
+    .modal-swatch.active { border-color: #0E4B47; box-shadow: 0 0 0 2px rgba(14,75,71,.3); }
+    .shape-grid-modal { display: grid; grid-template-columns: repeat(5,1fr); gap: 7px; }
+
+    /* Table status popup */
+    .status-popup { background: #fff; border-radius: 16px; width: 300px; box-shadow: 0 16px 48px rgba(0,0,0,.2); animation: mi .15s ease; }
+    .sp-pop-head { padding: 14px 16px; border-bottom: 1.5px solid #B8D0C8; }
+    .sp-pop-name { font-size: 15px; font-weight: 800; color: #0F2A28; }
+    .sp-pop-detail { font-size: 11px; color: #4D6260; margin-top: 2px; }
+    .sp-pop-body { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+    .sp-pop-btn { padding: 11px; border-radius: 10px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; text-align: center; }
+    .sp-pop-btn.free  { background: #DCF0ED; color: #0E4B47;  border: 1.5px solid #7BBBB5; }
+    .sp-pop-btn.free:hover  { background: #C6E5E0; }
+    .sp-pop-btn.occ   { background: #FCE8E5; color: #B83C2C; border: 1.5px solid #E36C5B; }
+    .sp-pop-btn.occ:hover   { background: #F8D5D0; }
+    .sp-pop-btn.res   { background: #FEF7E0; color: #856A10; border: 1.5px solid #F2C14E; }
+    .sp-pop-btn.res:hover   { background: #FDEFC8; }
+    .sp-pop-btn.clean { background: #F0E8FF; color: #5B21B6; border: 1.5px solid #A78BFA; }
+    .sp-pop-btn.cancel{ background: #F8FBF9; color: #4D6260; border: 1.5px solid #B8D0C8; }
+
+    /* Admin selector */
+    .admin-sel { display: flex; align-items: center; gap: 8px; }
+    .admin-sel select { padding: 5px 10px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,.2); background: rgba(255,255,255,.1); color: #fff; font-size: 12px; font-family: 'Inter',sans-serif; outline: none; cursor: pointer; }
+
+    /* ══ RESERVATIONS PANEL ══ */
+    .resa-panel { padding: 12px 16px; border-bottom: 1px solid #CFE0D9; }
+    .resa-panel-head { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px; }
+    .resa-today-lbl { font-size:10px;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:1px; }
+    .resa-count-badge { font-size:10px;font-weight:700;background:#FEF7E0;color:#856A10;padding:2px 7px;border-radius:10px;border:1px solid #F2C14E; }
+    .resa-empty { font-size:11px;color:#aaa;text-align:center;padding:8px 0; }
+    .resa-card { background:#F8FBF9;border:1.5px solid #B8D0C8;border-radius:10px;padding:9px 11px;margin-bottom:7px;transition:all .15s; }
+    .resa-card.assigned { background:#FEF7E0;border-color:#F2C14E; }
+    .resa-card-top { display:flex;align-items:center;justify-content:space-between;margin-bottom:3px; }
+    .resa-name { font-size:13px;font-weight:700;color:#0F2A28; }
+    .resa-heure { font-size:11px;font-weight:700;color:#856A10;background:#FEF7E0;padding:2px 7px;border-radius:5px;border:1px solid #F2C14E; }
+    .resa-details { font-size:11px;color:#4D6260;display:flex;align-items:center;gap:5px;margin-bottom:5px; }
+    .resa-assigned-badge { font-size:10px;font-weight:700;color:#0E4B47;background:#DCF0ED;padding:2px 8px;border-radius:5px;border:1px solid #7BBBB5; }
+    .resa-btn-row { display:flex;gap:5px;margin-top:4px; }
+    .resa-assign-btn { font-size:10px;font-weight:700;color:#856A10;background:#FEF7E0;border:1.5px solid #F2C14E;border-radius:6px;padding:4px 9px;cursor:pointer;font-family:Inter,sans-serif;flex:1;transition:all .15s; }
+    .resa-assign-btn:hover { background:#F2C14E;color:#5a3e00; }
+    .resa-unassign-btn { font-size:10px;font-weight:700;color:#B83C2C;background:#FCE8E5;border:1.5px solid #E36C5B;border-radius:6px;padding:4px 9px;cursor:pointer;font-family:Inter,sans-serif;transition:all .15s; }
+    .resa-unassign-btn:hover { background:#F8D5D0; }
+    /* Table avec réservation → bandeau collé en bas */
+    .tbl-resa-badge { position:absolute;bottom:0;left:0;right:0;font-size:8px;font-weight:800;color:#5a3e00;background:rgba(242,193,78,.92);padding:2px 5px;border-radius:0 0 var(--tbl-r,10px) var(--tbl-r,10px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;line-height:1.4;backdrop-filter:blur(2px); }
+    /* Mode assignation */
+    .assign-mode-banner { display:none;position:fixed;top:82px;left:50%;transform:translateX(-50%);background:#F2C14E;color:#5a3e00;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:500;box-shadow:0 6px 24px rgba(0,0,0,.18);align-items:center;gap:12px;white-space:nowrap; }
+    .assign-mode-banner.visible { display:flex; }
+    .assign-cancel-btn { background:rgba(0,0,0,.12);border:none;color:inherit;padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;font-family:Inter,sans-serif; }
+    .assign-cancel-btn:hover { background:rgba(0,0,0,.22); }
+    /* Pulse sur tables en mode assignation */
+    .canvas-area.assign-mode .tbl-block:not(.decor-item) { cursor:crosshair !important; animation:tablePulse 1.2s ease-in-out infinite alternate; }
+    @keyframes tablePulse { from{box-shadow:0 2px 8px rgba(0,0,0,.12)} to{box-shadow:0 0 0 3px rgba(242,193,78,.6),0 4px 16px rgba(0,0,0,.12)} }
+
+    /* ══ SNACKBAR ══ */
+    .snackbar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #0E4B47; color: #fff; padding: 12px 24px; border-radius: 10px; font-size: 13px; font-weight: 600; z-index: 3000; transition: transform .3s; pointer-events: none; white-space: nowrap; }
+    .snackbar.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 900px) { .main { grid-template-columns: 1fr; } .side-panel { display: none; } }
+  
+  </style>
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">
+      <div class="logo-icon" id="burger-btn" onclick="toggleBurger()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+      </div>
+      <div class="burger-menu" id="burger-menu">
+        <div class="burger-menu-inner">
+          <div class="burger-section">Service</div>
+          <a class="menu-item" href="/index.html"><span data-icon="clipboard"></span> Dashboard commandes</a>
+          <a class="menu-item active" href="/plan-salle.html"><span data-icon="building"></span> Plan de salle</a>
+          <a class="menu-item" href="/kds.html"><span data-icon="chef_hat"></span> Écran cuisine (KDS)</a>
+          <a class="menu-item" href="/paiement.html"><span data-icon="credit_card"></span> Paiement</a>
+          <a class="menu-item" href="/reservations.html"><span data-icon="calendar"></span> Réservations</a>
+          <div class="burger-divider"></div>
+          <div class="burger-section">Gestion</div>
+          <a class="menu-item" href="/planning.html"><span data-icon="calendar"></span> Planning équipe</a>
+          <a class="menu-item" href="/stocks.html"><span data-icon="box"></span> Stock</a>
+          <div class="burger-divider"></div>
+          <div class="burger-section">Outils IA</div>
+          <a class="menu-item" href="/fraude.html"><span data-icon="shield"></span> Détection fraude</a>
+          <div class="burger-divider"></div>
+          <div class="burger-section">Compte</div>
+          <a class="menu-item admin-only" href="/admin.html" style="display:none"><span data-icon="settings"></span> Administration</a>
+          <div class="menu-item danger" onclick="deconnexion()"><span data-icon="unlock"></span> Déconnexion</div>
+        </div>
+      </div>
+      Commande-IA
+    </div>
+    <div class="badge-live"><div class="live-dot"></div>Plan de salle</div>
+    <div class="topbar-stats">
+      <div class="stat-block"><span class="stat-label">Taux</span><span class="stat-value warn" id="ts-pct">0%</span></div>
+      <div class="stat-block"><span class="stat-label">Tables</span><span class="stat-value accent" id="ts-total">0</span></div>
+      <div class="stat-block"><span class="stat-label">Libres</span><span class="stat-value accent" id="ts-free">0</span></div>
+      <div class="stat-block"><span class="stat-label">Occupées</span><span class="stat-value danger" id="ts-occ">0</span></div>
+      <div class="stat-block"><span class="stat-label">Réservées</span><span class="stat-value warn" id="ts-res">0</span></div>
+      <div class="stat-block"><span class="stat-label">Couverts</span><span class="stat-value sm" id="ts-cov">0</span></div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div id="admin-bar" style="display:none" class="admin-sel">
+      <span style="font-size:11px;color:rgba(184,208,200,.7)">Restaurant :</span>
+      <select id="admin-rest-select" onchange="switchRestaurant(this.value)"></select>
+    </div>
+    <span style="font-size:11px;color:rgba(184,208,200,.8);display:flex;align-items:center" id="save-status"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">Synchronisé</span></span>
+    <div class="tabs-wrap">
+      <button class="tab active" id="tab-live" onclick="switchTab('live',this)"><span data-icon="eye"></span> Vue live</button>
+      <button class="tab" id="tab-edit" onclick="switchTab('edit',this)"><span data-icon="edit"></span> Édition</button>
+    </div>
+    <button class="top-btn primary" onclick="savePlan()"><span data-icon="save"></span> Sauvegarder</button>
+  </div>
+</div>
+
+<div class="page-wrap">
+<!-- TOOLBAR : ROOMS -->
+<div class="toolbar">
+  <div class="toolbar-left" id="room-tabs-wrap"><!-- filled by JS --></div>
+  <div class="toolbar-right">
+    <div style="display:flex;align-items:center;gap:4px;background:#CFE0D9;border:1.5px solid #B8D0C8;border-radius:8px;padding:2px 4px">
+      <button class="tb-btn" style="padding:4px 8px;border:none;background:none;font-size:14px" onclick="changeZoom(-0.1)" title="Zoom arrière">−</button>
+      <span id="zoom-lbl" style="font-size:11px;font-weight:700;color:#0E4B47;min-width:34px;text-align:center">100%</span>
+      <button class="tb-btn" style="padding:4px 8px;border:none;background:none;font-size:14px" onclick="changeZoom(0.1)" title="Zoom avant">+</button>
+      <button class="tb-btn" style="padding:4px 8px;border:none;background:none;font-size:10px;color:#4D6260" onclick="resetZoom()" title="Zoom 100%">↺</button>
+    </div>
+    <button class="tb-btn" id="grid-tog-btn" onclick="toggleGrid()">⊞ Grille</button>
+    <button class="tb-btn" onclick="autoNumber()"><span data-icon="list"></span> Numéroter</button>
+    <button class="tb-btn" onclick="resetAllFree()"><span data-icon="refresh"></span> Tout libérer</button>
+    <button class="tb-btn danger" id="clear-btn" style="display:none" onclick="clearRoom()"><span data-icon="trash"></span> Vider salle</button>
+  </div>
+</div>
+
+<!-- BARRE D'OUTILS EDITION -->
+<div class="tools-bar" id="tools-bar" style="display:none">
+  <!-- Sélection -->
+  <button class="tool-btn active" id="tool-select" onclick="setTool('select')" title="Sélectionner / déplacer (S)">↖ Sélection</button>
+  <div class="tool-sep"></div>
+  <!-- Ajout -->
+  <button class="tool-btn" id="tool-table" onclick="openAddModal()" title="Ajouter une table"><span data-icon="building"></span> Table</button>
+  <button class="tool-btn" id="tool-decor" onclick="openDecorModal()" title="Toilettes, Bar, Mur…"><span data-icon="home"></span> Décor</button>
+  <div class="tool-sep"></div>
+  <!-- Dessin -->
+  <button class="tool-btn" id="tool-pencil" onclick="setTool('pencil')" title="Tracé libre (P)"><span data-icon="edit"></span> Crayon</button>
+  <button class="tool-btn" id="tool-line"   onclick="setTool('line')"   title="Ligne droite (L)">╱ Ligne</button>
+  <button class="tool-btn" id="tool-rect"   onclick="setTool('rect')"   title="Zone vide (R)">▭ Zone</button>
+  <button class="tool-btn" id="tool-erase"  onclick="setTool('erase')"  title="Effacer un tracé (E)" style="color:#c03030">⌫ Effacer</button>
+  <div class="tool-sep"></div>
+  <!-- Undo/Redo -->
+  <button class="tool-btn" onclick="undo()" title="Annuler (Ctrl+Z)"><span data-icon="rotate_left"></span> Annuler</button>
+  <div class="tool-sep"></div>
+  <!-- Snap -->
+  <button class="tool-btn" id="snap-btn" onclick="toggleSnap()" title="Aligner sur la grille">⊡ Snap</button>
+  <!-- Fond de salle -->
+  <label class="tool-btn" style="gap:6px;cursor:pointer" title="Couleur de fond de la salle">
+    <span data-icon="palette"></span> Fond
+    <input type="color" id="room-bg-input" value="#EEF5F2" oninput="setRoomBg(this.value)" style="width:20px;height:20px;border:none;border-radius:4px;cursor:pointer;padding:0;background:none">
+  </label>
+  <!-- Tout sélectionner -->
+  <button class="tool-btn" onclick="selectAllTables()" title="Sélectionner toutes les tables (Ctrl+A)">⬜ Tout</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- CANVAS -->
+  <div class="canvas-area" id="canvas-area">
+    <div class="canvas-grid-bg hidden" id="canvas-grid"></div>
+    <div class="canvas-empty" id="canvas-empty">
+      <div class="canvas-empty-icon"><span data-icon="building"></span></div>
+      <div class="canvas-empty-text">Cette salle est vide.<br>Activez le mode Édition pour ajouter des tables.</div>
+    </div>
+    <div id="canvas"></div>
+    <!-- SVG overlay pour les tracés dessinés -->
+    <svg id="draw-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="side-panel">
+    <!-- Stats globales -->
+    <div class="sp-head">
+      <div class="sp-title" id="sp-main-title">Plan de salle</div>
+      <div class="sp-sub" id="sp-main-sub">Vue en temps réel</div>
+    </div>
+
+    <div class="stats-block">
+      <div class="stats-four">
+        <div class="stats-card"><div class="stats-card-n" style="color:#0E4B47" id="sp-free">0</div><div class="stats-card-l">Libres</div></div>
+        <div class="stats-card"><div class="stats-card-n" style="color:#E36C5B" id="sp-occ">0</div><div class="stats-card-l">Occupées</div></div>
+        <div class="stats-card"><div class="stats-card-n" style="color:#856A10" id="sp-res">0</div><div class="stats-card-l">Réservées</div></div>
+        <div class="stats-card"><div class="stats-card-n" style="color:#8B5CF6" id="sp-clean">0</div><div class="stats-card-l">Nettoyage</div></div>
+      </div>
+      <div class="sp-section-title">Taux d'occupation — <strong id="sp-pct-lbl">0%</strong></div>
+      <div class="occ-bar-wrap">
+        <div class="occ-bar-track"><div class="occ-bar-fill" id="occ-bar" style="width:0%"></div></div>
+      </div>
+      <div class="stats-detail">
+        <div class="stats-row"><span style="color:#4D6260">Couverts libres</span><strong style="color:#0E4B47" id="sp-cap-free">0</strong></div>
+        <div class="stats-row"><span style="color:#4D6260">Couverts occupés</span><strong style="color:#E36C5B" id="sp-cap-occ">0</strong></div>
+        <div class="stats-row"><span style="color:#4D6260">Capacité totale</span><strong id="sp-cap-total">0</strong></div>
+      </div>
+    </div>
+
+    <!-- Properties (edit mode) -->
+    <div id="prop-panel" style="display:none">
+
+      <!-- Message quand rien n'est sélectionné -->
+      <div class="sp-section" id="no-sel-msg">
+        <div class="sp-empty"><div style="font-size:2rem;opacity:.3"><span data-icon="building"></span></div>Cliquez sur une table pour la modifier</div>
+      </div>
+
+      <!-- Tout le reste masqué si rien sélectionné -->
+      <div id="sel-props" style="display:none">
+
+        <!-- Statut — SECTION PRINCIPALE bien visible -->
+        <div class="sp-section" style="background:#F8FBF9;">
+          <div class="sp-section-title">Statut de la table</div>
+          <div class="status-grid">
+            <div class="status-opt s-free"  id="so-free"  onclick="setStatus('free')">
+              <div class="s-dot" style="background:#0E4B47"></div><span data-icon="check"></span> Libre
+            </div>
+            <div class="status-opt s-occ"   id="so-occ"   onclick="setStatus('occupied')">
+              <div class="s-dot" style="background:#E36C5B"></div><span data-icon="circle_dot"></span> Occupée
+            </div>
+            <div class="status-opt s-res"   id="so-res"   onclick="setStatus('reserved')">
+              <div class="s-dot" style="background:#F2C14E"></div><span data-icon="clock"></span> Réservée
+            </div>
+            <div class="status-opt s-clean" id="so-clean" onclick="setStatus('cleaning')">
+              <div class="s-dot" style="background:#8B5CF6"></div><span data-icon="tool"></span> Nettoyage
+            </div>
+          </div>
+        </div>
+
+        <!-- Infos de service (client, serveur, heure) -->
+        <div class="sp-section">
+          <div class="sp-section-title">Infos service</div>
+          <div class="sp-field"><label class="sp-label"><span data-icon="user"></span> Client / Réservation</label><input class="sp-input" id="prop-client" placeholder="Nom du client…" oninput="updateSel('client',this.value)"></div>
+          <div class="sp-row">
+            <div class="sp-field"><label class="sp-label"><span data-icon="timer"></span> Heure arrivée</label><input class="sp-input" type="time" id="prop-time" oninput="updateSel('arrivalTime',this.value)"></div>
+            <div class="sp-field"><label class="sp-label"><span data-icon="users"></span> Couverts</label><input class="sp-input" type="number" min="0" max="50" id="prop-guests" placeholder="0" oninput="updateSel('guests',+this.value||0)"></div>
+          </div>
+          <div class="sp-field"><label class="sp-label"><span data-icon="user"></span>‍<span data-icon="chef_hat"></span> Serveur assigné</label><input class="sp-input" id="prop-waiter" placeholder="Prénom du serveur…" oninput="updateSel('waiter',this.value)"></div>
+        </div>
+
+        <!-- Paramètres de la table -->
+        <div class="sp-section">
+          <div class="sp-section-title">Paramètres</div>
+          <div class="sp-row">
+            <div class="sp-field"><label class="sp-label">Nom de la table</label><input class="sp-input" id="prop-name" oninput="updateSel('name',this.value)"></div>
+            <div class="sp-field" style="max-width:72px"><label class="sp-label">Capacité max</label><input class="sp-input" type="number" min="0" max="50" id="prop-cap" oninput="updateSel('capacity',+this.value||0)"></div>
+          </div>
+          <div class="sp-field"><label class="sp-label">Notes (ex: vue terrasse, PMR…)</label><input class="sp-input" id="prop-notes" placeholder="Notes internes…" oninput="updateSel('notes',this.value)"></div>
+        </div>
+
+        <!-- Forme -->
+        <div class="sp-section">
+          <div class="sp-section-title">Forme de la table</div>
+          <div class="shape-grid-inline" id="shape-grid-inline"><!-- filled by JS --></div>
+        </div>
+
+        <!-- Taille + rotation -->
+        <div class="sp-section">
+          <div class="sp-section-title">Taille & Rotation</div>
+          <div class="sp-row">
+            <div class="sp-field"><label class="sp-label">Largeur</label><input class="sp-input" type="number" min="30" max="500" id="prop-w" oninput="updateSel('w',+this.value||80)"></div>
+            <div class="sp-field"><label class="sp-label">Hauteur</label><input class="sp-input" type="number" min="30" max="500" id="prop-h" oninput="updateSel('h',+this.value||80)"></div>
+          </div>
+          <div class="sp-field">
+            <label class="sp-label">Rotation : <span id="rot-lbl">0°</span></label>
+            <input class="sp-input" type="range" min="0" max="359" id="prop-rot" oninput="updateSel('rotation',+this.value);document.getElementById('rot-lbl').textContent=this.value+'°'">
+          </div>
+        </div>
+
+        <!-- Couleur -->
+        <div class="sp-section">
+          <div class="sp-section-title">Couleur de fond</div>
+          <div class="color-swatches" id="color-swatches">
+            <div class="swatch active" style="background:#DCF0ED" onclick="updateSel('bg','#DCF0ED');setActiveSwatch(this)"></div>
+            <div class="swatch" style="background:#fff8e8" onclick="updateSel('bg','#fff8e8');setActiveSwatch(this)"></div>
+            <div class="swatch" style="background:#eef0ff" onclick="updateSel('bg','#eef0ff');setActiveSwatch(this)"></div>
+            <div class="swatch" style="background:#FCE8E5" onclick="updateSel('bg','#FCE8E5');setActiveSwatch(this)"></div>
+            <div class="swatch" style="background:#f8f0ff" onclick="updateSel('bg','#f8f0ff');setActiveSwatch(this)"></div>
+            <div class="swatch" style="background:#fff0e8" onclick="updateSel('bg','#fff0e8');setActiveSwatch(this)"></div>
+            <div class="swatch" style="background:#f0f0f8" onclick="updateSel('bg','#f0f0f8');setActiveSwatch(this)"></div>
+            <div class="swatch" style="background:#e8e8e8" onclick="updateSel('bg','#e8e8e8');setActiveSwatch(this)"></div>
+            <div class="swatch" style="background:#0E4B47;border:2px solid #B8D0C8" onclick="updateSel('bg','#0E4B47');setActiveSwatch(this)"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+            <input type="color" id="color-custom" value="#DCF0ED" oninput="updateSel('bg',this.value)" style="width:30px;height:30px;border-radius:6px;border:1.5px solid #B8D0C8;cursor:pointer;padding:2px">
+            <span style="font-size:11px;color:#4D6260">Couleur personnalisée</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="sp-section">
+          <div class="sp-section-title">Actions</div>
+          <button class="sp-btn primary" onclick="duplicateSel()">⧉ Dupliquer cette table</button>
+          <button class="sp-btn secondary" onclick="bringFront()">↑ Mettre au premier plan</button>
+          <button class="sp-btn danger" onclick="deleteSel()"><span data-icon="x"></span> Supprimer la table</button>
+        </div>
+
+      </div><!-- /sel-props -->
+    </div>
+
+    <!-- Réservations du jour (live mode) -->
+    <div class="resa-panel" id="resa-panel">
+      <div class="resa-panel-head">
+        <span class="resa-today-lbl"><span data-icon="calendar"></span> Réservations du jour</span>
+        <span class="resa-count-badge" id="resa-count">0</span>
+      </div>
+      <div id="resa-list"><div class="resa-empty">Chargement…</div></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend-block" id="legend-block">
+      <div class="sp-section-title">Légende</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#0E4B47"></div>Libre</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#E36C5B"></div>Occupée</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#F2C14E"></div>Réservée</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#8B5CF6"></div>En nettoyage</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /page-wrap -->
+
+<!-- MODAL AJOUTER TABLE -->
+<div class="modal-overlay" id="modal-add" onclick="if(event.target===this)closeModal('modal-add')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-add-title"><span data-icon="edit"></span> Nouvelle table</div>
+      <button class="modal-close" onclick="closeModal('modal-add')"><span data-icon="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row">
+        <div class="modal-field">
+          <label class="modal-label">Nom *</label>
+          <input class="modal-input" id="nb-name" placeholder="ex: Table 1, Bar VIP..." maxlength="30">
+        </div>
+        <div class="modal-field" style="max-width:90px">
+          <label class="modal-label">Couverts</label>
+          <input class="modal-input" type="number" id="nb-cap" min="0" max="50" value="2">
+        </div>
+        <div class="modal-field" style="max-width:80px">
+          <label class="modal-label" title="Nom d'icône (ex: building, circle_dot…) ou emoji">Icône</label>
+          <input class="modal-input" id="nb-icon" value="building" maxlength="32" placeholder="building">
+        </div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Forme</label>
+        <div class="shape-grid-modal" id="shape-grid-modal"><!-- filled by JS --></div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Couleur de fond</label>
+        <div class="modal-swatches" id="modal-swatches">
+          <div class="modal-swatch active" style="background:#DCF0ED" onclick="selModalColor(this,'#DCF0ED')"></div>
+          <div class="modal-swatch" style="background:#fff8e8" onclick="selModalColor(this,'#fff8e8')"></div>
+          <div class="modal-swatch" style="background:#eef0ff" onclick="selModalColor(this,'#eef0ff')"></div>
+          <div class="modal-swatch" style="background:#FCE8E5" onclick="selModalColor(this,'#FCE8E5')"></div>
+          <div class="modal-swatch" style="background:#f8f0ff" onclick="selModalColor(this,'#f8f0ff')"></div>
+          <div class="modal-swatch" style="background:#fff0e8" onclick="selModalColor(this,'#fff0e8')"></div>
+          <div class="modal-swatch" style="background:#f0f0f8" onclick="selModalColor(this,'#f0f0f8')"></div>
+          <div class="modal-swatch" style="background:#e8e8e8" onclick="selModalColor(this,'#e8e8e8')"></div>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Notes (optionnel)</label>
+        <input class="modal-input" id="nb-notes" placeholder="ex: vue mer, accessible PMR…">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn sec" onclick="closeModal('modal-add')">Annuler</button>
+      <button class="modal-btn pri" id="modal-add-btn" onclick="confirmAddTable()"><span data-icon="check_circle"></span> Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL STATUT (mode live) -->
+<div class="modal-overlay" id="modal-status" onclick="if(event.target===this)closeModal('modal-status')">
+  <div class="status-popup">
+    <div class="sp-pop-head">
+      <div class="sp-pop-name" id="pop-name">Table</div>
+      <div class="sp-pop-detail" id="pop-detail"></div>
+    </div>
+    <!-- Infos rapides service -->
+    <div style="padding:10px 16px 0;display:flex;flex-direction:column;gap:6px" id="pop-service-block">
+      <div style="display:flex;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;color:#4D6260;margin-bottom:3px"><span data-icon="user"></span> Client</div>
+          <input id="pop-client" style="width:100%;padding:6px 8px;border:1.5px solid #B8D0C8;border-radius:7px;font-size:12px;font-family:Inter,sans-serif;outline:none" placeholder="Nom client…" oninput="updatePopField('client',this.value)">
+        </div>
+        <div style="width:80px">
+          <div style="font-size:10px;font-weight:700;color:#4D6260;margin-bottom:3px"><span data-icon="users"></span> Couverts</div>
+          <input id="pop-guests" type="number" min="0" max="50" style="width:100%;padding:6px 8px;border:1.5px solid #B8D0C8;border-radius:7px;font-size:12px;font-family:Inter,sans-serif;outline:none" placeholder="0" oninput="updatePopField('guests',+this.value||0)">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;color:#4D6260;margin-bottom:3px"><span data-icon="user"></span>‍<span data-icon="chef_hat"></span> Serveur</div>
+          <input id="pop-waiter" style="width:100%;padding:6px 8px;border:1.5px solid #B8D0C8;border-radius:7px;font-size:12px;font-family:Inter,sans-serif;outline:none" placeholder="Prénom serveur…" oninput="updatePopField('waiter',this.value)">
+        </div>
+        <div style="width:80px">
+          <div style="font-size:10px;font-weight:700;color:#4D6260;margin-bottom:3px"><span data-icon="timer"></span> Arrivée</div>
+          <input id="pop-time" type="time" style="width:100%;padding:6px 8px;border:1.5px solid #B8D0C8;border-radius:7px;font-size:12px;font-family:Inter,sans-serif;outline:none" oninput="updatePopField('arrivalTime',this.value)">
+        </div>
+      </div>
+    </div>
+    <div class="sp-pop-body">
+      <div style="font-size:10px;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Changer le statut</div>
+      <button class="sp-pop-btn free"  id="ppb-free"  onclick="setStatusPop('free')"><span data-icon="check"></span> Libre</button>
+      <button class="sp-pop-btn occ"   id="ppb-occ"   onclick="setStatusPop('occupied')"><span data-icon="circle_dot"></span> Occupée</button>
+      <button class="sp-pop-btn res"   id="ppb-res"   onclick="setStatusPop('reserved')"><span data-icon="clock"></span> Réservée</button>
+      <button class="sp-pop-btn clean" id="ppb-clean" onclick="setStatusPop('cleaning')"><span data-icon="tool"></span> Nettoyage</button>
+      <button class="sp-pop-btn cancel" onclick="closeModal('modal-status')"><span data-icon="x"></span> Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DÉCOR -->
+<div class="modal-overlay" id="modal-decor" onclick="if(event.target===this)closeModal('modal-decor')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <div class="modal-title"><span data-icon="home"></span> Ajouter un élément décoratif</div>
+      <button class="modal-close" onclick="closeModal('modal-decor')"><span data-icon="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:#4D6260;margin-bottom:8px">Ces éléments sont visuels uniquement — ils n'ont pas de statut de service.</div>
+      <div class="decor-grid" id="decor-grid"><!-- filled by JS --></div>
+      <div class="modal-field" style="margin-top:10px">
+        <label class="modal-label">Nom personnalisé (optionnel)</label>
+        <input class="modal-input" id="decor-name" placeholder="Ex: Toilettes, Réception, Caisse…">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DRAW TOOLBAR flottante -->
+<div class="draw-toolbar" id="draw-toolbar">
+  <span style="font-size:11px;font-weight:700;color:#4D6260">Couleur :</span>
+  <div class="draw-color active" style="background:#0E4B47" data-c="#0E4B47" onclick="setDrawColor(this)"></div>
+  <div class="draw-color" style="background:#E36C5B" data-c="#E36C5B" onclick="setDrawColor(this)"></div>
+  <div class="draw-color" style="background:#F2C14E" data-c="#F2C14E" onclick="setDrawColor(this)"></div>
+  <div class="draw-color" style="background:#3b6db0" data-c="#3b6db0" onclick="setDrawColor(this)"></div>
+  <div class="draw-color" style="background:#888" data-c="#888" onclick="setDrawColor(this)"></div>
+  <div style="width:1px;height:18px;background:#B8D0C8;margin:0 2px"></div>
+  <span style="font-size:11px;font-weight:700;color:#4D6260">Épaisseur :</span>
+  <input type="range" class="draw-size" id="draw-size" min="1" max="12" value="2" oninput="drawStrokeW=+this.value">
+  <div style="width:1px;height:18px;background:#B8D0C8;margin:0 2px"></div>
+  <button onclick="setTool('select')" style="padding:4px 10px;border:1.5px solid #B8D0C8;border-radius:6px;background:#F8FBF9;font-size:11px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif"><span data-icon="x"></span> Quitter</button>
+</div>
+
+<div class="snackbar" id="snackbar"></div>
+
+<!-- Mode assignation réservation -->
+<div class="assign-mode-banner" id="assign-banner">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#5a3e00" stroke-width="1.5"/><path d="M8 5v3.5l2 1.5" stroke="#5a3e00" stroke-width="1.5" stroke-linecap="round"/></svg>
+  <span id="assign-banner-text">Cliquez sur une table pour placer la réservation</span>
+  <button class="assign-cancel-btn" onclick="cancelAssignMode()">✕ Annuler</button>
+</div>
+
+<script src="/permissions.js"></script>
+<script src="/icons.js"></script>
+<script>
+window.addEventListener('load', () => { try { window.ICONS && window.ICONS.replaceEmojisGlobal && window.ICONS.replaceEmojisGlobal(); } catch(e) {} });
+// ── AUTH (système central de hiérarchie) ──
+if (typeof requireAuth === 'function') requireAuth();
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (!user.email) window.location.href = '/login.html';
+const ORIGIN = window.location.origin;
+let restaurantId = user.restaurantId || '';
+const PLAN_KEY = () => `floor_plan_v2_${restaurantId}`;
+if (user.role === 'Admin') {
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+  document.getElementById('admin-bar').style.display = 'flex';
+  loadRestaurantList();
+}
+
+// ── STATE ──
+let rooms = [];
+let currentRoomId = null;
+let items = [];            // ref to current room's items array
+let selectedId = null;
+let statusPopItemId = null;
+let currentTab = 'live';  // 'live' | 'edit'
+let showGrid = false;
+let zoomLevel = 1;
+let undoStack = [];
+let autoSaveTimer = null;
+let isDragging = false, dragOffX = 0, dragOffY = 0;
+let isResizing = false, rsItem = null, rsX0, rsY0, rsW0, rsH0;
+// New table form state
+let nbShape = 'circle', nbColor = '#DCF0ED';
+// Edit mode last drop coords
+let dropX = null, dropY = null;
+
+// ── SHAPE DEFINITIONS ──
+const SHAPES = [
+  { id:'circle',    lbl:'Ronde',    w:80,  h:80,  pw:30,ph:30  },
+  { id:'square',    lbl:'Carrée',   w:80,  h:80,  pw:28,ph:28  },
+  { id:'rect-h',    lbl:'Rectangle',w:120, h:70,  pw:42,ph:24  },
+  { id:'rect-v',    lbl:'Portrait', w:70,  h:120, pw:24,ph:42  },
+  { id:'rect-long', lbl:'Longue',   w:200, h:60,  pw:52,ph:16  },
+  { id:'wide',      lbl:'Large',    w:160, h:90,  pw:46,ph:26  },
+  { id:'small',     lbl:'Petite',   w:50,  h:50,  pw:18,ph:18  },
+  { id:'big',       lbl:'Grande',   w:150, h:150, pw:38,ph:38  },
+  { id:'thin-h',    lbl:'Barre H.', w:200, h:18,  pw:52,ph:8   },
+  { id:'thin-v',    lbl:'Barre V.', w:18,  h:160, pw:8, ph:52  },
+];
+
+function shapeCSS(shape) {
+  if (shape === 'circle') return 'border-radius:50%';
+  if (shape === 'square') return 'border-radius:10px';
+  if (shape === 'thin-h' || shape === 'thin-v') return 'border-radius:4px';
+  return 'border-radius:8px';
+}
+
+function shapePreview(s) {
+  const r = shapeCSS(s.id).replace('border-radius:','').replace('%','%').replace('px','px');
+  return `<div class="sp" style="width:${s.pw}px;height:${s.ph}px;border-radius:${r}"></div>`;
+}
+
+function buildShapeGrid(containerId, activeShape, onclickFn) {
+  document.getElementById(containerId).innerHTML = SHAPES.map(s =>
+    `<div class="shape-opt ${s.id === activeShape ? 'active' : ''}" onclick="${onclickFn}('${s.id}')">
+      <div class="shape-opt-preview">${shapePreview(s)}</div>
+      <div class="shape-opt-lbl">${s.lbl}</div>
+    </div>`
+  ).join('');
+}
+
+// ── STATUS SETTER (panneau latéral) ──
+function setStatus(status) {
+  updateSel('status', status);
+  renderAll();
+  updateStatusButtons(status);
+}
+function updateStatusButtons(status) {
+  ['free','occ','res','clean'].forEach(k => {
+    const map = {free:'free',occ:'occupied',res:'reserved',clean:'cleaning'};
+    const el = document.getElementById('so-'+k);
+    if (el) el.classList.toggle('selected', map[k] === status);
+  });
+}
+
+// ── ROOMS ──
+function setItems(arr) {
+  items = arr;
+  const cur = rooms.find(r => r.id === currentRoomId);
+  if (cur) cur.items = arr;
+}
+
+function initRooms(savedRooms) {
+  if (savedRooms && Array.isArray(savedRooms) && savedRooms.length) {
+    rooms = savedRooms;
+  } else {
+    rooms = [{ id: 'rm-' + Date.now(), name: 'Salle principale', items: [] }];
+  }
+  currentRoomId = rooms[0].id;
+  items = rooms[0].items;
+  renderRoomTabs();
+}
+
+function switchRoom(roomId) {
+  if (roomId === currentRoomId) return;
+  currentRoomId = roomId;
+  const next = rooms.find(r => r.id === roomId);
+  items = next ? next.items : [];
+  selectedId = null;
+  renderAll();
+  if (typeof renderDrawPaths === 'function') renderDrawPaths();
+  if (typeof applyRoomBg === 'function') applyRoomBg();
+  renderRoomTabs();
+  renderReservationPanel();
+}
+
+function addRoom() {
+  const name = prompt('Nom de la nouvelle salle :', 'Salle ' + (rooms.length + 1));
+  if (!name?.trim()) return;
+  const room = { id: 'rm-' + Date.now(), name: name.trim(), items: [] };
+  rooms.push(room);
+  switchRoom(room.id);
+  autoSave();
+  showSnack('<span data-icon="check_circle"></span> Salle "' + room.name + '" créée');
+}
+
+function renameRoom(roomId) {
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return;
+  const n = prompt('Nouveau nom :', room.name);
+  if (!n?.trim()) return;
+  room.name = n.trim();
+  renderRoomTabs();
+  autoSave();
+}
+
+function deleteRoom(roomId) {
+  if (rooms.length <= 1) { showSnack('<span data-icon="alert"></span> Impossible de supprimer la seule salle'); return; }
+  const room = rooms.find(r => r.id === roomId);
+  if (!confirm(`Supprimer "${room?.name}" et toutes ses tables ?`)) return;
+  rooms = rooms.filter(r => r.id !== roomId);
+  if (currentRoomId === roomId) { currentRoomId = rooms[0].id; items = rooms[0].items; selectedId = null; renderAll(); }
+  renderRoomTabs();
+  autoSave();
+  showSnack('<span data-icon="trash"></span> Salle supprimée');
+}
+
+function duplicateRoom(roomId) {
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return;
+  const copy = { id: 'rm-' + Date.now(), name: room.name + ' (copie)', items: JSON.parse(JSON.stringify(room.items)).map(i => ({...i, id: uid()})) };
+  rooms.push(copy);
+  switchRoom(copy.id);
+  autoSave();
+  showSnack('⧉ Salle dupliquée');
+}
+
+function renderRoomTabs() {
+  const wrap = document.getElementById('room-tabs-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = rooms.map(r => {
+    const tc = r.items.filter(i => !i.isDecor).length;
+    const active = r.id === currentRoomId;
+    return `<div class="room-tab ${active ? 'active' : ''}" onclick="switchRoom('${r.id}')">
+      <span data-icon="building"></span> ${r.name}
+      <span class="room-tab-count">${tc}</span>
+      <span class="room-icon-btn" onclick="event.stopPropagation();renameRoom('${r.id}')" title="Renommer"><span data-icon="edit"></span></span>
+      <span class="room-icon-btn" onclick="event.stopPropagation();duplicateRoom('${r.id}')" title="Dupliquer">⧉</span>
+      ${rooms.length > 1 ? `<span class="room-icon-btn" style="color:#c03030" onclick="event.stopPropagation();deleteRoom('${r.id}')" title="Supprimer"><span data-icon="x"></span></span>` : ''}
+    </div>`;
+  }).join('') +
+  `<button class="add-room-btn" onclick="addRoom()">+ Salle</button>`;
+}
+
+// ── TABS ──
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.getElementById('tab-live').classList.toggle('active', tab === 'live');
+  document.getElementById('tab-edit').classList.toggle('active', tab === 'edit');
+  document.getElementById('prop-panel').style.display = tab === 'edit' ? '' : 'none';
+  document.getElementById('clear-btn').style.display = tab === 'edit' ? '' : 'none';
+  document.getElementById('resa-panel').style.display = tab === 'live' ? '' : 'none';
+  if (tab === 'edit') cancelAssignMode();
+  // Barre d'outils
+  const toolsBar = document.getElementById('tools-bar');
+  if (toolsBar) toolsBar.style.display = (tab === 'edit') ? 'flex' : 'none';
+  if (tab === 'edit') {
+    document.getElementById('sp-main-title').textContent = 'Mode Édition';
+    document.getElementById('sp-main-sub').textContent = 'Cliquez sur une table pour la modifier';
+    document.getElementById('no-sel-msg').style.display = selectedId ? 'none' : '';
+    setTool('select');
+  } else {
+    document.getElementById('sp-main-title').textContent = 'Plan de salle';
+    document.getElementById('sp-main-sub').textContent = 'Cliquez sur une table pour changer son statut';
+    selectedId = null;
+    setTool('select');
+  }
+  renderAll();
+  renderDrawPaths();
+}
+
+// ── LOAD / SAVE ──
+async function loadPlan() {
+  setSaveStatus('<span data-icon="timer"></span> Chargement...');
+  if (restaurantId) {
+    try {
+      const res = await fetch(`${ORIGIN}/floor-plan/${restaurantId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data) {
+          if (data.rooms?.length) { initRooms(data.rooms); }
+          else if (Array.isArray(data.items)) { initRooms([{ id: 'rm-main', name: 'Salle principale', items: data.items }]); }
+          renderAll(); setSaveStatus('<span data-icon="check"></span> Synchronisé'); return;
+        }
+      }
+    } catch(e) {}
+  }
+  try {
+    const saved = JSON.parse(localStorage.getItem(PLAN_KEY()) || 'null');
+    if (saved) {
+      if (saved.rooms?.length) initRooms(saved.rooms);
+      else if (Array.isArray(saved.items)) initRooms([{ id:'rm-main', name:'Salle principale', items: saved.items }]);
+      else initRooms([]);
+    } else initRooms([]);
+  } catch(e) { initRooms([]); }
+  renderAll(); setSaveStatus('<span data-icon="check"></span> Local');
+}
+
+async function savePlan() {
+  setSaveStatus('<span data-icon="save"></span> Sauvegarde...');
+  const cur = rooms.find(r => r.id === currentRoomId);
+  if (cur) cur.items = items;
+  const payload = { rooms, updatedAt: new Date().toISOString(), updatedBy: user.nom || user.email };
+  if (restaurantId) {
+    try {
+      const r = await fetch(`${ORIGIN}/floor-plan/${restaurantId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      if (r.ok) { localStorage.setItem(PLAN_KEY(), JSON.stringify(payload)); setSaveStatus('<span data-icon="check"></span> Synchronisé'); showSnack('<span data-icon="save"></span> Sauvegardé et synchronisé'); return; }
+    } catch(e) {}
+  }
+  localStorage.setItem(PLAN_KEY(), JSON.stringify(payload));
+  setSaveStatus('<span data-icon="check"></span> Local'); showSnack('<span data-icon="save"></span> Sauvegardé en local');
+}
+
+function autoSave() {
+  const cur = rooms.find(r => r.id === currentRoomId);
+  if (cur) cur.items = items;
+  renderRoomTabs();
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(savePlan, 2500);
+  setSaveStatus('<span data-icon="timer"></span> Non sauvegardé…');
+}
+
+function setSaveStatus(msg) { document.getElementById('save-status').innerHTML = msg; }
+
+// ── UTILS ──
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function snap(v, g = 20) { return (typeof snapEnabled !== 'undefined' && snapEnabled) ? Math.round(v / g) * g : v; }
+function getCenter() {
+  const a = document.getElementById('canvas-area');
+  return { x: snap(a.clientWidth / 2 - 40), y: snap(a.clientHeight / 2 - 40) };
+}
+
+function createItem(overrides = {}) {
+  const sh = SHAPES.find(s => s.id === (overrides.shape || 'circle')) || SHAPES[0];
+  const c = getCenter();
+  return {
+    id: uid(), name: 'Table', icon: '<span data-icon="building"></span>', shape: 'circle',
+    w: sh.w, h: sh.h, x: c.x, y: c.y,
+    bg: '#DCF0ED', status: 'free', capacity: 2,
+    rotation: 0, notes: '', isDecor: false,
+    ...overrides
+  };
+}
+
+// ── RENDER ──
+function renderAll() {
+  const canvas = document.getElementById('canvas');
+  canvas.innerHTML = items.map(item => {
+    const sc = shapeCSS(item.shape);
+    const sel = item.id === selectedId && currentTab === 'edit';
+    const statusClass = item.isDecor ? 'decor-item' : `status-${item.status || 'free'}`;
+    const editClass = currentTab === 'edit' ? 'edit-mode' : '';
+    const clickFn = currentTab === 'live' && !item.isDecor ? `openStatusPop('${item.id}')` : currentTab === 'edit' ? `selectItem('${item.id}')` : '';
+    const rot = item.rotation || 0;
+    return `<div class="tbl-block ${sel ? 'selected' : ''} ${statusClass} ${editClass}"
+        id="b-${item.id}"
+        style="left:${item.x}px;top:${item.y}px;width:${item.w}px;height:${item.h}px;background:${item.bg};${sc};transform:rotate(${rot}deg)"
+        onclick="${clickFn}">
+      ${!item.isDecor ? `<div class="tbl-status-dot ${item.status || 'free'}"></div>` : ''}
+      <div class="tbl-icon">${item.icon || '<span data-icon="building"></span>'}</div>
+      <div class="tbl-name">${item.name}</div>
+      ${item.capacity ? `<div class="tbl-cap">${item.guests ? item.guests+'/'+item.capacity : item.capacity} p.</div>` : ''}
+      ${item.reservationId && currentTab === 'live' ? `<div class="tbl-resa-badge">⏰ ${(item.arrivalTime||'')} ${(item.client||'')}</div>` : (item.client && currentTab === 'live' ? `<div class="tbl-order">${item.client}</div>` : '')}
+      ${item.waiter && currentTab === 'live' ? `<div style="font-size:8px;color:#6a8a6a;margin-top:1px"><span data-icon="user"></span>‍<span data-icon="chef_hat"></span> ${item.waiter}</div>` : ''}
+      <div class="resize-handle"></div>
+      <div class="rotate-handle"></div>
+    </div>`;
+  }).join('');
+
+  // Re-attach drag/resize/rotate handlers
+  if (currentTab === 'edit') {
+    items.forEach(item => {
+      const el = document.getElementById('b-' + item.id);
+      if (!el) return;
+      el.addEventListener('mousedown', e => onItemDown(e, item.id));
+      const rh = el.querySelector('.resize-handle');
+      if (rh) rh.addEventListener('mousedown', e => { e.stopPropagation(); startResize(e, item.id); });
+      const roth = el.querySelector('.rotate-handle');
+      if (roth) roth.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); startRotate(e, item.id); });
+    });
+  }
+
+  document.getElementById('canvas-empty').classList.toggle('hidden', items.length > 0);
+  updateStats();
+  updatePropPanel();
+}
+
+// ── ITEM INTERACTION ──
+function onItemDown(e, id) {
+  if (currentTab !== 'edit') return;
+  if (e.target.classList.contains('resize-handle') || e.target.classList.contains('rotate-handle')) return;
+  e.preventDefault();
+  selectItem(id);
+  startDrag(e, id);
+}
+
+function startDrag(e, id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  isDragging = true;
+  const area = document.getElementById('canvas-area');
+  const r = area.getBoundingClientRect();
+  dragOffX = e.clientX - r.left - item.x;
+  dragOffY = e.clientY - r.top - item.y;
+  const onMove = e => {
+    if (!isDragging) return;
+    const r = area.getBoundingClientRect();
+    item.x = Math.max(0, snap(e.clientX - r.left - dragOffX));
+    item.y = Math.max(0, snap(e.clientY - r.top - dragOffY));
+    const el = document.getElementById('b-' + id);
+    if (el) { el.style.left = item.x + 'px'; el.style.top = item.y + 'px'; }
+  };
+  const onUp = () => { isDragging = false; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); autoSave(); };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function startResize(e, id) {
+  e.preventDefault();
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  isResizing = true; rsItem = item; rsX0 = e.clientX; rsY0 = e.clientY; rsW0 = item.w; rsH0 = item.h;
+  const onMove = e => {
+    item.w = Math.max(30, snap(rsW0 + (e.clientX - rsX0)));
+    item.h = Math.max(30, snap(rsH0 + (e.clientY - rsY0)));
+    const el = document.getElementById('b-' + id);
+    if (el) { el.style.width = item.w + 'px'; el.style.height = item.h + 'px'; }
+    const pw = document.getElementById('prop-w'); const ph = document.getElementById('prop-h');
+    if (pw) pw.value = item.w; if (ph) ph.value = item.h;
+  };
+  const onUp = () => { isResizing = false; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); autoSave(); };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function startRotate(e, id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  const el = document.getElementById('b-' + id);
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const onMove = e => {
+    const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI) + 90;
+    item.rotation = snap(((angle % 360) + 360) % 360, 5);
+    el.style.transform = `rotate(${item.rotation}deg)`;
+    const pr = document.getElementById('prop-rot');
+    if (pr) { pr.value = item.rotation; document.getElementById('rot-lbl').textContent = item.rotation + '°'; }
+  };
+  const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); autoSave(); };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function selectItem(id) {
+  if (currentTab !== 'edit') return;
+  selectedId = id === selectedId ? null : id;
+  renderAll();
+}
+
+// ── PROPS PANEL ──
+function updatePropPanel() {
+  if (currentTab !== 'edit') return;
+  const noSel = document.getElementById('no-sel-msg');
+  const selProps = document.getElementById('sel-props');
+  const item = items.find(i => i.id === selectedId);
+  if (!item) {
+    if (noSel) noSel.style.display = '';
+    if (selProps) selProps.style.display = 'none';
+    return;
+  }
+  if (noSel) noSel.style.display = 'none';
+  if (selProps) selProps.style.display = '';
+  // Paramètres
+  document.getElementById('prop-name').value = item.name || '';
+  document.getElementById('prop-cap').value = item.capacity || 0;
+  document.getElementById('prop-notes').value = item.notes || '';
+  // Infos service
+  document.getElementById('prop-client').value = item.client || '';
+  document.getElementById('prop-waiter').value = item.waiter || '';
+  document.getElementById('prop-time').value = item.arrivalTime || '';
+  document.getElementById('prop-guests').value = item.guests || '';
+  // Taille & rotation
+  document.getElementById('prop-w').value = item.w;
+  document.getElementById('prop-h').value = item.h;
+  document.getElementById('prop-rot').value = item.rotation || 0;
+  document.getElementById('rot-lbl').textContent = (item.rotation || 0) + '°';
+  document.getElementById('color-custom').value = item.bg || '#DCF0ED';
+  // Status buttons
+  updateStatusButtons(item.status || 'free');
+  // Shape grid
+  buildShapeGrid('shape-grid-inline', item.shape, 'changeShapeInline');
+}
+
+function changeShapeInline(shape) {
+  const item = items.find(i => i.id === selectedId);
+  if (!item) return;
+  pushUndo();
+  const s = SHAPES.find(sh => sh.id === shape);
+  item.shape = shape;
+  if (s) { item.w = s.w; item.h = s.h; }
+  renderAll(); autoSave();
+}
+
+function updateSel(prop, val) {
+  const item = items.find(i => i.id === selectedId);
+  if (!item) return;
+  item[prop] = val;
+  const el = document.getElementById('b-' + selectedId);
+  if (el) {
+    if (prop === 'bg') el.style.background = val;
+    if (prop === 'w') el.style.width = val + 'px';
+    if (prop === 'h') el.style.height = val + 'px';
+    if (prop === 'x') el.style.left = val + 'px';
+    if (prop === 'y') el.style.top = val + 'px';
+    if (prop === 'rotation') el.style.transform = `rotate(${val}deg)`;
+    if (prop === 'name') { const n = el.querySelector('.tbl-name'); if (n) n.textContent = val; }
+    if (prop === 'icon') { const ic = el.querySelector('.tbl-icon'); if (ic) ic.textContent = val; }
+    if (prop === 'status') renderAll();
+  }
+  updateStats(); autoSave();
+}
+
+function setActiveSwatch(el) {
+  document.querySelectorAll('#color-swatches .swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── STATUS POPUP (live mode) ──
+function openStatusPop(id) {
+  if (currentTab !== 'live') return;
+  // Mode assignation : on place la réservation sur la table cliquée
+  if (assignModeResaId) { assignReservationToTable(id); return; }
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  statusPopItemId = id;
+  document.getElementById('pop-name').textContent = item.name;
+  // Détail statut actuel
+  const sl = { free:'<span data-icon="check"></span> Libre', occupied:'<span data-icon="circle_dot"></span> Occupée', reserved:'<span data-icon="clock"></span> Réservée', cleaning:'<span data-icon="tool"></span> Nettoyage' };
+  const parts = [];
+  if (item.capacity) parts.push(item.capacity + ' couverts max');
+  parts.push(sl[item.status] || '');
+  if (item.notes) parts.push(_escHtml(item.notes));
+  document.getElementById('pop-detail').innerHTML = parts.filter(Boolean).join(' · ');
+  if (window.ICONS?.replaceAll) window.ICONS.replaceAll(document.getElementById('pop-detail'));
+  // Remplir les champs service
+  document.getElementById('pop-client').value = item.client || '';
+  document.getElementById('pop-guests').value = item.guests || '';
+  document.getElementById('pop-waiter').value = item.waiter || '';
+  document.getElementById('pop-time').value = item.arrivalTime || '';
+  // Badge réservation dans la popup
+  let resaBadge = document.getElementById('pop-resa-info');
+  if (!resaBadge) {
+    resaBadge = document.createElement('div');
+    resaBadge.id = 'pop-resa-info';
+    resaBadge.style.cssText = 'padding:8px 16px 4px;';
+    document.getElementById('pop-service-block').before(resaBadge);
+  }
+  if (item.reservationId) {
+    const resa = todayReservations.find(r => r.id === item.reservationId);
+    resaBadge.innerHTML = `<div style="background:#FEF7E0;border:1.5px solid #F2C14E;border-radius:8px;padding:7px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div><div style="font-size:11px;font-weight:700;color:#856A10">⏰ Réservation</div>
+      <div style="font-size:12px;font-weight:700;color:#0F2A28;margin-top:2px">${_escHtml(resa?.nom || item.client)} — ${_escHtml(resa?.heure || item.arrivalTime)}</div>
+      <div style="font-size:11px;color:#4D6260">${resa?.couverts || item.guests || 0} pers.</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        <button onclick="changeResaTable('${item.reservationId}');closeModal('modal-status')" style="font-size:10px;font-weight:700;color:#0E4B47;background:#DCF0ED;border:1.5px solid #7ABDB5;border-radius:6px;padding:4px 8px;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap">⇄ Changer</button>
+        <button onclick="unassignReservation('${item.reservationId}');closeModal('modal-status')" style="font-size:10px;font-weight:600;color:#B83C2C;background:#FCE8E5;border:1.5px solid #E36C5B;border-radius:6px;padding:3px 7px;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap">✕ Retirer</button>
+      </div>
+    </div>`;
+  } else {
+    resaBadge.innerHTML = '';
+  }
+  // Highlighting du bouton de statut actuel
+  ['free','occ','res','clean'].forEach(k => {
+    const map = {free:'free',occ:'occupied',res:'reserved',clean:'cleaning'};
+    const btn = document.getElementById('ppb-'+k);
+    if (btn) btn.style.opacity = map[k] === item.status ? '1' : '0.55';
+  });
+  document.getElementById('modal-status').classList.add('open');
+}
+function setStatusPop(status) {
+  const item = items.find(i => i.id === statusPopItemId);
+  if (!item) return;
+  item.status = status;
+  // Mettre à jour highlighting
+  ['free','occ','res','clean'].forEach(k => {
+    const map = {free:'free',occ:'occupied',res:'reserved',clean:'cleaning'};
+    const btn = document.getElementById('ppb-'+k);
+    if (btn) btn.style.opacity = map[k] === status ? '1' : '0.55';
+  });
+  renderAll(); autoSave();
+  const labels = { free:'Libre', occupied:'Occupée', reserved:'Réservée', cleaning:'En nettoyage' };
+  showSnack(`${item.name} → ${labels[status]}`);
+}
+function updatePopField(prop, val) {
+  const item = items.find(i => i.id === statusPopItemId);
+  if (!item) return;
+  item[prop] = val;
+  autoSave();
+}
+
+// ── ADD TABLE MODAL ──
+function openAddModal() {
+  if (currentTab !== 'edit') { showSnack('<span data-icon="alert"></span> Activez le mode Édition pour ajouter des tables'); return; }
+  document.getElementById('nb-name').value = '';
+  document.getElementById('nb-cap').value = '2';
+  document.getElementById('nb-icon').value = 'building';
+  document.getElementById('nb-notes').value = '';
+  nbShape = 'circle'; nbColor = '#DCF0ED';
+  document.getElementById('modal-add-title').innerHTML = '<span data-icon="edit"></span> Nouvelle table';
+  document.getElementById('modal-add-btn').innerHTML = '<span data-icon="check_circle"></span> Ajouter';
+  if (window.ICONS?.replaceAll) { window.ICONS.replaceAll(document.getElementById('modal-add')); }
+  buildShapeGrid('shape-grid-modal', nbShape, 'selModalShape');
+  document.querySelectorAll('#modal-swatches .modal-swatch').forEach((el, i) => el.classList.toggle('active', i === 0));
+  document.getElementById('modal-add').classList.add('open');
+  setTimeout(() => document.getElementById('nb-name').focus(), 80);
+}
+
+function selModalShape(shape) {
+  nbShape = shape;
+  buildShapeGrid('shape-grid-modal', nbShape, 'selModalShape');
+}
+function selModalColor(el, color) {
+  document.querySelectorAll('#modal-swatches .modal-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active'); nbColor = color;
+}
+
+function confirmAddTable() {
+  const name = document.getElementById('nb-name').value.trim();
+  if (!name) { document.getElementById('nb-name').focus(); showSnack('<span data-icon="alert"></span> Donnez un nom à la table'); return; }
+  const cap = parseInt(document.getElementById('nb-cap').value) || 0;
+  const _iconRaw = document.getElementById('nb-icon').value.trim() || 'building';
+  const icon = _iconRaw.startsWith('<') ? _iconRaw : `<span data-icon="${_iconRaw}"></span>`;
+  const notes = document.getElementById('nb-notes').value.trim();
+  const sh = SHAPES.find(s => s.id === nbShape) || SHAPES[0];
+  // Offset to avoid stacking
+  const offset = items.length * 15;
+  const c = getCenter();
+  pushUndo();
+  items.push(createItem({ name, icon, shape: nbShape, w: sh.w, h: sh.h, bg: nbColor, capacity: cap, notes, x: Math.max(0, c.x - sh.w/2 + offset % 100), y: Math.max(0, c.y - sh.h/2 + Math.floor(offset/100)*20) }));
+  closeModal('modal-add');
+  renderAll(); autoSave();
+  showSnack(`<span data-icon="check_circle"></span> "${name}" ajoutée`);
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── ACTIONS ──
+function duplicateSel() {
+  const item = items.find(i => i.id === selectedId);
+  if (!item) return;
+  pushUndo();
+  const copy = { ...item, id: uid(), x: item.x + snap(item.w + 10), y: item.y };
+  items.push(copy); selectedId = copy.id;
+  renderAll(); autoSave(); showSnack('⧉ Dupliqué');
+}
+
+function deleteSel() {
+  if (!selectedId) return;
+  if (!confirm('Supprimer cet élément ?')) return;
+  pushUndo();
+  setItems(items.filter(i => i.id !== selectedId));
+  selectedId = null; renderAll(); autoSave(); showSnack('<span data-icon="trash"></span> Supprimé');
+}
+
+function bringFront() {
+  const idx = items.findIndex(i => i.id === selectedId);
+  if (idx < 0) return;
+  items.push(items.splice(idx, 1)[0]);
+  renderAll(); autoSave();
+}
+
+function clearRoom() {
+  if (!items.length) return;
+  const room = rooms.find(r => r.id === currentRoomId);
+  if (!confirm(`Vider la salle "${room?.name}" ?`)) return;
+  pushUndo(); setItems([]); selectedId = null; renderAll(); autoSave(); showSnack('<span data-icon="trash"></span> Salle vidée'); renderRoomTabs();
+}
+
+function autoNumber() {
+  const tables = items.filter(i => !i.isDecor);
+  if (!tables.length) { showSnack('Aucune table à numéroter'); return; }
+  pushUndo();
+  tables.sort((a, b) => a.y !== b.y ? a.y - b.y : a.x - b.x);
+  tables.forEach((t, i) => t.name = 'Table ' + (i + 1));
+  renderAll(); autoSave(); showSnack(`<span data-icon="list"></span> ${tables.length} tables numérotées`);
+}
+
+function resetAllFree() {
+  const all = rooms.flatMap(r => r.items.filter(i => !i.isDecor));
+  if (!all.length) return;
+  if (!confirm(`Marquer toutes les ${all.length} tables (toutes salles) comme libres ?`)) return;
+  pushUndo();
+  all.forEach(t => t.status = 'free');
+  renderAll(); autoSave(); showSnack('<span data-icon="check"></span> Toutes les tables libres');
+}
+
+// ── STATS ──
+function updateStats() {
+  const tables = items.filter(i => !i.isDecor);
+  const free = tables.filter(i => i.status === 'free').length;
+  const occ = tables.filter(i => i.status === 'occupied').length;
+  const res = tables.filter(i => i.status === 'reserved').length;
+  const clean = tables.filter(i => i.status === 'cleaning').length;
+  const totalCap = tables.reduce((s, i) => s + (i.capacity || 0), 0);
+  const freeCap = tables.filter(i => i.status === 'free').reduce((s, i) => s + (i.capacity || 0), 0);
+  const occCap = tables.filter(i => i.status === 'occupied').reduce((s, i) => s + (i.capacity || 0), 0);
+  const resCap = tables.filter(i => i.status === 'reserved').reduce((s, i) => s + (i.capacity || 0), 0);
+  const pct = totalCap > 0 ? Math.round(((occCap + resCap) / totalCap) * 100) : 0;
+
+  // Panel stats (current room)
+  document.getElementById('sp-free').textContent = free;
+  document.getElementById('sp-occ').textContent = occ;
+  document.getElementById('sp-res').textContent = res;
+  document.getElementById('sp-clean').textContent = clean;
+  document.getElementById('sp-pct-lbl').textContent = pct + '%';
+  document.getElementById('sp-cap-free').textContent = freeCap;
+  document.getElementById('sp-cap-occ').textContent = occCap;
+  document.getElementById('sp-cap-total').textContent = totalCap;
+  const bar = document.getElementById('occ-bar');
+  bar.style.width = pct + '%';
+  bar.style.background = pct >= 80 ? 'linear-gradient(90deg,#c03030,#E36C5B)' : pct >= 50 ? 'linear-gradient(90deg,#c07010,#d08030)' : 'linear-gradient(90deg,#0E4B47,#0E4B47)';
+
+  // Topbar stats (global)
+  const allT = rooms.flatMap(r => r.items.filter(i => !i.isDecor));
+  const gFree = allT.filter(i => i.status === 'free').length;
+  const gOcc = allT.filter(i => i.status === 'occupied').length;
+  const gRes = allT.filter(i => i.status === 'reserved').length;
+  const gCap = allT.reduce((s, i) => s + (i.capacity || 0), 0);
+  const gOccCap = allT.filter(i => i.status === 'occupied').reduce((s, i) => s + (i.capacity || 0), 0);
+  const gResCap = allT.filter(i => i.status === 'reserved').reduce((s, i) => s + (i.capacity || 0), 0);
+  const gPct = gCap > 0 ? Math.round(((gOccCap + gResCap) / gCap) * 100) : 0;
+  document.getElementById('ts-total').textContent = allT.length;
+  document.getElementById('ts-free').textContent = gFree;
+  document.getElementById('ts-occ').textContent = gOcc;
+  document.getElementById('ts-res').textContent = gRes;
+  document.getElementById('ts-cov').textContent = gCap;
+  document.getElementById('ts-pct').textContent = gPct + '%';
+  const tsPct = document.getElementById('ts-pct');
+  tsPct.className = 'stat-value ' + (gPct >= 80 ? 'danger' : gPct >= 50 ? 'warn' : 'accent');
+}
+
+// ── UNDO ──
+function pushUndo() { undoStack.push(JSON.stringify(items)); if (undoStack.length > 50) undoStack.shift(); }
+function undo() {
+  if (!undoStack.length) { showSnack('Rien à annuler'); return; }
+  setItems(JSON.parse(undoStack.pop()));
+  selectedId = null; renderAll(); showSnack('<span data-icon="rotate_left"></span> Annulé');
+}
+
+// ── GRID ──
+function toggleGrid() {
+  showGrid = !showGrid;
+  document.getElementById('canvas-grid').classList.toggle('hidden', !showGrid);
+  document.getElementById('grid-tog-btn').classList.toggle('active', showGrid);
+}
+
+// ── CANVAS CLICK FOR ADD ──
+document.getElementById('canvas-area').addEventListener('dblclick', e => {
+  if (currentTab !== 'edit') return;
+  if (e.target.closest('.tbl-block')) return;
+  openAddModal();
+});
+
+document.getElementById('canvas').addEventListener('click', e => {
+  if (e.target === document.getElementById('canvas') && currentTab === 'edit') {
+    selectedId = null; renderAll();
+  }
+});
+
+// ── BURGER MENU ──
+function toggleBurger() { document.getElementById('burger-menu').classList.toggle('open'); }
+document.addEventListener('click', e => {
+  if (!e.target.closest('#burger-btn') && !e.target.closest('#burger-menu')) {
+    document.getElementById('burger-menu').classList.remove('open');
+  }
+});
+
+// ── ADMIN ──
+async function loadRestaurantList() {
+  try {
+    const res = await fetch(`${ORIGIN}/restaurants`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const sel = document.getElementById('admin-rest-select');
+    sel.innerHTML = data.map(r => `<option value="${r.id}" ${r.id===restaurantId?'selected':''}>${r.nom}</option>`).join('');
+  } catch(e) {}
+}
+function switchRestaurant(rid) { restaurantId = rid; setItems([]); selectedId = null; loadPlan(); }
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && currentTab === 'edit') deleteSel();
+  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+  if (e.ctrlKey && e.key === 's') { e.preventDefault(); savePlan(); }
+  if (e.ctrlKey && e.key === 'd' && selectedId) { e.preventDefault(); duplicateSel(); }
+  if (e.key === 'Escape') { selectedId = null; closeModal('modal-add'); closeModal('modal-status'); renderAll(); }
+  if (selectedId && currentTab === 'edit' && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+    e.preventDefault();
+    const item = items.find(i => i.id === selectedId);
+    if (item) {
+      const d = e.shiftKey ? 20 : 5;
+      if (e.key === 'ArrowUp') item.y = Math.max(0, item.y - d);
+      if (e.key === 'ArrowDown') item.y += d;
+      if (e.key === 'ArrowLeft') item.x = Math.max(0, item.x - d);
+      if (e.key === 'ArrowRight') item.x += d;
+      const el = document.getElementById('b-' + selectedId);
+      if (el) { el.style.left = item.x + 'px'; el.style.top = item.y + 'px'; }
+      autoSave();
+    }
+  }
+  // Tab shortcut
+  if (e.key === 'Tab' && !e.shiftKey) {
+    e.preventDefault();
+    if (currentTab === 'live') switchTab('edit', null);
+    else switchTab('live', null);
+  }
+});
+
+// ── ZOOM ──
+function changeZoom(delta) {
+  zoomLevel = Math.max(0.3, Math.min(3, zoomLevel + delta));
+  applyZoom();
+}
+function resetZoom() { zoomLevel = 1; applyZoom(); }
+function applyZoom() {
+  const cv = document.getElementById('canvas');
+  if (cv) { cv.style.transform = `scale(${zoomLevel})`; cv.style.transformOrigin = '0 0'; }
+  const svg = document.getElementById('draw-svg');
+  if (svg) { svg.style.transform = `scale(${zoomLevel})`; svg.style.transformOrigin = '0 0'; }
+  const lbl = document.getElementById('zoom-lbl');
+  if (lbl) lbl.textContent = Math.round(zoomLevel * 100) + '%';
+}
+// Zoom avec molette
+document.getElementById('canvas-area').addEventListener('wheel', e => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  changeZoom(e.deltaY < 0 ? 0.1 : -0.1);
+}, { passive: false });
+
+// ── SNAP TO GRID ──
+let snapEnabled = false;
+const SNAP = 20;
+function toggleSnap() {
+  snapEnabled = !snapEnabled;
+  const btn = document.getElementById('snap-btn');
+  if (btn) { btn.classList.toggle('active', snapEnabled); btn.textContent = snapEnabled ? '⊡ Snap ON' : '⊡ Snap'; }
+  showSnack(snapEnabled ? '⊡ Snap activé (20px)' : 'Snap désactivé');
+}
+
+// ── ROOM BACKGROUND ──
+function setRoomBg(color) {
+  const cur = rooms.find(r => r.id === currentRoomId);
+  if (!cur) return;
+  cur.bg = color;
+  document.getElementById('canvas-area').style.background = color;
+  autoSave();
+}
+function applyRoomBg() {
+  const cur = rooms.find(r => r.id === currentRoomId);
+  const color = (cur && cur.bg) ? cur.bg : '#EEF5F2';
+  document.getElementById('canvas-area').style.background = color;
+  const inp = document.getElementById('room-bg-input');
+  if (inp) inp.value = color;
+}
+
+// ── SELECT ALL ──
+function selectAllTables() {
+  // On ne peut pas sélectionner plusieurs à la fois (pas de multi-select),
+  // mais on peut montrer un résumé ou sélectionner la première
+  showSnack(`${items.filter(i=>!i.isDecor).length} tables · ${items.filter(i=>i.isDecor).length} décors dans cette salle`);
+}
+
+// ── KEYBOARD SHORTCUTS EDIT MODE ──
+// (ajout dans le listener existant via les touches S, P, L, R, E)
+
+// ── SNACK ──
+function showSnack(msg) {
+  const s = document.getElementById('snackbar');
+  s.textContent = msg; s.classList.add('show');
+  setTimeout(() => s.classList.remove('show'), 2800);
+}
+
+function deconnexion() { sessionStorage.removeItem('user'); window.location.href = '/login.html'; }
+
+// ── DECOR ELEMENTS ──
+const DECOR_ELEMENTS = [
+  { id:'wc',       icon:'<span data-icon="user"></span>', lbl:'Toilettes',  w:70,  h:70,  bg:'#e8f4ff', shape:'square' },
+  { id:'bar',      icon:'<span data-icon="beer"></span>', lbl:'Bar',        w:120, h:60,  bg:'#fff8e0', shape:'rect-h' },
+  { id:'kitchen',  icon:'<span data-icon="chef_hat"></span>', lbl:'Cuisine',    w:140, h:80,  bg:'#fff0e8', shape:'rect-h' },
+  { id:'door',     icon:'<span data-icon="log_out"></span>', lbl:'Entrée',     w:50,  h:90,  bg:'#f5f5f5', shape:'rect-v' },
+  { id:'cashier',  icon:'<span data-icon="credit_card"></span>', lbl:'Caisse',     w:90,  h:60,  bg:'#f0fff4', shape:'rect-h' },
+  { id:'plant',    icon:'<span data-icon="salad"></span>', lbl:'Plante',     w:50,  h:50,  bg:'transparent', shape:'circle' },
+  { id:'wall',     icon:'',   lbl:'Mur',        w:200, h:22,  bg:'#aaaaaa', shape:'thin-h' },
+  { id:'column',   icon:'',   lbl:'Colonne',    w:32,  h:32,  bg:'#999999', shape:'circle' },
+  { id:'window',   icon:'',   lbl:'Fenêtre',    w:90,  h:16,  bg:'#aaddff', shape:'thin-h' },
+  { id:'stairs',   icon:'<span data-icon="tool"></span>', lbl:'Escalier',   w:90,  h:80,  bg:'#f0f0f0', shape:'rect-h' },
+  { id:'reception',icon:'<span data-icon="bell"></span>', lbl:'Réception',  w:120, h:60,  bg:'#faf0ff', shape:'rect-h' },
+  { id:'zone',     icon:'',   lbl:'Zone texte', w:120, h:50,  bg:'rgba(240,245,240,0.5)', shape:'rect-h' },
+];
+
+function openDecorModal() {
+  const grid = document.getElementById('decor-grid');
+  grid.innerHTML = DECOR_ELEMENTS.map(d => `
+    <div class="decor-opt" onclick="addDecorItem('${d.id}')">
+      <div class="decor-opt-icon">${d.icon || '▬'}</div>
+      <div class="decor-opt-lbl">${d.lbl}</div>
+    </div>`).join('');
+  document.getElementById('decor-name').value = '';
+  document.getElementById('modal-decor').classList.add('open');
+}
+
+function addDecorItem(did) {
+  const def = DECOR_ELEMENTS.find(d => d.id === did);
+  if (!def) return;
+  const customName = document.getElementById('decor-name').value.trim();
+  pushUndo();
+  const item = {
+    id: uid(), type:'decor', isDecor: true,
+    name: customName || def.lbl,
+    icon: def.icon, bg: def.bg,
+    x: 60 + Math.random()*100, y: 60 + Math.random()*100,
+    w: def.w, h: def.h, shape: def.shape,
+    rotation: 0, status: 'free'
+  };
+  items.push(item);
+  closeModal('modal-decor');
+  renderAll(); autoSave();
+  showSnack('<span data-icon="check_circle"></span> ' + item.name + ' ajouté');
+}
+
+// ── DRAW ENGINE ──
+let currentTool = 'select'; // select | pencil | line | rect | erase
+let drawStrokeColor = '#0E4B47';
+let drawStrokeW = 2;
+let drawPaths = [];         // per-room: array of { id, type:'path', d, stroke, width }
+let isDrawing = false;
+let drawPoints = [];        // current path points
+let drawStartX = 0, drawStartY = 0;
+let drawPreviewEl = null;
+
+function setTool(tool) {
+  currentTool = tool;
+  ['select','pencil','line','rect','erase'].forEach(t => {
+    const btn = document.getElementById('tool-'+t);
+    if (btn) btn.classList.toggle('active', t === tool);
+  });
+  const area = document.getElementById('canvas-area');
+  const drawTb = document.getElementById('draw-toolbar');
+  if (['pencil','line','rect','erase'].includes(tool)) {
+    area.classList.add('draw-mode');
+    // Curseur différent pour effacer
+    area.style.cursor = tool === 'erase' ? 'cell' : 'crosshair';
+    document.getElementById('draw-svg').style.cursor = tool === 'erase' ? 'cell' : 'crosshair';
+    drawTb.classList.toggle('visible', tool !== 'erase');
+  } else {
+    area.classList.remove('draw-mode');
+    area.style.cursor = '';
+    document.getElementById('draw-svg').style.cursor = '';
+    drawTb.classList.remove('visible');
+  }
+}
+
+function setDrawColor(el) {
+  document.querySelectorAll('.draw-color').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  drawStrokeColor = el.dataset.c;
+}
+
+// SVG draw rendering
+function renderDrawPaths() {
+  const svg = document.getElementById('draw-svg');
+  if (!svg) return;
+  const cur = rooms.find(r => r.id === currentRoomId);
+  const paths = (cur && cur.paths) ? cur.paths : [];
+  svg.innerHTML = paths.map(p => {
+    const sel = p.id === selectedId;
+    return `<path class="draw-path${sel?' selected-path':''}" d="${p.d}" stroke="${p.stroke}" stroke-width="${p.width}" data-id="${p.id}" onclick="selectDrawPath('${p.id}')"/>`;
+  }).join('');
+}
+
+function selectDrawPath(id) {
+  if (currentTool !== 'erase' && currentTool !== 'select') return;
+  if (currentTool === 'erase') {
+    const cur = rooms.find(r => r.id === currentRoomId);
+    if (cur) { cur.paths = (cur.paths||[]).filter(p => p.id !== id); renderDrawPaths(); autoSave(); showSnack('Tracé supprimé'); }
+    return;
+  }
+  selectedId = (selectedId === id) ? null : id;
+  renderDrawPaths();
+}
+
+// Draw events on SVG
+const drawSvg = document.getElementById('draw-svg');
+
+drawSvg.addEventListener('mousedown', e => {
+  if (!['pencil','line','rect'].includes(currentTool)) return;
+  isDrawing = true;
+  const rect = drawSvg.getBoundingClientRect();
+  drawStartX = e.clientX - rect.left;
+  drawStartY = e.clientY - rect.top;
+  drawPoints = [{x: drawStartX, y: drawStartY}];
+  // Create preview element
+  drawPreviewEl = document.createElementNS('http://www.w3.org/2000/svg','path');
+  drawPreviewEl.setAttribute('stroke', drawStrokeColor);
+  drawPreviewEl.setAttribute('stroke-width', drawStrokeW);
+  drawPreviewEl.setAttribute('fill', 'none');
+  drawPreviewEl.setAttribute('stroke-linecap', 'round');
+  drawPreviewEl.setAttribute('stroke-linejoin', 'round');
+  drawPreviewEl.setAttribute('opacity', '0.7');
+  drawSvg.appendChild(drawPreviewEl);
+  e.preventDefault();
+});
+
+drawSvg.addEventListener('mousemove', e => {
+  if (!isDrawing || !drawPreviewEl) return;
+  const rect = drawSvg.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  if (currentTool === 'pencil') {
+    drawPoints.push({x:cx, y:cy});
+    const d = 'M' + drawPoints.map(p=>`${p.x},${p.y}`).join(' L');
+    drawPreviewEl.setAttribute('d', d);
+  } else if (currentTool === 'line') {
+    drawPreviewEl.setAttribute('d', `M${drawStartX},${drawStartY} L${cx},${cy}`);
+  } else if (currentTool === 'rect') {
+    const x = Math.min(drawStartX, cx), y = Math.min(drawStartY, cy);
+    const w = Math.abs(cx-drawStartX), h = Math.abs(cy-drawStartY);
+    drawPreviewEl.setAttribute('d', `M${x},${y} h${w} v${h} h${-w} Z`);
+  }
+});
+
+function finishDraw(e) {
+  if (!isDrawing) return;
+  isDrawing = false;
+  const d = drawPreviewEl ? drawPreviewEl.getAttribute('d') : null;
+  if (drawPreviewEl) { drawPreviewEl.remove(); drawPreviewEl = null; }
+  if (!d || d.length < 5) return;
+  const cur = rooms.find(r => r.id === currentRoomId);
+  if (!cur) return;
+  if (!cur.paths) cur.paths = [];
+  cur.paths.push({ id: uid(), type:'path', d, stroke: drawStrokeColor, width: drawStrokeW });
+  renderDrawPaths(); autoSave();
+}
+drawSvg.addEventListener('mouseup', finishDraw);
+drawSvg.addEventListener('mouseleave', finishDraw);
+
+// ── SOCKET.IO SYNC ──
+let socket = null;
+let isSyncing = false;
+try {
+  socket = io(ORIGIN);
+  socket.on('connect', () => {
+    socket.emit('join-restaurant', { restaurantId });
+    setSyncStatus('ok');
+  });
+  socket.on('disconnect', () => setSyncStatus('error'));
+  socket.on('floor-plan-broadcast', (data) => {
+    if (data.restaurantId !== restaurantId) return;
+    if (data.senderId === socket.id) return; // ignore own broadcast
+    isSyncing = true;
+    setSyncStatus('syncing');
+    initRooms(data.rooms);
+    // Restore paths per room
+    if (data.roomPaths) {
+      data.roomPaths.forEach(rp => {
+        const r = rooms.find(x => x.id === rp.roomId);
+        if (r) r.paths = rp.paths;
+      });
+    }
+    renderAll();
+    renderDrawPaths();
+    isSyncing = false;
+    setSyncStatus('ok');
+    showSnack('<span data-icon="refresh"></span> Plan mis à jour par ' + (data.userName || 'un collègue'));
+  });
+} catch(e) { console.warn('Socket non disponible'); }
+
+function setSyncStatus(state) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  if (!dot || !lbl) return;
+  dot.className = 'sync-dot' + (state==='syncing'?' syncing':state==='error'?' error':'');
+  lbl.textContent = state==='syncing'?'Synchronisation…':state==='error'?'Hors ligne':'Synchronisé';
+}
+
+function broadcastPlan() {
+  if (!socket || isSyncing) return;
+  const roomPaths = rooms.map(r => ({ roomId: r.id, paths: r.paths||[] }));
+  socket.emit('floor-plan-update', { restaurantId, rooms, roomPaths, senderId: socket.id, userName: user.nom || user.email });
+}
+
+// ── OVERRIDE autoSave to also broadcast ──
+const _origAutoSave = autoSave;
+function autoSave() {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    const cur = rooms.find(r => r.id === currentRoomId);
+    if (cur) cur.items = items;
+    try { localStorage.setItem(PLAN_KEY(), JSON.stringify({ rooms, updatedAt: Date.now(), updatedBy: user.email })); } catch(e) {}
+    broadcastPlan();
+  }, 600);
+}
+
+// Make sure renderAll also calls renderDrawPaths
+const _origRenderAll = renderAll;
+
+// ── ADD TABLE BUTTON (floating) ──
+const fab = document.createElement('button');
+fab.id = 'fab-add';
+fab.title = 'Ajouter une table (mode édition requis)';
+fab.innerHTML = '<span data-icon="building"></span> Table';
+fab.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#0E4B47;color:#fff;border:none;border-radius:24px;padding:12px 20px;font-size:13px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(14,75,71,.35);z-index:200;transition:all .15s;display:flex;align-items:center;gap:6px;';
+fab.onmouseenter = () => fab.style.background = '#0A3D3A';
+fab.onmouseleave = () => fab.style.background = '#0E4B47';
+fab.onclick = () => {
+  if (currentTab !== 'edit') { switchTab('edit', null); setTimeout(openAddModal, 100); }
+  else openAddModal();
+};
+document.body.appendChild(fab);
+
+// ── RÉSERVATIONS DU JOUR ──
+let todayReservations = [];
+let assignModeResaId = null;
+
+function _todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function _escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function loadTodayReservations() {
+  if (!restaurantId) return;
+  try {
+    const r = await fetch(`${ORIGIN}/reservations/${restaurantId}`);
+    if (r.ok) {
+      const all = await r.json();
+      const today = _todayStr();
+      todayReservations = (all || [])
+        .filter(r => r.date === today)
+        .sort((a, b) => (a.heure || '').localeCompare(b.heure || ''));
+      renderReservationPanel();
+    }
+  } catch(e) {}
+}
+
+function renderReservationPanel() {
+  const listEl  = document.getElementById('resa-list');
+  const badgeEl = document.getElementById('resa-count');
+  if (!listEl) return;
+
+  const count = todayReservations.length;
+  if (badgeEl) badgeEl.textContent = count;
+
+  if (!count) {
+    listEl.innerHTML = '<div class="resa-empty">Aucune réservation aujourd\'hui</div>';
+    return;
+  }
+
+  listEl.innerHTML = todayReservations.map(resa => {
+    const assignedTable = items.find(t => t.reservationId === resa.id);
+    const isAssigned = !!assignedTable;
+    return `<div class="resa-card${isAssigned ? ' assigned' : ''}" id="resa-card-${resa.id}">
+      <div class="resa-card-top">
+        <span class="resa-name">${_escHtml(resa.nom || '—')}</span>
+        <span class="resa-heure">${_escHtml(resa.heure || '?')}</span>
+      </div>
+      <div class="resa-details">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3.5" stroke="#4D6260" stroke-width="1.5"/><path d="M2.5 14c0-3.037 2.462-5.5 5.5-5.5s5.5 2.463 5.5 5.5" stroke="#4D6260" stroke-width="1.5" stroke-linecap="round"/></svg>
+        ${resa.couverts || 0} pers.
+        ${resa.tel ? `· 📞 ${_escHtml(resa.tel)}` : ''}
+        ${resa.note ? `<span style="font-style:italic">· ${_escHtml(resa.note)}</span>` : ''}
+      </div>
+      <div class="resa-btn-row">
+        ${isAssigned
+          ? `<span class="resa-assigned-badge">✓ ${_escHtml(assignedTable.name)}</span>
+             <button class="resa-unassign-btn" onclick="unassignReservation('${resa.id}')">✕ Retirer</button>`
+          : `<button class="resa-assign-btn" onclick="enterAssignMode('${resa.id}')">Placer sur une table →</button>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function enterAssignMode(resaId) {
+  if (currentTab !== 'live') {
+    showSnack('Passez en Vue live pour placer une réservation');
+    return;
+  }
+  assignModeResaId = resaId;
+  const resa = todayReservations.find(r => r.id === resaId);
+  const bannerText = document.getElementById('assign-banner-text');
+  if (bannerText) bannerText.textContent = resa
+    ? `Cliquez sur une table pour "${resa.nom}" — ${resa.heure}`
+    : 'Cliquez sur une table pour placer la réservation';
+  document.getElementById('assign-banner').classList.add('visible');
+  document.getElementById('canvas-area').classList.add('assign-mode');
+}
+
+function cancelAssignMode() {
+  assignModeResaId = null;
+  const banner = document.getElementById('assign-banner');
+  if (banner) banner.classList.remove('visible');
+  const ca = document.getElementById('canvas-area');
+  if (ca) ca.classList.remove('assign-mode');
+}
+
+function assignReservationToTable(tableId) {
+  const resa = todayReservations.find(r => r.id === assignModeResaId);
+  if (!resa) { cancelAssignMode(); return; }
+
+  // Retirer de l'ancienne table si déjà placée
+  items.forEach(t => {
+    if (t.reservationId === resa.id) {
+      t.reservationId = null;
+      t.client        = '';
+      t.arrivalTime   = '';
+      t.guests        = 0;
+      if (t.status === 'reserved') t.status = 'free';
+    }
+  });
+
+  // Placer sur la nouvelle table
+  const table = items.find(i => i.id === tableId);
+  if (table) {
+    table.reservationId = resa.id;
+    table.client        = resa.nom   || '';
+    table.arrivalTime   = resa.heure || '';
+    table.guests        = resa.couverts || 0;
+    table.status        = 'reserved';
+  }
+
+  cancelAssignMode();
+  renderAll();
+  renderReservationPanel();
+  autoSave();
+
+  if (table) showSnack(`✓ "${resa.nom}" placé(e) sur ${table.name}`);
+}
+
+function changeResaTable(resaId) {
+  // Déplace la réservation : désassigne l'ancienne table puis entre en mode assignation
+  unassignReservation(resaId);
+  setTimeout(() => enterAssignMode(resaId), 80);
+}
+
+function unassignReservation(resaId) {
+  const table = items.find(t => t.reservationId === resaId);
+  if (table) {
+    table.reservationId = null;
+    table.client        = '';
+    table.arrivalTime   = '';
+    table.guests        = 0;
+    if (table.status === 'reserved') table.status = 'free';
+    renderAll();
+    autoSave();
+    showSnack('Réservation retirée de ' + table.name);
+  }
+  renderReservationPanel();
+}
+
+// Écoute les mises à jour en temps réel des réservations
+if (typeof io !== 'undefined') {
+  const _sock = io();
+  _sock.on('reservations-broadcast', data => {
+    if (data.restaurantId && data.restaurantId !== restaurantId) return;
+    const today = _todayStr();
+    todayReservations = (data.reservations || [])
+      .filter(r => r.date === today)
+      .sort((a, b) => (a.heure || '').localeCompare(b.heure || ''));
+    renderReservationPanel();
+  });
+}
+
+// ── INIT ──
+loadPlan();
+loadTodayReservations();
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

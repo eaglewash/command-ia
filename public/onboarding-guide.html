@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guide d'Onboarding – Commande-IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/common.css">
+<!-- NOTE: theme.css chargé EN DERNIER pour cohérence — nos styles spécifiques
+     utilisent des noms de classes qui évitent ses sélecteurs génériques :
+     [class*="-card"] → on utilise "-block", "-box", "-wrap", "-section" -->
+<link rel="stylesheet" href="/css/theme.css">
+<script src="/icons.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#0F2A28;min-height:100vh}
+
+/* ── TOPBAR ── */
+.topbar{background:#0E4B47;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.tl{display:flex;align-items:center;gap:14px}
+.logo{display:flex;align-items:center;gap:9px;color:#fff;font-weight:800;font-size:1.05rem;text-decoration:none}
+.logo-icon{width:30px;height:30px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.page-badge{background:rgba(255,255,255,.13);color:#a7d9b8;font-size:.73rem;font-weight:700;padding:4px 11px;border-radius:20px}
+.tr{display:flex;align-items:center;gap:10px}
+.topbar-prog{color:#a7d9b8;font-size:.82rem;font-weight:700}
+.back-btn{background:rgba(255,255,255,.1);color:#fff;text-decoration:none;padding:6px 14px;border-radius:7px;font-size:.82rem;font-weight:600;transition:background .18s;border:1px solid rgba(255,255,255,.15)}
+.back-btn:hover{background:rgba(255,255,255,.22)}
+
+/* ── LAYOUT ── */
+.og-main{padding:24px 28px;max-width:1240px;margin:0 auto}
+.og-grid{display:grid;grid-template-columns:290px 1fr;gap:22px;align-items:start}
+
+/* ── SIDEBAR ── */
+.og-sidebar{position:sticky;top:68px;max-height:calc(100vh - 86px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#B8D0C8 transparent;display:flex;flex-direction:column;gap:12px}
+.og-sidebar::-webkit-scrollbar{width:4px}
+.og-sidebar::-webkit-scrollbar-thumb{background:#B8D0C8;border-radius:4px}
+
+/* ── PROGRESSION BLOCK (évite "-card" → pas d'override theme.css) ── */
+.prog-block{background:#0E4B47;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(14,75,71,.22)}
+.prog-top{padding:20px 18px 14px;text-align:center}
+.prog-top-title{font-size:.9rem;font-weight:800;color:#fff;margin-bottom:2px}
+.prog-top-sub{font-size:.72rem;color:rgba(255,255,255,.55);margin-bottom:16px}
+
+/* Anneau SVG */
+.ring-wrap{position:relative;width:110px;height:110px;margin:0 auto 14px}
+.ring-wrap svg{display:block}
+.ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+.ring-pct{font-size:1.9rem;font-weight:900;color:#fff;line-height:1;display:block}
+.ring-sub{font-size:.65rem;color:rgba(255,255,255,.5);display:block;margin-top:1px}
+
+/* Compteurs */
+.ring-counts{display:flex;justify-content:center;gap:20px}
+.rcnt{text-align:center}
+.rcnt-val{font-size:.95rem;font-weight:800;color:#fff;display:block}
+.rcnt-key{font-size:.65rem;color:rgba(255,255,255,.45);display:block;margin-top:1px}
+
+/* Séparateur */
+.prog-sep{height:1px;background:rgba(255,255,255,.12);margin:0 14px}
+
+/* Liste phases (fond blanc en bas du bloc vert) */
+.phases-list-wrap{background:#fff;border-radius:0 0 16px 16px;padding:8px 8px 10px}
+.ph-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;cursor:pointer;transition:background .15s}
+.ph-row:hover{background:#EEF5F2}
+.ph-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0}
+.ph-dot-done{background:#0E4B47;color:#fff}
+.ph-dot-partial{background:#fff;color:#0E4B47;border:2px solid #0E4B47}
+.ph-dot-todo{background:#f3f4f6;color:#9ca3af;border:2px solid #e5e7eb}
+.ph-name{font-size:.8rem;font-weight:600;color:#0F2A28;flex:1}
+.ph-frac{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:5px}
+.ph-frac-done{background:#dcfce7;color:#15803d}
+.ph-frac-partial{background:#EEF5F2;color:#0E4B47}
+.ph-frac-todo{background:#f3f4f6;color:#9ca3af}
+
+/* ── TEMPS ESTIMÉ (évite "-card") ── */
+.time-box{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;padding:14px 16px}
+.box-label{font-size:.7rem;font-weight:700;color:#4D6260;margin-bottom:9px;text-transform:uppercase;letter-spacing:.05em}
+.tc-row{display:flex;align-items:center;justify-content:space-between;padding:2px 0}
+.tc-nm{font-size:.79rem;color:#0F2A28}
+.tc-tm{font-size:.77rem;font-weight:700;color:#0E4B47}
+.tc-sep{height:1px;background:#e5e7eb;margin:7px 0}
+.tc-total{display:flex;align-items:center;justify-content:space-between}
+.tc-total-l{font-size:.82rem;font-weight:700;color:#0F2A28}
+.tc-total-v{font-size:.88rem;font-weight:800;color:#0E4B47}
+
+/* ── TUTORIELS VIDÉO (évite "-card") ── */
+.vid-box{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;padding:14px 16px}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px}
+.vt{border:1.5px solid #e5e7eb;border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .18s}
+.vt:hover{border-color:#0E4B47}
+.vt-thumb{height:60px;display:flex;align-items:center;justify-content:center}
+.vt-play{width:28px;height:28px;background:rgba(255,255,255,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#0E4B47}
+.vt-body{padding:6px 8px}
+.vt-title{font-size:.73rem;font-weight:700;color:#0F2A28;line-height:1.3}
+.vt-dur{font-size:.65rem;color:#9ca3af;margin-top:2px}
+
+/* ── COLONNE PRINCIPALE ── */
+.og-content{display:flex;flex-direction:column;gap:14px}
+
+/* Hero */
+.hero-banner{background:#fff;border:1.5px solid #86efac;border-radius:16px;padding:24px 26px;display:flex;align-items:center;gap:20px}
+.hero-ico{font-size:2.6rem;flex-shrink:0;line-height:1}
+.hero-title{font-size:1.25rem;font-weight:800;color:#0E4B47;margin-bottom:5px}
+.hero-sub{font-size:.86rem;color:#4D6260;line-height:1.55}
+.hero-sub strong{color:#0E4B47}
+.hero-btns{margin-top:13px;display:flex;gap:8px;flex-wrap:wrap}
+
+/* Boutons — noms sans conflit avec theme.css */
+.og-btn{border:none;border-radius:8px;padding:8px 16px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:5px}
+.og-btn-primary{background:#0E4B47;color:#fff}
+.og-btn-primary:hover{background:#083330}
+.og-btn-reset{background:transparent;color:#4D6260;border:1.5px solid #B8D0C8}
+.og-btn-reset:hover{background:#EEF5F2;border-color:#0E4B47;color:#0E4B47}
+
+/* Achievement */
+.ach-banner{background:linear-gradient(135deg,#fefce8,#fef9e7);border:1.5px solid #fcd34d;border-radius:12px;padding:13px 18px;align-items:center;gap:14px}
+.ach-ico{font-size:1.7rem;flex-shrink:0}
+.ach-title{font-weight:800;font-size:.88rem;color:#78350f}
+.ach-sub{font-size:.75rem;color:#92400e;margin-top:2px}
+.ach-pts{background:#fbbf24;color:#fff;font-size:.7rem;font-weight:800;padding:4px 10px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+
+/* ── SECTIONS DE PHASES ── */
+.phase-section{background:#fff;border:1.5px solid #B8D0C8;border-radius:14px;overflow:hidden}
+.phase-hdr{padding:13px 18px 11px;display:flex;align-items:center;gap:11px;background:#f8fbf9;border-bottom:1px solid #e8f0ec}
+.phase-num{width:28px;height:28px;border-radius:50%;background:#0E4B47;color:#fff;font-size:.82rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.phase-name{font-size:.95rem;font-weight:800;color:#0F2A28;flex:1}
+.phase-frac{font-size:.76rem;font-weight:700;color:#6b7280}
+.phase-bar{height:3px;background:#e8f0ec}
+.phase-bar-fill{height:100%;background:#0E4B47;transition:width .4s ease}
+.phase-items{padding:6px 12px 10px}
+
+/* ── TÂCHES (évite "-card") ── */
+.task-item{display:flex;align-items:flex-start;gap:12px;padding:11px 10px;border-radius:10px;cursor:pointer;transition:all .17s;margin-top:5px;border:1.5px solid transparent;position:relative;user-select:none}
+.task-item:hover:not(.task-done){background:#f8fbf9;border-color:#cce4dc}
+/* done : fond vert très léger */
+.task-item.task-done{background:#f0faf5 !important;border-color:#c6ead4 !important}
+.task-item.task-done .task-title{text-decoration:line-through;color:#9ca3af}
+/* Prochaine tâche highlight */
+.task-item.task-next{border-color:#0E4B47 !important;background:#f3fbf6 !important;box-shadow:0 1px 8px rgba(14,75,71,.08)}
+.next-stripe{position:absolute;left:0;top:8px;bottom:8px;width:3px;background:#0E4B47;border-radius:0 3px 3px 0}
+
+/* Checkbox */
+.task-cb{width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .2s;background:#fff}
+.task-item.task-done .task-cb{background:#0E4B47;border-color:#0E4B47}
+.task-item.task-next:not(.task-done) .task-cb{border-color:#0E4B47}
+
+/* Corps de la tâche */
+.task-body{flex:1;min-width:0}
+.task-row1{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px}
+.task-title{font-weight:700;font-size:.86rem;color:#0F2A28}
+.badge-auto{font-size:.65rem;font-weight:700;color:#0E4B47;background:#dcfce7;padding:2px 7px;border-radius:4px;flex-shrink:0}
+.badge-next{font-size:.65rem;font-weight:700;color:#fff;background:#0E4B47;padding:2px 7px;border-radius:4px;flex-shrink:0}
+.task-desc{font-size:.77rem;color:#6b7280;line-height:1.45;margin-bottom:7px}
+.task-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.task-lnk{background:#EEF5F2;color:#0E4B47;border:1px solid #B8D0C8;border-radius:6px;padding:4px 11px;font-size:.75rem;font-weight:700;text-decoration:none;transition:all .17s;display:inline-flex;align-items:center;gap:4px}
+.task-lnk:hover{background:#0E4B47;color:#fff;border-color:#0E4B47}
+.task-time{font-size:.7rem;color:#9ca3af;display:flex;align-items:center;gap:3px}
+.task-diff{font-size:.67rem;font-weight:700;padding:2px 7px;border-radius:4px}
+.d-easy{background:#dcfce7;color:#166534}
+.d-med{background:#fef3c7;color:#92400e}
+.d-hard{background:#fee2e2;color:#dc2626}
+
+/* Bannière 100% */
+.done-banner{background:linear-gradient(135deg,#0E4B47,#166534);border-radius:14px;padding:28px;text-align:center;display:none}
+.done-banner.visible{display:block}
+.done-emoji{font-size:2.8rem;margin-bottom:10px;display:block}
+.done-title{font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:5px}
+.done-sub{font-size:.85rem;color:rgba(255,255,255,.7)}
+
+/* Snackbar */
+.og-snack{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0E4B47;color:#fff;padding:10px 20px;border-radius:10px;font-size:.83rem;font-weight:600;z-index:2000;transition:transform .25s ease;box-shadow:0 4px 18px rgba(0,0,0,.2);white-space:nowrap}
+.og-snack.show{transform:translateX(-50%) translateY(0)}
+
+/* FAB */
+.og-fab{position:fixed;bottom:24px;right:24px;background:#0E4B47;color:#fff;border:none;border-radius:50px;padding:10px 18px;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(14,75,71,.35);transition:all .2s;display:flex;align-items:center;gap:6px;z-index:200}
+.og-fab:hover{background:#083330;transform:translateY(-2px)}
+.og-fab.hidden{display:none!important}
+
+/* Confetti */
+@keyframes cffall{from{transform:translateY(-40px) rotate(0deg);opacity:1}to{transform:translateY(105vh) rotate(720deg);opacity:0}}
+.cf{position:fixed;border-radius:2px;animation:cffall linear forwards;pointer-events:none;z-index:9999}
+
+@media(max-width:860px){
+  .og-grid{grid-template-columns:1fr}
+  .og-sidebar{position:static;max-height:none}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tl">
+    <a href="/index.html" class="logo">
+      <div class="logo-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      Commande-IA
+    </a>
+    <span class="page-badge"><span data-icon="rocket"></span> Guide d'onboarding</span>
+  </div>
+  <div class="tr">
+    <span class="topbar-prog" id="topbar-prog">Chargement…</span>
+    <a href="/index.html" class="back-btn">← Dashboard</a>
+  </div>
+</div>
+
+<div class="og-main">
+  <div class="og-grid">
+
+    <!-- ═══════════ SIDEBAR ═══════════ -->
+    <div class="og-sidebar">
+
+      <!-- Bloc progression (PAS de "-card" dans le nom) -->
+      <div class="prog-block">
+        <div class="prog-top">
+          <div class="prog-top-title"><span data-icon="rocket"></span> Votre progression</div>
+          <div class="prog-top-sub">Cochez les étapes au fur et à mesure</div>
+
+          <!-- Anneau SVG -->
+          <div class="ring-wrap">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+              <!-- Cercle fond -->
+              <circle cx="55" cy="55" r="44" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="10"/>
+              <!-- Arc rempli — rotate(-90) pour partir du haut -->
+              <circle cx="55" cy="55" r="44" fill="none" stroke="#6ee7b7" stroke-width="10"
+                stroke-dasharray="276.46" id="ring-fill" stroke-dashoffset="276.46"
+                stroke-linecap="round" transform="rotate(-90 55 55)"/>
+            </svg>
+            <div class="ring-center">
+              <span class="ring-pct" id="ring-pct">0%</span>
+              <span class="ring-sub">complété</span>
+            </div>
+          </div>
+
+          <!-- Compteurs -->
+          <div class="ring-counts">
+            <div class="rcnt">
+              <span class="rcnt-val" id="stat-done">0</span>
+              <span class="rcnt-key">terminées</span>
+            </div>
+            <div class="rcnt" style="border-left:1px solid rgba(255,255,255,.18);padding-left:20px">
+              <span class="rcnt-val" id="stat-left">16</span>
+              <span class="rcnt-key">restantes</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="prog-sep"></div>
+
+        <!-- Liste des phases (fond blanc) -->
+        <div class="phases-list-wrap" id="sidebar-phases">
+          <!-- Injecté par JS -->
+        </div>
+      </div>
+
+      <!-- Temps restant estimé -->
+      <div class="time-box" id="time-box"></div>
+
+      <!-- Tutoriels vidéo -->
+      <div class="vid-box">
+        <div class="box-label"><span data-icon="video"></span> Tutoriels vidéo</div>
+        <div class="vgrid">
+          <div class="vt" onclick="snack('Lecture : Commande vocale')">
+            <div class="vt-thumb" style="background:linear-gradient(135deg,#0E4B47,#1a6b5a)"><div class="vt-play">▶</div></div>
+            <div class="vt-body"><div class="vt-title">Commande vocale</div><div class="vt-dur">⏱ 3 min</div></div>
+          </div>
+          <div class="vt" onclick="snack('Lecture : Configurer le menu')">
+            <div class="vt-thumb" style="background:linear-gradient(135deg,#166534,#15803d)"><div class="vt-play">▶</div></div>
+            <div class="vt-body"><div class="vt-title">Configurer le menu</div><div class="vt-dur">⏱ 5 min</div></div>
+          </div>
+          <div class="vt" onclick="snack('Lecture : Plan de salle')">
+            <div class="vt-thumb" style="background:linear-gradient(135deg,#083330,#0E4B47)"><div class="vt-play">▶</div></div>
+            <div class="vt-body"><div class="vt-title">Plan de salle</div><div class="vt-dur">⏱ 4 min</div></div>
+          </div>
+          <div class="vt" onclick="snack('Lecture : KDS cuisine')">
+            <div class="vt-thumb" style="background:linear-gradient(135deg,#1a6b5a,#2d8a6e)"><div class="vt-play">▶</div></div>
+            <div class="vt-body"><div class="vt-title">Écran cuisine KDS</div><div class="vt-dur">⏱ 3 min</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /sidebar -->
+
+    <!-- ═══════════ CONTENU PRINCIPAL ═══════════ -->
+    <div class="og-content">
+
+      <!-- Hero -->
+      <div class="hero-banner">
+        <div class="hero-ico"><span data-icon="party" style="font-size:2.4rem"></span></div>
+        <div style="flex:1">
+          <div class="hero-title">Bienvenue dans Commande-IA !</div>
+          <div class="hero-sub">Il vous reste <strong id="hero-left">—</strong> avant d'avoir votre restaurant entièrement opérationnel. Cochez chaque tâche — les liens <strong>Ouvrir →</strong> vous amènent directement à la bonne page.</div>
+          <div class="hero-btns">
+            <button class="og-btn og-btn-primary" onclick="scrollToNext()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Aller à la prochaine étape
+            </button>
+            <button class="og-btn og-btn-reset" onclick="confirmReset()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+              Réinitialiser
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Achievement phase 1 (masqué par défaut) -->
+      <div class="ach-banner" id="achievement" style="display:none">
+        <div class="ach-ico"><span data-icon="trophy"></span></div>
+        <div style="flex:1">
+          <div class="ach-title">Bravo ! Phase 1 complétée</div>
+          <div class="ach-sub">Compte &amp; restaurant configurés — passez au menu maintenant</div>
+        </div>
+        <span class="ach-pts">+50 pts</span>
+      </div>
+
+      <!-- Phases injectées dynamiquement -->
+      <div id="phases-content"></div>
+
+      <!-- 100% complété -->
+      <div class="done-banner" id="done-banner">
+        <span class="done-emoji"><span data-icon="party"></span></span>
+        <div class="done-title">Configuration 100% complète !</div>
+        <div class="done-sub">Votre restaurant est entièrement opérationnel. Bon lancement !</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="og-snack" id="og-snack"></div>
+<button class="og-fab" id="og-fab" onclick="scrollToNext()">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+  Prochaine étape
+</button>
+
+<script>
+/* ─── Auth guard ─── */
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (!user.email) window.location.href = '/login.html';
+const rid = user.restaurantId || '';
+const ORIGIN = window.location.origin;
+
+/* ─── Données ─── */
+const PHASES = [
+  { id:1, name:'Compte & restaurant', icon:'home', tasks:[
+    { id:1,  title:'Créer votre compte',                 desc:'Inscription et vérification email',                              link:null,                time:2,  diff:'easy' },
+    { id:2,  title:'Renseigner les infos du restaurant', desc:'Nom, adresse, horaires d\'ouverture, type de cuisine',            link:'/setup.html',       time:5,  diff:'easy' },
+    { id:3,  title:'Uploader le logo',                   desc:'Logo en haute résolution (PNG ou SVG recommandé)',               link:'/setup.html',       time:2,  diff:'easy' },
+  ]},
+  { id:2, name:'Menu & cartes', icon:'plate', tasks:[
+    { id:4,  title:'Créer votre carte principale',       desc:'Ajoutez vos plats, photos et descriptions',                     link:'/menu-ia.html',     time:15, diff:'med'  },
+    { id:5,  title:'Configurer les allergènes',          desc:'Matrice EU 14 allergènes par plat',                             link:'/allergenes.html',  time:10, diff:'med'  },
+    { id:6,  title:'Activer le QR code client',          desc:'Générer et tester la page de commande en ligne',                link:'/demo-client.html', time:3,  diff:'easy' },
+  ]},
+  { id:3, name:'Salle & tables', icon:'building', tasks:[
+    { id:7,  title:'Dessiner le plan de salle',          desc:'Placer les tables en drag & drop',                              link:'/plan-salle.html',  time:8,  diff:'easy' },
+    { id:8,  title:'Configurer les réservations',        desc:'Horaires, capacité et confirmation automatique',                link:'/reservations.html',time:10, diff:'med'  },
+  ]},
+  { id:4, name:'Cuisine & service', icon:'chef_hat', tasks:[
+    { id:9,  title:'Configurer l\'écran cuisine (KDS)',  desc:'Installer le KDS sur tablette en cuisine',                     link:'/kds.html',         time:5,  diff:'easy' },
+    { id:10, title:'Tester la commande vocale',          desc:'Dicter votre première commande à l\'IA',                       link:'/vocal-avance.html',time:5,  diff:'easy' },
+    { id:11, title:'Former votre équipe',                desc:'Partager le guide de formation staff',                         link:null,                time:30, diff:'med'  },
+  ]},
+  { id:5, name:'Paiements & finance', icon:'credit_card', tasks:[
+    { id:12, title:'Connecter le terminal de paiement',  desc:'Intégrer Stripe ou votre TPE physique',                        link:'/paiement.html',    time:15, diff:'hard' },
+    { id:13, title:'Configurer les rapports auto',       desc:'Rapports de ventes quotidiens par email',                      link:'/rapports.html',    time:5,  diff:'easy' },
+  ]},
+  { id:6, name:'Optimisation IA', icon:'cpu', tasks:[
+    { id:14, title:'Analyser les rapports IA',           desc:'Rapports de ventes, prévisions et tendances',                  link:'/rapports.html',    time:5,  diff:'easy' },
+    { id:15, title:'Paramétrer les seuils de stock',     desc:'Définir les seuils d\'alerte pour le réapprovisionnement',     link:'/stocks.html',      time:10, diff:'med'  },
+    { id:16, title:'Activer la 2FA sécurité',            desc:'Double authentification pour protéger votre compte',           link:'/securite.html',    time:3,  diff:'easy' },
+  ]},
+];
+
+/* ─── État
+   - checkedTasks  : tâches cochées (manuellement + pré-cochées API)
+   - userUnchecked : tâches EXPLICITEMENT décochées par l'utilisateur
+                     → l'API ne peut PAS les re-cocher automatiquement
+   - autoIds       : tâches confirmées par l'API (badge uniquement)
+─── */
+const STORE_KEY     = 'og_v2_' + rid;
+const UNCHECKED_KEY = 'og_v2_unchk_' + rid;
+let checkedTasks  = new Set();
+let userUnchecked = new Set(); // mémoire des décochages volontaires
+try { checkedTasks  = new Set(JSON.parse(localStorage.getItem(STORE_KEY)     || '[]')); } catch(e) {}
+try { userUnchecked = new Set(JSON.parse(localStorage.getItem(UNCHECKED_KEY) || '[]')); } catch(e) {}
+let autoIds = new Set();
+
+function save() {
+  try {
+    localStorage.setItem(STORE_KEY,     JSON.stringify([...checkedTasks]));
+    localStorage.setItem(UNCHECKED_KEY, JSON.stringify([...userUnchecked]));
+  } catch(e) {}
+}
+
+/* ─── Détection API ─── */
+async function detectRealProgress() {
+  const toCheck = [];
+  toCheck.push(1); // connecté = compte créé
+
+  if (user.email) {
+    try {
+      const r = await fetch(`${ORIGIN}/security/${encodeURIComponent(user.email)}`);
+      if (r.ok) { const d = await r.json(); if (d.tfa_enabled) toCheck.push(16); }
+    } catch(e) {}
+  }
+  if (rid) {
+    try {
+      const [rR, mR, sR] = await Promise.all([
+        fetch(`${ORIGIN}/mon-restaurant/${rid}`),
+        fetch(`${ORIGIN}/mon-menu/${rid}`),
+        fetch(`${ORIGIN}/stocks/${rid}`)
+      ]);
+      if (rR.ok) {
+        const d = await rR.json(), r = Array.isArray(d) ? d[0] : d;
+        if (r?.nom && r?.adresse) toCheck.push(2);
+        if (r?.logo) toCheck.push(3);
+      }
+      if (mR.ok) {
+        const m = await mR.json();
+        const ok = Array.isArray(m) ? m.some(c => c.items?.length) : Object.values(m||{}).some(v => Array.isArray(v) && v.length);
+        if (ok) toCheck.push(4);
+      }
+      if (sR.ok) {
+        const s = await sR.json();
+        if (Array.isArray(s) && s.length) toCheck.push(5);
+        if (Array.isArray(s) && s.some(x => x.seuilAlerte > 0)) toCheck.push(15);
+      }
+    } catch(e) {}
+  }
+
+  toCheck.forEach(id => {
+    autoIds.add(id);
+    // Ne pré-coche QUE si l'utilisateur ne l'a pas explicitement décochée
+    if (!checkedTasks.has(id) && !userUnchecked.has(id)) {
+      checkedTasks.add(id);
+    }
+  });
+  save();
+  renderAll();
+}
+
+/* ─── Calculs ─── */
+const allTasks  = () => PHASES.flatMap(p => p.tasks);
+const isDone    = id => checkedTasks.has(id);
+const countDone = () => allTasks().filter(t => isDone(t.id)).length;
+const total     = () => allTasks().length;
+const nextTask  = () => allTasks().find(t => !isDone(t.id));
+const timeLeft  = () => allTasks().filter(t => !isDone(t.id)).reduce((a,t) => a + t.time, 0);
+const phDone    = ph => ph.tasks.filter(t => isDone(t.id)).length;
+
+/* ─── Rendu ─── */
+function renderAll() {
+  renderRing();
+  renderSidebarPhases();
+  renderTimeBox();
+  renderPhases();
+  renderHero();
+
+  const complete = countDone() === total();
+  document.getElementById('done-banner').classList.toggle('visible', complete);
+  document.getElementById('og-fab').classList.toggle('hidden', complete);
+
+  // Achievement phase 1
+  const ph1 = PHASES[0].tasks.every(t => isDone(t.id));
+  document.getElementById('achievement').style.display = ph1 ? 'flex' : 'none';
+}
+
+function renderRing() {
+  const done = countDone(), tot = total();
+  const pct  = Math.round(done / tot * 100);
+  const C    = 276.46; // 2π×44
+
+  document.getElementById('ring-pct').textContent   = pct + '%';
+  document.getElementById('ring-fill').setAttribute('stroke-dashoffset', (C * (1 - pct / 100)).toFixed(2));
+  document.getElementById('stat-done').textContent  = done;
+  document.getElementById('stat-left').textContent  = tot - done;
+  document.getElementById('topbar-prog').textContent = `✓ ${done}/${tot} étapes complétées`;
+}
+
+function renderSidebarPhases() {
+  const svg = (paths) => `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">${paths}</svg>`;
+  document.getElementById('sidebar-phases').innerHTML = PHASES.map(ph => {
+    const done = phDone(ph), all = ph.tasks.length;
+    const full = done === all, partial = done > 0 && !full;
+    const dotCls  = full ? 'ph-dot-done' : partial ? 'ph-dot-partial' : 'ph-dot-todo';
+    const fracCls = full ? 'ph-frac-done' : partial ? 'ph-frac-partial' : 'ph-frac-todo';
+    const dotInner = full
+      ? svg('<polyline points="20 6 9 17 4 12"/>')
+      : `<span data-icon="${ph.icon}"></span>`;
+    return `<div class="ph-row" onclick="scrollToPhase(${ph.id})">
+      <div class="ph-dot ${dotCls}">${dotInner}</div>
+      <span class="ph-name">${ph.name}</span>
+      <span class="ph-frac ${fracCls}">${done}/${all}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderTimeBox() {
+  const box = document.getElementById('time-box');
+  const remaining = allTasks().filter(t => !isDone(t.id));
+  if (!remaining.length) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  const fmt = m => m >= 60 ? `${Math.floor(m/60)}h${m%60 ? m%60+'min' : ''}` : `${m} min`;
+  const rows = PHASES.map(ph => {
+    const mins = ph.tasks.filter(t => !isDone(t.id)).reduce((a,t) => a + t.time, 0);
+    if (!mins) return '';
+    return `<div class="tc-row"><span class="tc-nm">${ph.name}</span><span class="tc-tm">${fmt(mins)}</span></div>`;
+  }).filter(Boolean).join('');
+  box.innerHTML = `<div class="box-label"><span data-icon="timer"></span> Temps restant estimé</div>${rows}
+    <div class="tc-sep"></div>
+    <div class="tc-total"><span class="tc-total-l">Total</span><span class="tc-total-v">≈ ${fmt(timeLeft())}</span></div>`;
+}
+
+function renderPhases() {
+  const next = nextTask();
+  const chk  = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const diffLbl = { easy:'Facile', med:'Moyen', hard:'Avancé' };
+  const diffCls = { easy:'d-easy', med:'d-med', hard:'d-hard' };
+
+  document.getElementById('phases-content').innerHTML = PHASES.map(ph => {
+    const done = phDone(ph), all = ph.tasks.length;
+    const pct  = Math.round(done / all * 100);
+    return `<div class="phase-section" id="phase-${ph.id}">
+      <div class="phase-hdr">
+        <div class="phase-num">${ph.id}</div>
+        <span class="phase-name"><span data-icon="${ph.icon}"></span> ${ph.name}</span>
+        <span class="phase-frac">${done}/${all}</span>
+      </div>
+      <div class="phase-bar"><div class="phase-bar-fill" style="width:${pct}%"></div></div>
+      <div class="phase-items">
+        ${ph.tasks.map(t => {
+          const done   = isDone(t.id);
+          const isAuto = autoIds.has(t.id);
+          const isNext = next && t.id === next.id && !done;
+          return `<div class="task-item ${done?'task-done':''} ${isNext?'task-next':''}" id="task-${t.id}" onclick="toggleTask(${t.id})">
+            ${isNext ? '<div class="next-stripe"></div>' : ''}
+            <div class="task-cb">${done ? chk : ''}</div>
+            <div class="task-body">
+              <div class="task-row1">
+                <span class="task-title">${t.title}</span>
+                ${isAuto ? '<span class="badge-auto">✓ Auto-détecté</span>' : ''}
+                ${isNext  ? '<span class="badge-next">→ Suivant</span>'    : ''}
+              </div>
+              <div class="task-desc">${t.desc}</div>
+              <div class="task-meta">
+                ${t.link ? `<a href="${t.link}" class="task-lnk" onclick="event.stopPropagation()"><span data-icon="link"></span> Ouvrir →</a>` : ''}
+                <span class="task-time"><span data-icon="timer"></span> ${t.time} min</span>
+                <span class="task-diff ${diffCls[t.diff]}">${diffLbl[t.diff]}</span>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderHero() {
+  const left = total() - countDone();
+  document.getElementById('hero-left').textContent = left === 0
+    ? 'plus aucune étape'
+    : `${left} étape${left > 1 ? 's' : ''}`;
+}
+
+/* ─── Actions ─── */
+function toggleTask(id) {
+  if (isDone(id)) {
+    checkedTasks.delete(id);
+    userUnchecked.add(id);   // mémorise le décochage → l'API ne re-cochera plus
+    snack('↩ Étape décochée');
+  } else {
+    checkedTasks.add(id);
+    userUnchecked.delete(id); // l'utilisateur re-coche → retire de la liste des refus
+    if (countDone() === total()) { confetti(); snack('🎊 Configuration 100% complète !'); }
+    else snack('✅ Étape cochée ! Continuez comme ça 🎯');
+  }
+  save();
+  renderAll();
+}
+
+function scrollToNext() {
+  const t = nextTask();
+  if (t) document.getElementById('task-'+t.id)?.scrollIntoView({behavior:'smooth',block:'center'});
+  else snack('🎉 Toutes les étapes sont complétées !');
+}
+
+function scrollToPhase(id) {
+  document.getElementById('phase-'+id)?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function confirmReset() {
+  if (!confirm('Réinitialiser toute la progression ?')) return;
+  checkedTasks.clear(); autoIds.clear(); userUnchecked.clear(); save();
+  renderAll();
+  detectRealProgress();
+  snack('↺ Progression réinitialisée');
+}
+
+function snack(msg) {
+  const s = document.getElementById('og-snack');
+  s.textContent = msg;
+  s.classList.add('show');
+  clearTimeout(snack._t);
+  snack._t = setTimeout(() => s.classList.remove('show'), 3400);
+}
+
+function confetti() {
+  const cols = ['#0E4B47','#6ee7b7','#fbbf24','#1d4ed8','#dc2626','#7c3aed','#f97316'];
+  for (let i = 0; i < 55; i++) {
+    const c = document.createElement('div');
+    c.className = 'cf';
+    const sz = 6 + Math.random() * 8;
+    c.style.cssText = `left:${Math.random()*100}vw;top:-20px;background:${cols[i%7]};width:${sz}px;height:${sz}px;border-radius:${Math.random()>.5?'50%':'2px'};animation-delay:${Math.random()*.7}s;animation-duration:${1.6+Math.random()}s`;
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3500);
+  }
+}
+
+/* ─── Init ─── */
+renderAll();           // affichage immédiat
+detectRealProgress();  // puis enrichi par l'API
+</script>
+
+<script>window.addEventListener('pageshow', e => { if (e.persisted) window.location.reload(); });</script>
+<script src="/burger-menu.js"></script>
+</body>
+</html>

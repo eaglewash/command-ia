@@ -1,0 +1,573 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CRM Clients — Commande-IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;min-height:100vh;color:#111}
+.topbar{background:#0E4B47;display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;position:sticky;top:0;z-index:100}
+.tl{display:flex;align-items:center;gap:14px}
+.logo{font-size:16px;font-weight:700;color:#fff;display:flex;align-items:center;gap:9px}
+.logo-icon{width:30px;height:30px;border-radius:8px;background:#0E4B47;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:14px;height:14px}
+.page-badge{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;background:rgba(123,187,181,.15);color:#B8D0C8;padding:3px 9px;border-radius:5px;border:1px solid rgba(123,187,181,.25)}
+.tr{display:flex;align-items:center;gap:10px}
+.back-btn{font-size:12px;font-weight:600;color:#B8D0C8;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:6px 14px;border-radius:7px;cursor:pointer;text-decoration:none;transition:all .15s;font-family:'Inter',sans-serif}
+.back-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+.main{padding:24px 28px;max-width:1400px;margin:0 auto}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.page-title{font-size:22px;font-weight:800;color:#0F2A28;letter-spacing:-.5px}
+.page-sub{font-size:13px;color:#4D6260;margin-top:4px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn-primary{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;border:none;background:#0E4B47;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.btn-primary:hover{background:#0A3D3A}
+.btn-secondary{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;border:1.5px solid #B8D0C8;background:#fff;color:#0E4B47;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.btn-secondary:hover{border-color:#0E4B47;background:#EEF5F2}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1.5px solid #B8D0C8;border-radius:14px;padding:16px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.green::after{background:linear-gradient(90deg,#0E4B47,#7BBBB5)}
+.kpi.blue::after{background:linear-gradient(90deg,#2a50aa,#70a0f0)}
+.kpi.orange::after{background:linear-gradient(90deg,#e08a10,#f0c040)}
+.kpi.purple::after{background:linear-gradient(90deg,#6030a0,#b060f0)}
+.kpi-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.kpi-val{font-size:24px;font-weight:800;color:#0F2A28;letter-spacing:-.6px}
+.kpi-lbl{font-size:10px;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+.kpi-sub{font-size:11px;color:#b0c8b0;margin-top:2px}
+.layout{display:grid;grid-template-columns:1fr 320px;gap:16px}
+.table-card{background:#fff;border:1.5px solid #B8D0C8;border-radius:14px;overflow:hidden}
+.table-toolbar{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1.5px solid #B8D0C8;flex-wrap:wrap}
+.search{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f4f7f1;border:1.5px solid #B8D0C8;border-radius:9px;min-width:200px;flex:1}
+.search:focus-within{border-color:#0E4B47;background:#fff}
+.search input{border:none;outline:none;font-size:12px;font-family:'Inter',sans-serif;color:#0F2A28;background:transparent;width:100%}
+.search input::placeholder{color:#b0c8b0}
+.filter-pill{font-size:11px;font-weight:600;padding:5px 12px;border-radius:16px;border:1.5px solid #B8D0C8;background:#fff;color:#4D6260;cursor:pointer;white-space:nowrap;transition:all .12s;font-family:'Inter',sans-serif}
+.filter-pill.active{background:#0E4B47;color:#B8D0C8;border-color:#0E4B47}
+table{width:100%;border-collapse:collapse}
+thead tr{background:#f8fbf5}
+th{font-size:10px;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:.8px;padding:10px 16px;text-align:left;border-bottom:1.5px solid #B8D0C8;white-space:nowrap}
+td{font-size:12px;color:#3a5a3a;padding:11px 16px;border-bottom:1px solid #f0f6ee;vertical-align:middle}
+tbody tr{cursor:pointer;transition:background .1s}
+tbody tr:hover td{background:#f8fdf5}
+.client-cell{display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.client-name{font-size:12px;font-weight:600;color:#0F2A28}
+.client-email{font-size:11px;color:#8aaa8a}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;display:inline-block}
+.bg{background:#DCF0ED;color:#0E4B47}
+.bb{background:#e8f0ff;color:#2a50aa}
+.bo{background:#fff8e8;color:#906010}
+.bp{background:#f5eeff;color:#7030c0}
+.bgray{background:#f0f0f0;color:#666}
+/* Side panel */
+.side-card{background:#fff;border:1.5px solid #B8D0C8;border-radius:14px;padding:18px}
+.side-title{font-size:13px;font-weight:700;color:#0F2A28;margin-bottom:14px}
+.cp-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0f6ee;font-size:12px}
+.cp-row:last-child{border-bottom:none}
+.cp-key{color:#8aaa8a}
+.cp-val{font-weight:600;color:#0F2A28}
+.progress-bar{height:6px;background:#B8D0C8;border-radius:3px;overflow:hidden;margin:8px 0 4px}
+.progress-fill{height:100%;background:linear-gradient(90deg,#0E4B47,#7BBBB5);border-radius:3px}
+.state-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;text-align:center}
+.state-icon{font-size:40px;opacity:.5}
+.state-title{font-size:15px;font-weight:700;color:#0F2A28}
+.state-sub{font-size:12px;color:#8aaa8a;max-width:300px}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:500px;box-shadow:0 24px 60px rgba(0,0,0,.12);animation:mIn .2s}
+@keyframes mIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.mt{font-size:17px;font-weight:700;color:#0F2A28}
+.mc{width:28px;height:28px;border-radius:7px;border:none;background:#f5f5f5;cursor:pointer;font-size:16px}
+.fg{margin-bottom:14px}
+.fl{font-size:11px;font-weight:600;color:#8aaa8a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;display:block}
+.fi{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #B8D0C8;background:#fafdf8;font-size:12px;font-family:'Inter',sans-serif;color:#0F2A28;outline:none;transition:all .15s}
+.fi:focus{border-color:#0E4B47;background:#fff}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mf{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:#fff;border:1px solid #B8D0C8;border-radius:10px;padding:12px 16px;font-size:12px;font-weight:600;color:#333;box-shadow:0 6px 20px rgba(0,0,0,.1);animation:ti .25s ease}
+@keyframes ti{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  </style>
+<script src="/socket.io/socket.io.js"></script>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="tl">
+    <div class="logo"><div class="logo-icon"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2v10" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>Commande-IA</div>
+    <span class="page-badge">CRM Clients</span>
+  </div>
+  <div class="tr">
+    <button class="btn-secondary" id="export-btn" onclick="exportCSV()" style="display:none">Exporter CSV</button>
+    <button class="btn-primary" onclick="openModal()">+ Nouveau client</button>
+    <a href="/index.html" class="back-btn">← Dashboard</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Clients & Fidélité</div>
+      <div class="page-sub">Données enregistrées manuellement — <span id="client-count">0</span> client(s)</div>
+    </div>
+    <div class="actions" id="header-actions"></div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi green"><div class="kpi-icon" style="background:#DCF0ED"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><path d="M17 20v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2" stroke="#0E4B47" stroke-width="1.5"/><circle cx="10" cy="7" r="4" stroke="#0E4B47" stroke-width="1.5"/></svg></div><div class="kpi-val" id="k-total">0</div><div class="kpi-lbl">Clients enregistrés</div><div class="kpi-sub" id="k-total-sub">Aucun client</div></div>
+    <div class="kpi blue"><div class="kpi-icon" style="background:#e8f0ff"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><path d="M10 2v16M2 10h16" stroke="#2a50aa" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="kpi-val" id="k-new">0</div><div class="kpi-lbl">Nouveaux ce mois</div><div class="kpi-sub">30 derniers jours</div></div>
+    <div class="kpi orange"><div class="kpi-icon" style="background:#fff8e8"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><path d="M10 2l2.5 5 5.5.8-4 3.9.9 5.5L10 14.7 5.1 17.2l.9-5.5L2 7.8l5.5-.8z" stroke="#e08a10" stroke-width="1.5"/></svg></div><div class="kpi-val" id="k-vip">0</div><div class="kpi-lbl">Clients VIP</div><div class="kpi-sub">CA ≥ 500€</div></div>
+    <div class="kpi purple"><div class="kpi-icon" style="background:#f5eeff"><svg viewBox="0 0 20 20" fill="none" width="18" height="18"><path d="M4 3h12v14H4z" stroke="#7030c0" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 8h4m-4 4h4" stroke="#7030c0" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="kpi-val" id="k-pts">0</div><div class="kpi-lbl">Total points actifs</div><div class="kpi-sub">Programme fidélité</div></div>
+  </div>
+
+  <div class="layout">
+    <div class="table-card">
+      <div class="table-toolbar">
+        <div class="search"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="7" cy="7" r="5" stroke="#4D6260" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#4D6260" stroke-width="1.5" stroke-linecap="round"/></svg><input id="search-input" placeholder="Nom, email, téléphone..." oninput="renderTable()"/></div>
+        <button class="filter-pill active" onclick="setFilter('all',this)">Tous</button>
+        <button class="filter-pill" onclick="setFilter('vip',this)">VIP</button>
+        <button class="filter-pill" onclick="setFilter('allegenes',this)">Allergènes</button>
+        <button class="filter-pill" onclick="setFilter('new',this)">Nouveaux</button>
+      </div>
+      <div id="table-zone"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="side-card" id="detail-panel">
+        <div class="state-wrap" style="padding:40px 20px">
+          <div class="state-icon"><span data-icon="user"></span></div>
+          <div class="state-title" style="font-size:13px">Sélectionnez un client</div>
+          <div class="state-sub" style="font-size:11px">Cliquez sur une ligne pour voir le profil</div>
+        </div>
+      </div>
+      <div class="side-card">
+        <div class="side-title">Programme fidélité</div>
+        <div style="font-size:12px;color:#8aaa8a;line-height:1.6">
+          Les points sont attribués manuellement. 1 visite = 10 points. 100 points = 1 récompense à définir.
+        </div>
+        <div style="margin-top:12px;padding:10px 12px;background:#f8fbf5;border-radius:8px;font-size:11px;color:#4D6260">
+          <strong style="color:#0F2A28">Tiers actifs :</strong> Bronze (0 pts) · Argent (100 pts) · Or (300 pts) · VIP (500€ CA)
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="mh"><span class="mt" id="modal-title">Nouveau client</span><button class="mc" onclick="closeModal()"><span data-icon="x"></span></button></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Prénom *</label><input class="fi" id="f-prenom" placeholder="Jean"/></div>
+      <div class="fg"><label class="fl">Nom *</label><input class="fi" id="f-nom" placeholder="Dupont"/></div>
+    </div>
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="f-email" placeholder="jean@exemple.fr" type="email"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Téléphone</label><input class="fi" id="f-tel" placeholder="+33 6 00 00 00 00"/></div>
+      <div class="fg"><label class="fl">Anniversaire</label><input class="fi" id="f-birth" type="date"/></div>
+    </div>
+    <div class="fg"><label class="fl">Allergènes connus</label><input class="fi" id="f-allerg" placeholder="Gluten, Lactose, Arachides..."/></div>
+    <div class="fg"><label class="fl">Notes internes</label><input class="fi" id="f-notes" placeholder="Client fidèle, préfère la terrasse..."/></div>
+    <div id="edit-extra" style="display:none">
+      <div class="fr">
+        <div class="fg"><label class="fl">CA total (€)</label><input class="fi" id="f-ca" type="number" placeholder="0" min="0"/></div>
+        <div class="fg"><label class="fl">Nombre de visites</label><input class="fi" id="f-visits" type="number" placeholder="0" min="0"/></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn-secondary" id="delete-btn" style="display:none;border-color:#f0c0c0;color:#c03030" onclick="deleteClient()">Supprimer</button>
+      <button class="btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveClient()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="/permissions.js"></script>
+<script src="/icons.js"></script>
+<script>
+window.addEventListener('load', () => { try { window.ICONS && window.ICONS.replaceEmojisGlobal && window.ICONS.replaceEmojisGlobal(); } catch(e) {} });
+if (typeof requireAuth === 'function') requireAuth();
+const ORIGIN = window.location.origin;
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (!user.email) window.location.href = '/login.html';
+const isAdmin = user.role === 'Admin';
+let currentRestaurantId = user.restaurantId || null;
+
+const STORAGE_KEY = 'crm_clients_' + (currentRestaurantId || 'default');
+let clients = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let filterMode = 'all';
+let editingId = null;
+
+const AVG_COLORS = ['#DCF0ED','#e8f0ff','#fff8e8','#f5eeff','#fef0f0'];
+const AVG_TEXT = ['#0E4B47','#2a50aa','#906010','#7030c0','#b03030'];
+
+function saveToStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+}
+
+let syncTimer = null;
+function syncToServer() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(async () => {
+    if (!currentRestaurantId) return;
+    try {
+      await fetch(`${ORIGIN}/crm/${currentRestaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clients, updatedAt: new Date().toISOString(), updatedBy: user.nom || user.email })
+      });
+    } catch(e) {}
+  }, 2000);
+}
+
+async function loadFromServer() {
+  if (!currentRestaurantId) return;
+  try {
+    const res = await fetch(`${ORIGIN}/crm/${currentRestaurantId}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.clients) && data.clients.length > 0) {
+        clients = data.clients;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+      }
+    }
+  } catch(e) {}
+}
+
+// Sync on save
+const _origSave = saveToStorage;
+function saveAndSync() {
+  saveToStorage();
+  syncToServer();
+}
+
+function getTier(c) {
+  if ((c.ca || 0) >= 500) return { label: 'VIP', bg: '#f5eeff', color: '#7030c0' };
+  if ((c.visits || 0) >= 10) return { label: 'Or', bg: '#fff8dc', color: '#c08010' };
+  if ((c.visits || 0) >= 3) return { label: 'Argent', bg: '#e8eeff', color: '#506090' };
+  return { label: 'Bronze', bg: '#f0ebe4', color: '#8a5a3a' };
+}
+
+function getPoints(c) {
+  // Manual points take priority if set, otherwise visits <span data-icon="x"></span> 10
+  return c.points != null ? c.points : (c.visits || 0) * 10;
+}
+
+function adjustPoints(id, direction) {
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+  const inputEl = document.getElementById('pts-qty-' + id);
+  const qty = parseInt(inputEl ? inputEl.value : 10) || 10;
+  const current = getPoints(c);
+  const newVal = Math.max(0, current + direction * qty);
+  c.points = newVal;
+  saveToStorage();
+  syncToServer(); // try to push to server
+  selectClient(id);
+  renderTable();
+  toast(`${direction > 0 ? '+' : '-'}${qty} points — ${c.prenom} a maintenant ${newVal} pts`, 'success');
+}
+
+function isNew(c) {
+  if (!c.createdAt) return false;
+  return (Date.now() - new Date(c.createdAt).getTime()) < 30 * 24 * 3600 * 1000;
+}
+
+function updateKPIs() {
+  const total = clients.length;
+  const newCount = clients.filter(isNew).length;
+  const vipCount = clients.filter(c => (c.ca || 0) >= 500).length;
+  const totalPts = clients.reduce((s, c) => s + getPoints(c), 0);
+  document.getElementById('k-total').textContent = total;
+  document.getElementById('k-total-sub').textContent = total === 0 ? 'Ajoutez votre premier client' : total + ' au total';
+  document.getElementById('k-new').textContent = newCount;
+  document.getElementById('k-vip').textContent = vipCount;
+  document.getElementById('k-pts').textContent = totalPts;
+  document.getElementById('client-count').textContent = total;
+  document.getElementById('export-btn').style.display = total > 0 ? 'flex' : 'none';
+}
+
+function renderTable() {
+  const q = (document.getElementById('search-input').value || '').toLowerCase();
+  let list = clients.filter(c => {
+    if (q && !`${c.prenom} ${c.nom} ${c.email || ''} ${c.tel || ''}`.toLowerCase().includes(q)) return false;
+    if (filterMode === 'vip') return (c.ca || 0) >= 500;
+    if (filterMode === 'allegenes') return c.allergenes && c.allergenes.length > 0;
+    if (filterMode === 'new') return isNew(c);
+    return true;
+  });
+
+  const zone = document.getElementById('table-zone');
+  if (list.length === 0) {
+    zone.innerHTML = `<div class="state-wrap"><div class="state-icon"><span data-icon="users"></span></div>
+      <div class="state-title">${clients.length === 0 ? 'Aucun client enregistré' : 'Aucun résultat'}</div>
+      <div class="state-sub">${clients.length === 0 ? 'Cliquez sur "+ Nouveau client" pour commencer à enregistrer vos clients fidèles.' : 'Modifiez votre recherche ou les filtres.'}</div>
+      ${clients.length === 0 ? `<button class="btn-primary" onclick="openModal()" style="margin-top:8px">+ Ajouter le premier client</button>` : ''}
+    </div>`;
+    updateKPIs();
+    return;
+  }
+
+  zone.innerHTML = `<table><thead><tr>
+    <th>Client</th><th>Visites</th><th>CA total</th><th>Tier</th><th>Allergènes</th><th>Notes</th><th></th>
+  </tr></thead><tbody>
+    ${list.map(c => {
+      const tier = getTier(c);
+      const idx = c.prenom.charCodeAt(0) % AVG_COLORS.length;
+      const init = (c.prenom[0] + c.nom[0]).toUpperCase();
+      return `<tr onclick="selectClient('${c.id}')">
+        <td><div class="client-cell">
+          <div class="avatar" style="background:${AVG_COLORS[idx]};color:${AVG_TEXT[idx]}">${init}</div>
+          <div><div class="client-name">${c.prenom} ${c.nom}</div><div class="client-email">${c.email || c.tel || '—'}</div></div>
+        </div></td>
+        <td>${c.visits || 0}</td>
+        <td style="font-weight:700;color:#0E4B47">${(c.ca || 0).toFixed(2)}€</td>
+        <td><span class="badge" style="background:${tier.bg};color:${tier.color}">${tier.label}</span>${isNew(c)?'<span class="badge bgray" style="margin-left:4px">Nouveau</span>':''}</td>
+        <td>${c.allergenes ? c.allergenes.split(',').map(a => `<span class="badge bo" style="margin-right:3px">${a.trim()}</span>`).join('') : '—'}</td>
+        <td style="font-size:11px;color:#8aaa8a;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.notes || '—'}</td>
+        <td><button onclick="event.stopPropagation();openEditModal('${c.id}')" style="font-size:11px;font-weight:600;padding:4px 9px;border-radius:6px;border:1.5px solid #B8D0C8;background:#fff;cursor:pointer;color:#0E4B47;font-family:'Inter',sans-serif">Éditer</button></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+  updateKPIs();
+}
+
+function setFilter(mode, btn) {
+  filterMode = mode;
+  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function selectClient(id) {
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+  const tier = getTier(c);
+  const pts = getPoints(c);
+  const nextPts = tier.label === 'Bronze' ? 30 : tier.label === 'Argent' ? 100 : tier.label === 'Or' ? 500 : 9999;
+  const progress = Math.min(100, Math.round((pts / nextPts) * 100));
+  const idx = c.prenom.charCodeAt(0) % AVG_COLORS.length;
+  const init = (c.prenom[0] + c.nom[0]).toUpperCase();
+  document.getElementById('detail-panel').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div class="avatar" style="width:44px;height:44px;font-size:15px;border-radius:10px;background:${AVG_COLORS[idx]};color:${AVG_TEXT[idx]}">${init}</div>
+      <div><div style="font-size:15px;font-weight:800;color:#0F2A28">${c.prenom} ${c.nom}</div>
+        <span class="badge" style="background:${tier.bg};color:${tier.color};margin-top:4px">${tier.label}</span>
+      </div>
+      <button onclick="openEditModal('${c.id}')" class="btn-primary" style="margin-left:auto;font-size:11px;padding:5px 10px">Modifier</button>
+    </div>
+    <div class="cp-row"><span class="cp-key">Email</span><span class="cp-val">${c.email || '—'}</span></div>
+    <div class="cp-row"><span class="cp-key">Téléphone</span><span class="cp-val">${c.tel || '—'}</span></div>
+    <div class="cp-row"><span class="cp-key">Visites</span><span class="cp-val">${c.visits || 0}</span></div>
+    <div class="cp-row"><span class="cp-key">CA total</span><span class="cp-val" style="color:#0E4B47">${(c.ca || 0).toFixed(2)}€</span></div>
+    <div class="cp-row"><span class="cp-key">Anniversaire</span><span class="cp-val">${c.birth || '—'}</span></div>
+    ${c.allergenes ? `<div class="cp-row"><span class="cp-key">Allergènes</span><span class="cp-val" style="color:#906010">${c.allergenes}</span></div>` : ''}
+    ${c.notes ? `<div class="cp-row"><span class="cp-key">Notes</span><span class="cp-val">${c.notes}</span></div>` : ''}
+    <div style="margin-top:14px">
+      <div style="font-size:11px;font-weight:600;color:#8aaa8a;margin-bottom:6px">FIDÉLITÉ — ${pts} pts</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#b0c8b0">
+        <span>${pts} pts</span><span>Prochain palier : ${nextPts} pts</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button onclick="addVisit('${c.id}')" class="btn-primary" style="font-size:11px;padding:6px 11px;flex:1">+1 Visite</button>
+      <button onclick="openEditModal('${c.id}')" class="btn-secondary" style="font-size:11px;padding:6px 11px;flex:1">Modifier profil</button>
+    </div>
+    <div style="margin-top:12px;padding:10px 12px;background:#f8fbf5;border-radius:10px;border:1.5px solid #B8D0C8">
+      <div style="font-size:10px;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Ajuster les points manuellement</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" id="pts-qty-${c.id}" value="10" min="1" max="9999" style="width:70px;padding:6px 8px;border:1.5px solid #B8D0C8;border-radius:7px;font-size:12px;font-family:'Inter',sans-serif;outline:none;text-align:center">
+        <button onclick="adjustPoints('${c.id}',1)" style="flex:1;padding:7px 0;border-radius:7px;border:none;background:#DCF0ED;color:#0E4B47;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">+ Points</button>
+        <button onclick="adjustPoints('${c.id}',-1)" style="flex:1;padding:7px 0;border-radius:7px;border:1.5px solid #f0c0c0;background:#fef0f0;color:#b03030;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">− Points</button>
+      </div>
+    </div>`;
+}
+
+function addVisit(id) {
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+  c.visits = (c.visits || 0) + 1;
+  // Also add visit-based points (10 per visit) if not using manual points
+  if (c.points == null) {
+    c.points = c.visits * 10;
+  } else {
+    c.points = (c.points || 0) + 10;
+  }
+  saveToStorage(); syncToServer();
+  renderTable();
+  selectClient(id);
+  toast(c.prenom + ' — 1 visite + 10 points (' + c.visits + ' visites, ' + getPoints(c) + ' pts)', 'success');
+}
+
+function openModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Nouveau client';
+  document.getElementById('delete-btn').style.display = 'none';
+  document.getElementById('edit-extra').style.display = 'none';
+  ['f-prenom','f-nom','f-email','f-tel','f-birth','f-allerg','f-notes','f-ca','f-visits'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function openEditModal(id) {
+  editingId = id;
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('modal-title').textContent = 'Modifier — ' + c.prenom + ' ' + c.nom;
+  document.getElementById('delete-btn').style.display = 'flex';
+  document.getElementById('edit-extra').style.display = 'block';
+  document.getElementById('f-prenom').value = c.prenom;
+  document.getElementById('f-nom').value = c.nom;
+  document.getElementById('f-email').value = c.email || '';
+  document.getElementById('f-tel').value = c.tel || '';
+  document.getElementById('f-birth').value = c.birth || '';
+  document.getElementById('f-allerg').value = c.allergenes || '';
+  document.getElementById('f-notes').value = c.notes || '';
+  document.getElementById('f-ca').value = c.ca || 0;
+  document.getElementById('f-visits').value = c.visits || 0;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function saveClient() {
+  const prenom = document.getElementById('f-prenom').value.trim();
+  const nom = document.getElementById('f-nom').value.trim();
+  if (!prenom || !nom) { toast('Prénom et nom obligatoires', 'error'); return; }
+  if (editingId) {
+    const c = clients.find(x => x.id === editingId);
+    if (c) {
+      c.prenom = prenom; c.nom = nom;
+      c.email = document.getElementById('f-email').value.trim();
+      c.tel = document.getElementById('f-tel').value.trim();
+      c.birth = document.getElementById('f-birth').value;
+      c.allergenes = document.getElementById('f-allerg').value.trim();
+      c.notes = document.getElementById('f-notes').value.trim();
+      c.ca = parseFloat(document.getElementById('f-ca').value) || 0;
+      c.visits = parseInt(document.getElementById('f-visits').value) || 0;
+    }
+    toast(prenom + ' mis à jour', 'success');
+  } else {
+    clients.unshift({
+      id: 'c' + Date.now(),
+      prenom, nom,
+      email: document.getElementById('f-email').value.trim(),
+      tel: document.getElementById('f-tel').value.trim(),
+      birth: document.getElementById('f-birth').value,
+      allergenes: document.getElementById('f-allerg').value.trim(),
+      notes: document.getElementById('f-notes').value.trim(),
+      ca: 0, visits: 0, points: 0,
+      restaurantId: currentRestaurantId,
+      createdAt: new Date().toISOString()
+    });
+    toast(prenom + ' ' + nom + ' ajouté(e)', 'success');
+  }
+  saveToStorage(); syncToServer();
+  closeModal();
+  renderTable();
+}
+
+function deleteClient() {
+  if (!editingId) return;
+  const c = clients.find(x => x.id === editingId);
+  if (!c) return;
+  if (!confirm('Supprimer ' + c.prenom + ' ' + c.nom + ' ?')) return;
+  clients = clients.filter(x => x.id !== editingId);
+  saveToStorage(); syncToServer();
+  closeModal();
+  renderTable();
+  document.getElementById('detail-panel').innerHTML = `<div class="state-wrap" style="padding:40px 20px"><div class="state-icon"><span data-icon="user"></span></div><div class="state-title" style="font-size:13px">Sélectionnez un client</div></div>`;
+  toast('Client supprimé');
+}
+
+function exportCSV() {
+  const h = 'Prenom,Nom,Email,Téléphone,Anniversaire,CA Total,Visites,Points,Tier,Allergènes,Notes\n';
+  const rows = clients.map(c => {
+    const tier = getTier(c);
+    return [c.prenom, c.nom, c.email || '', c.tel || '', c.birth || '', c.ca || 0, c.visits || 0, getPoints(c), tier.label, c.allergenes || '', c.notes || ''].join(',');
+  }).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(h + rows);
+  a.download = 'clients_crm.csv'; a.click();
+  toast('Export CSV téléchargé', 'success');
+}
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.style.borderLeft = '3px solid ' + (type === 'success' ? '#0E4B47' : '#c03030');
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── SOCKET.IO sync temps réel entre employés ──
+let socket = null;
+let isSyncing = false;
+try {
+  socket = io(ORIGIN);
+  socket.on('connect', () => {
+    if (currentRestaurantId) socket.emit('join-restaurant', { restaurantId: currentRestaurantId });
+  });
+  socket.on('crm-broadcast', (data) => {
+    if (data.restaurantId !== currentRestaurantId) return;
+    if (isSyncing) return;
+    clients = data.clients || [];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+    renderTable();
+    const dot = document.createElement('div');
+    dot.className = 'toast';
+    dot.style.borderLeft = '3px solid #2a50aa';
+    dot.innerHTML = '<span data-icon="refresh"></span> CRM mis à jour par ' + (data.updatedBy || 'un collègue');
+    if (window.ICONS?.replaceAll) window.ICONS.replaceAll(dot);
+    document.getElementById('toast-container').appendChild(dot);
+    setTimeout(() => dot.remove(), 3000);
+  });
+} catch(e) { console.warn('Socket indisponible'); }
+
+// Patch saveAndSync pour aussi rejoindre via socket si besoin
+const _origSyncToServer = syncToServer;
+
+// Try to load latest data from server on page load
+loadFromServer().then(() => renderTable()).catch(() => renderTable());
+
+// Admin selector
+if (isAdmin) {
+  fetch(ORIGIN + '/admin/restaurants').then(r => r.json()).then(restos => {
+    if (!restos.length) return;
+    const sel = document.createElement('select');
+    sel.className = 'btn-secondary';
+    sel.style.cssText = 'font-size:12px;padding:7px 12px;cursor:pointer';
+    sel.innerHTML = restos.map(r => `<option value="${r.id}">${r.nom}</option>`).join('');
+    currentRestaurantId = restos[0].id;
+    sel.onchange = () => {
+      currentRestaurantId = sel.value;
+      clients = JSON.parse(localStorage.getItem('crm_clients_' + currentRestaurantId) || '[]');
+      renderTable();
+    };
+    document.getElementById('header-actions').prepend(sel);
+    clients = JSON.parse(localStorage.getItem('crm_clients_' + currentRestaurantId) || '[]');
+    renderTable();
+  }).catch(() => {});
+} else {
+  // non-admin: already handled by loadFromServer above
+}
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

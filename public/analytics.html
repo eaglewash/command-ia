@@ -1,0 +1,362 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analytics – Commande-IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:100vh}
+.topbar{background:#0E4B47;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.tl{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:1.1rem}
+.logo-icon{width:32px;height:32px;background:#0E4B47;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.page-badge{background:rgba(255,255,255,.12);color:#c8e6c9;font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:20px;white-space:nowrap}
+.tr{display:flex;align-items:center;gap:10px}
+.back-btn{background:rgba(255,255,255,.1);color:#fff;text-decoration:none;padding:7px 16px;border-radius:8px;font-size:.85rem;font-weight:500;transition:background .2s;white-space:nowrap}
+.back-btn:hover{background:rgba(255,255,255,.2)}
+.btn{border:none;border-radius:8px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px}
+.btn-ghost{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}.btn-ghost:hover{background:rgba(255,255,255,.2)}
+.btn-primary{background:#0E4B47;color:#fff}.btn-primary:hover{background:#2d5509}
+.btn-secondary{background:#fff;color:#1a2e1a;border:1.5px solid #B8D0C8}.btn-secondary:hover{background:#f5f9f2}
+
+select.topbar-select{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 10px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:500;cursor:pointer;max-width:220px}
+select.topbar-select option{background:#0E4B47;color:#fff}
+
+.period-tabs{display:flex;gap:2px;background:rgba(255,255,255,.08);border-radius:8px;padding:3px}
+.ptab{padding:5px 12px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;color:rgba(255,255,255,.6);transition:all .2s;border:none;background:transparent;font-family:'Inter',sans-serif;white-space:nowrap}
+.ptab.active{background:rgba(255,255,255,.18);color:#fff}
+
+.main{padding:24px;max-width:1400px;margin:0 auto}
+
+/* Loading */
+.loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px}
+.spinner{width:36px;height:36px;border:3px solid #B8D0C8;border-top-color:#0E4B47;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-state p{color:#6b7280;font-size:.9rem;font-weight:500}
+
+/* Empty state */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:12px;background:#fff;border-radius:12px;border:1.5px solid #B8D0C8}
+.empty-icon{font-size:3rem;opacity:.4}
+.empty-title{font-size:1rem;font-weight:700;color:#1a2e1a}
+.empty-sub{font-size:.85rem;color:#6b7280;text-align:center;max-width:380px;line-height:1.5}
+
+/* Error state */
+.error-state{background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;padding:20px;display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.error-state p{font-size:.88rem;color:#dc2626;font-weight:500;flex:1}
+
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;padding:16px 18px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--c)}
+.kpi-icon{font-size:1.1rem;margin-bottom:8px}
+.kv{font-size:1.8rem;font-weight:800;line-height:1}
+.kl{font-size:.73rem;color:#6b7280;margin-top:4px;font-weight:500}
+.ks{font-size:.73rem;font-weight:600;margin-top:5px}
+.ks.up{color:#16a34a}.ks.dn{color:#dc2626}.ks.neu{color:#6b7280}
+
+.grid2{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+.grid2b{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.card{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;overflow:hidden}
+.card-head{padding:14px 18px;border-bottom:1.5px solid #B8D0C8;display:flex;align-items:center;justify-content:space-between}
+.card-head h2{font-size:.93rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-body{padding:16px}
+.chart-h{position:relative;height:220px}
+.chart-sm{position:relative;height:180px}
+
+/* Top products */
+.prod-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #EEF5F2}
+.prod-row:last-child{border-bottom:none}
+.prod-rank{width:22px;height:22px;border-radius:50%;background:#f5f9f2;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#4b5563}
+.prod-rank.gold{background:#fbbf24;color:#fff}
+.prod-rank.silver{background:#9ca3af;color:#fff}
+.prod-rank.bronze{background:#d97706;color:#fff}
+.prod-name{flex:1;font-size:.85rem;font-weight:600;color:#1a2e1a}
+.prod-bar-bg{width:72px;height:5px;background:#e5e7eb;border-radius:3px;overflow:hidden}
+.prod-bar-fill{height:100%;background:#0E4B47;border-radius:3px}
+.prod-qty{font-size:.8rem;font-weight:700;color:#1a2e1a;min-width:28px;text-align:right}
+
+/* Stats row */
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #EEF5F2}
+.stat-row:last-child{border-bottom:none}
+.stat-lbl{font-size:.85rem;color:#4b5563}
+.stat-val{font-size:.88rem;font-weight:700;color:#1a2e1a}
+
+.admin-badge{background:#fef3c7;color:#92400e;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:6px}
+
+  </style>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="tl">
+    <div class="logo">
+      <div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+      Commande-IA
+    </div>
+    <span class="page-badge"><span data-icon="chart_bar"></span> Analytics</span>
+    <select class="topbar-select" id="resto-select" style="display:none" onchange="onRestaurantChange()">
+      <option value="">Chargement...</option>
+    </select>
+    <div class="period-tabs" id="period-tabs">
+      <button class="ptab" onclick="setPeriod(7,this)">7j</button>
+      <button class="ptab active" onclick="setPeriod(14,this)">14j</button>
+      <button class="ptab" onclick="setPeriod(30,this)">30j</button>
+      <button class="ptab" onclick="setPeriod(90,this)">90j</button>
+    </div>
+  </div>
+  <div class="tr">
+    <a href="/index.html" class="back-btn">← Dashboard</a>
+  </div>
+</div>
+
+<div class="main" id="main-content">
+  <div class="loading-state" id="loading">
+    <div class="spinner"></div>
+    <p>Chargement des données analytiques...</p>
+  </div>
+</div>
+
+<script src="/permissions.js"></script>
+<script src="/icons.js"></script>
+<script>
+window.addEventListener('load', () => { try { window.ICONS && window.ICONS.replaceEmojisGlobal && window.ICONS.replaceEmojisGlobal(); } catch(e) {} });
+if (typeof requireAuth === 'function') requireAuth();
+const ORIGIN = window.location.origin;
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (!user.email) window.location.href = '/login.html';
+const isAdmin = user.role === 'Admin';
+
+let currentDays = 14;
+let currentRestaurantId = user.restaurantId || null;
+let charts = {};
+
+// Si admin, charger la liste des restaurants
+async function init() {
+  if (isAdmin) {
+    document.getElementById('resto-select').style.display = 'block';
+    try {
+      const r = await fetch(ORIGIN + '/admin/restaurants');
+      const restos = await r.json();
+      const sel = document.getElementById('resto-select');
+      if (!restos.length) {
+        sel.innerHTML = '<option value="">Aucun restaurant</option>';
+      } else {
+        sel.innerHTML = restos.map(r => `<option value="${r.id}">${r.nom || r.email}</option>`).join('');
+        currentRestaurantId = restos[0].id;
+      }
+    } catch(e) {
+      document.getElementById('resto-select').innerHTML = '<option value="">Erreur chargement</option>';
+    }
+  }
+  if (currentRestaurantId) loadAnalytics();
+  else renderNoRestaurant();
+}
+
+function onRestaurantChange() {
+  currentRestaurantId = document.getElementById('resto-select').value;
+  if (currentRestaurantId) loadAnalytics();
+}
+
+function setPeriod(days, btn) {
+  currentDays = days;
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (currentRestaurantId) loadAnalytics();
+}
+
+async function loadAnalytics() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Chargement des analytics...</p></div>';
+  destroyCharts();
+  try {
+    const r = await fetch(`${ORIGIN}/analytics?restaurantId=${encodeURIComponent(currentRestaurantId)}&days=${currentDays}`);
+    if (!r.ok) throw new Error('Erreur API');
+    const data = await r.json();
+    renderAnalytics(data);
+  } catch(e) {
+    main.innerHTML = `<div class="error-state"><span><span data-icon="alert"></span></span><p>Impossible de charger les données : ${e.message}</p><button class="btn btn-secondary" onclick="loadAnalytics()">↻ Réessayer</button></div>`;
+  }
+}
+
+function destroyCharts() {
+  Object.values(charts).forEach(c => c?.destroy());
+  charts = {};
+}
+
+function renderNoRestaurant() {
+  document.getElementById('main-content').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon"><span data-icon="chart_bar"></span></div>
+      <div class="empty-title">Aucun restaurant sélectionné</div>
+      <div class="empty-sub">Sélectionnez un restaurant dans la liste ci-dessus pour voir ses analytics.</div>
+    </div>`;
+}
+
+function renderAnalytics(data) {
+  const main = document.getElementById('main-content');
+
+  const noData = !data.totalOrders;
+  const noBanner = noData ? `
+    <div style="background:#fff8ec;border:1.5px solid #f0d898;border-radius:10px;padding:11px 16px;margin-bottom:18px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:16px">📊</span>
+      <span style="font-size:12px;color:#906010;font-weight:500">Aucune commande sur cette période — les graphiques se rempliront automatiquement dès que des commandes seront archivées.</span>
+    </div>` : '';
+
+  const days = Object.entries(data.revenueByDay || {});
+  // Si pas de données, générer les N derniers jours comme labels vides
+  let labels, caValues, ordersValues, surPlaceValues;
+  if (days.length) {
+    labels = days.map(([d]) => { const p=d.split('-'); return p[2]+'/'+p[1]; });
+    caValues = days.map(([,v]) => v);
+    ordersValues = Object.values(data.ordersByDay || {});
+    surPlaceValues = Object.values(data.surPlaceByDay || {});
+  } else {
+    labels = Array.from({length: currentDays}, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (currentDays - 1 - i));
+      return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+    });
+    caValues = Array(currentDays).fill(0);
+    ordersValues = Array(currentDays).fill(0);
+    surPlaceValues = Array(currentDays).fill(0);
+  }
+
+  const taux = data.totalOrders > 0 ? Math.round((data.totalOrders / (data.totalOrders + (data.refusedOrders || 0))) * 100) : 0;
+  const tauxRefus = data.totalOrders + (data.refusedOrders||0) > 0 ? Math.round(((data.refusedOrders||0) / (data.totalOrders + (data.refusedOrders||0))) * 100) : 0;
+
+  const catData = data.revenueByCategory || {};
+  const catLabels = Object.keys(catData).filter(k => catData[k] > 0);
+  const catValues2 = catLabels.map(k => catData[k]);
+
+  main.innerHTML = noBanner + `
+    <div class="kpi-grid">
+      <div class="kpi" style="--c:#0E4B47">
+        <div class="kpi-icon"><span data-icon="receipt"></span></div>
+        <div class="kv">€${data.totalRevenue?.toFixed(2) || '0.00'}</div>
+        <div class="kl">Chiffre d'affaires</div>
+        <div class="ks neu">${currentDays} derniers jours</div>
+      </div>
+      <div class="kpi" style="--c:#1d4ed8">
+        <div class="kpi-icon"><span data-icon="clipboard"></span></div>
+        <div class="kv">${data.totalOrders || 0}</div>
+        <div class="kl">Commandes traitées</div>
+        <div class="ks ${tauxRefus>15?'dn':'up'}">${tauxRefus}% de refus</div>
+      </div>
+      <div class="kpi" style="--c:#7c3aed">
+        <div class="kpi-icon"><span data-icon="wallet"></span></div>
+        <div class="kv">€${data.avgOrderValue?.toFixed(2) || '0.00'}</div>
+        <div class="kl">Panier moyen</div>
+        <div class="ks neu">par commande</div>
+      </div>
+      <div class="kpi" style="--c:#d97706">
+        <div class="kpi-icon"><span data-icon="x"></span></div>
+        <div class="kv">${data.refusedOrders || 0}</div>
+        <div class="kl">Commandes refusées</div>
+        <div class="ks ${(data.refusedOrders||0)>0?'dn':'up'}">${tauxRefus}% du total</div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="wallet"></span> Évolution du CA</h2></div>
+        <div class="card-body"><div class="chart-h"><canvas id="ca-chart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="plate"></span> Par catégorie</h2></div>
+        <div class="card-body"><div class="chart-sm"><canvas id="cat-chart"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="clipboard"></span> Commandes / jour</h2></div>
+        <div class="card-body"><div class="chart-sm"><canvas id="orders-chart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="building"></span> Sur place vs Livraison</h2></div>
+        <div class="card-body"><div class="chart-sm"><canvas id="surplace-chart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2><span data-icon="chart_bar"></span> Résumé</h2></div>
+        <div class="card-body">
+          <div class="stat-row"><span class="stat-lbl">Total commandes</span><span class="stat-val">${data.totalOrders}</span></div>
+          <div class="stat-row"><span class="stat-lbl">Refusées</span><span class="stat-val" style="color:${(data.refusedOrders||0)>0?'#dc2626':'#0E4B47'}">${data.refusedOrders || 0}</span></div>
+          <div class="stat-row"><span class="stat-lbl">CA total</span><span class="stat-val">€${data.totalRevenue?.toFixed(2)}</span></div>
+          <div class="stat-row"><span class="stat-lbl">Panier moyen</span><span class="stat-val">€${data.avgOrderValue?.toFixed(2)}</span></div>
+          <div class="stat-row"><span class="stat-lbl">Sur place</span><span class="stat-val">${surPlaceValues.reduce((a,b)=>a+b,0)} cmd</span></div>
+          <div class="stat-row"><span class="stat-lbl">Période</span><span class="stat-val">${currentDays} jours</span></div>
+        </div>
+      </div>
+    </div>
+
+    ${data.topProducts?.length ? `
+    <div class="card">
+      <div class="card-head"><h2><span data-icon="trophy"></span> Top produits vendus</h2><span style="font-size:.75rem;color:#6b7280">${currentDays} derniers jours</span></div>
+      <div class="card-body" style="padding:12px 18px" id="top-products"></div>
+    </div>` : ''}
+  `;
+
+  // Charts
+  const chartOpts = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:9},maxTicksLimit:12}},y:{grid:{color:'#EEF5F2'},ticks:{font:{family:'Inter',size:9}}}} };
+
+  charts.ca = new Chart(document.getElementById('ca-chart'), {
+    type:'line',
+    data:{ labels, datasets:[{ data:caValues, borderColor:'#0E4B47', backgroundColor:'#0E4B4715', fill:true, tension:.35, pointRadius:0, borderWidth:2 }] },
+    options:{...chartOpts, scales:{...chartOpts.scales, y:{...chartOpts.scales.y, ticks:{...chartOpts.scales.y.ticks,callback:v=>'€'+v}}}}
+  });
+
+  charts.orders = new Chart(document.getElementById('orders-chart'), {
+    type:'bar',
+    data:{ labels, datasets:[{ data:ordersValues, backgroundColor:'#1d4ed833', borderColor:'#1d4ed8', borderWidth:1.5, borderRadius:3 }] },
+    options: chartOpts
+  });
+
+  const surLivr = ordersValues.map((t,i) => t - (surPlaceValues[i]||0));
+  charts.surplace = new Chart(document.getElementById('surplace-chart'), {
+    type:'bar',
+    data:{ labels, datasets:[
+      { label:'Sur place', data:surPlaceValues, backgroundColor:'#0E4B4766', borderRadius:3 },
+      { label:'Emporté', data:surLivr, backgroundColor:'#d9780666', borderRadius:3 }
+    ]},
+    options:{...chartOpts, plugins:{legend:{display:true,labels:{font:{family:'Inter',size:10},boxWidth:8}}}, scales:{...chartOpts.scales, x:{...chartOpts.scales.x,stacked:true},y:{...chartOpts.scales.y,stacked:true}}}
+  });
+
+  if (catLabels.length) {
+    charts.cat = new Chart(document.getElementById('cat-chart'), {
+      type:'doughnut',
+      data:{ labels:catLabels, datasets:[{ data:catValues2, backgroundColor:['#0E4B47','#1d4ed8','#d97706','#7c3aed','#dc2626'], borderWidth:0 }] },
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{position:'bottom',labels:{font:{family:'Inter',size:10},boxWidth:8,padding:6}}} }
+    });
+  } else {
+    const catEl = document.getElementById('cat-chart');
+    if (catEl) catEl.parentElement.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:12px">Aucune donnée</div>`;
+  }
+
+  // Top products
+  if (data.topProducts?.length) {
+    const maxQty = data.topProducts[0]?.qty || 1;
+    document.getElementById('top-products').innerHTML = data.topProducts.map((p,i) => {
+      const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      return `<div class="prod-row">
+        <div class="prod-rank ${rankClass}">${i+1}</div>
+        <div class="prod-name">${p.nom}</div>
+        <div class="prod-bar-bg"><div class="prod-bar-fill" style="width:${Math.round(p.qty/maxQty*100)}%"></div></div>
+        <div class="prod-qty">${p.qty}</div>
+        <div style="font-size:.78rem;color:#6b7280;min-width:52px;text-align:right">€${p.revenue?.toFixed(0)}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+init();
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

@@ -1,0 +1,528 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Allergènes — Commande-IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="/socket.io/socket.io.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;min-height:100vh;color:#111}
+.topbar{background:#0E4B47;display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;position:sticky;top:0;z-index:100}
+.tl{display:flex;align-items:center;gap:14px}
+.logo{font-size:16px;font-weight:700;color:#fff;display:flex;align-items:center;gap:9px}
+.logo-icon{width:30px;height:30px;border-radius:8px;background:#0E4B47;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:14px;height:14px}
+.page-badge{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;background:rgba(123,187,181,.15);color:#B8D0C8;padding:3px 9px;border-radius:5px;border:1px solid rgba(123,187,181,.25)}
+.tr{display:flex;align-items:center;gap:10px}
+.back-btn{font-size:12px;font-weight:600;color:#B8D0C8;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:6px 14px;border-radius:7px;cursor:pointer;text-decoration:none;transition:all .15s}
+.back-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+.btn-sm{font-size:12px;font-weight:600;padding:7px 14px;border-radius:7px;border:1.5px solid #B8D0C8;background:#fff;color:#0E4B47;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.btn-sm:hover{border-color:#0E4B47;background:#EEF5F2}
+.btn-primary{font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;border:none;background:#0E4B47;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.btn-primary:hover{background:#0A3D3A}
+.admin-sel{font-size:12px;padding:6px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-family:'Inter',sans-serif;outline:none;cursor:pointer;display:none}
+.main{padding:24px 28px}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.page-title{font-size:22px;font-weight:800;color:#0F2A28;letter-spacing:-.5px}
+.page-sub{font-size:13px;color:#4D6260;margin-top:4px}
+/* LEGAL BANNER */
+.legal-banner{background:linear-gradient(90deg,#fff8e8,#fffdf5);border:1.5px solid #e8d080;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.lb-icon{width:38px;height:38px;border-radius:9px;background:#fff0c0;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.lb-title{font-size:13px;font-weight:700;color:#906010}
+.lb-text{font-size:12px;color:#a07020;margin-top:2px;line-height:1.5}
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px;color:#4D6260}
+.spinner{width:20px;height:20px;border:2px solid #B8D0C8;border-top-color:#0E4B47;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* ERROR */
+.err-banner{background:#fef0f0;border:1.5px solid #f0c0c0;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#c03030;display:none;align-items:center;gap:10px}
+.err-banner.show{display:flex}
+.err-retry{margin-left:auto;background:#fff;border:1px solid #f0b0b0;color:#c03030;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer}
+/* EMPTY */
+.empty-state{background:#fff;border:1.5px solid #B8D0C8;border-radius:14px;padding:40px;text-align:center;display:none}
+.empty-state.show{display:block}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.empty-text{font-size:14px;font-weight:600;color:#4D6260;margin-bottom:6px}
+.empty-sub{font-size:12px;color:#4D6260;line-height:1.5}
+/* FILTER BAR */
+.filter-section{background:#fff;border:1.5px solid #B8D0C8;border-radius:14px;padding:16px 20px;margin-bottom:16px}
+.fs-title{font-size:12px;font-weight:700;color:#0F2A28;margin-bottom:10px}
+.allergen-filters{display:flex;flex-wrap:wrap;gap:7px}
+.af-btn{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;border:1.5px solid #B8D0C8;background:#fff;color:#4D6260;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif}
+.af-btn:hover{border-color:#7BBBB5}
+.af-btn.selected{background:#fef0f0;border-color:#f0c0c0;color:#b03030}
+.af-icon{font-size:14px}
+/* TABLE */
+.matrix-card{background:#fff;border:1.5px solid #B8D0C8;border-radius:14px;overflow:hidden}
+.matrix-toolbar{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1.5px solid #B8D0C8;flex-wrap:wrap}
+.search{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f4f7f1;border:1.5px solid #B8D0C8;border-radius:9px;min-width:200px}
+.search:focus-within{border-color:#0E4B47;background:#fff}
+.search input{border:none;outline:none;font-size:12px;font-family:'Inter',sans-serif;background:transparent;width:100%;color:#0F2A28}
+.search input::placeholder{color:#b0c8b0}
+.cat-pill{font-size:11px;font-weight:600;padding:5px 12px;border-radius:16px;border:1.5px solid #B8D0C8;background:#fff;color:#4D6260;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif}
+.cat-pill.active{background:#0E4B47;color:#B8D0C8;border-color:#0E4B47}
+/* MATRIX TABLE */
+.matrix-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+thead tr{background:#f8fbf5;position:sticky;top:0;z-index:5}
+th.dish-col{text-align:left;padding:10px 14px;font-size:10px;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:.8px;border-bottom:1.5px solid #B8D0C8;min-width:200px;position:sticky;left:0;background:#f8fbf5;z-index:6}
+th.allergen-col{text-align:center;padding:8px 4px;font-size:9px;font-weight:700;color:#4D6260;border-bottom:1.5px solid #B8D0C8;min-width:50px;white-space:normal;line-height:1.3}
+th.allergen-col span{display:block;font-size:14px;margin-bottom:3px}
+td.dish-name-cell{padding:10px 14px;border-bottom:1px solid #f0f6ee;position:sticky;left:0;background:#fff;z-index:2}
+td.allergen-cell{text-align:center;padding:8px 4px;border-bottom:1px solid #f0f6ee}
+.dish-name-main{font-size:13px;font-weight:600;color:#0F2A28}
+.dish-cat{font-size:10px;font-weight:600;color:#4D6260;margin-top:1px;text-transform:uppercase;letter-spacing:.5px}
+.a-dot{width:24px;height:24px;border-radius:6px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;transition:all .12s;border:1.5px solid transparent}
+.a-yes{background:#fef0f0;color:#c03030;border-color:#f0c0c0}
+.a-yes:hover{background:#f8d8d8}
+.a-no{background:#f4f7f1;color:#c8d8c0;border-color:#B8D0C8}
+.a-no:hover{background:#DCF0ED;border-color:#7BBBB5}
+/* SUMMARY */
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.sum-card{background:#fff;border:1.5px solid #B8D0C8;border-radius:12px;padding:14px;text-align:center}
+.sum-val{font-size:24px;font-weight:800;color:#0F2A28;margin-bottom:4px}
+.sum-lbl{font-size:10px;font-weight:700;color:#4D6260;text-transform:uppercase;letter-spacing:.8px}
+/* DANGER ALERT */
+.danger-alert{background:#fef0f0;border:2px solid #f0b0b0;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:none}
+.danger-alert.show{display:flex;align-items:center;gap:12px;animation:alertIn .3s ease}
+@keyframes alertIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.da-icon{font-size:24px;flex-shrink:0}
+.da-title{font-size:14px;font-weight:700;color:#c03030}
+.da-text{font-size:12px;color:#a03030;margin-top:2px;line-height:1.4}
+/* SAVE STATUS */
+.save-status{font-size:11px;color:#4D6260;padding:4px 10px;border-radius:6px;background:#DCF0ED;border:1px solid #7BBBB5;transition:opacity .3s}
+.save-status.hide{opacity:0}
+/* TOAST */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:#fff;border:1px solid #B8D0C8;border-radius:10px;padding:12px 16px;font-size:12px;font-weight:600;color:#333;box-shadow:0 6px 20px rgba(0,0,0,.1);animation:ti .25s ease}
+@keyframes ti{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  </style>
+<script src="/icons.js"></script>
+
+<link rel=stylesheet href=/css/common.css>
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tl">
+    <div class="logo">
+      <div class="logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+      Commande-IA
+    </div>
+    <span class="page-badge">Allergènes</span>
+  </div>
+  <div class="tr">
+    <select class="admin-sel" id="admin-resto-sel" onchange="onRestaurantChange(this.value)"></select>
+    <span class="save-status hide" id="save-status"><span data-icon="check"></span> Sauvegardé</span>
+    <button class="btn-sm" onclick="exportCSV()">Export CSV</button>
+    <a href="/index.html" class="back-btn">← Dashboard</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Matrice Allergènes</div>
+      <div class="page-sub">Configurez les allergènes de votre menu — données sauvegardées localement</div>
+    </div>
+  </div>
+
+  <div class="legal-banner">
+    <div class="lb-icon"><span data-icon="badge"></span></div>
+    <div>
+      <div class="lb-title">Obligation légale — Règlement EU 1169/2011</div>
+      <div class="lb-text">Tout établissement de restauration est tenu d'informer les consommateurs sur les 14 allergènes majeurs. Cochez les cases pour chaque plat contenant un allergène. Les données sont sauvegardées automatiquement.</div>
+    </div>
+  </div>
+
+  <div class="err-banner" id="err-banner">
+    <span><span data-icon="alert"></span> <span id="err-text">Erreur de chargement du menu</span></span>
+    <button class="err-retry" onclick="loadMenu()">Réessayer</button>
+  </div>
+
+  <div id="loading" class="loading">
+    <div class="spinner"></div> Chargement du menu…
+  </div>
+
+  <div id="empty-state" class="empty-state">
+    <div class="empty-icon"><span data-icon="plate"></span></div>
+    <div class="empty-text">Aucun plat dans le menu</div>
+    <div class="empty-sub">Ajoutez des plats à votre menu pour configurer les allergènes</div>
+  </div>
+
+  <div id="content" style="display:none">
+    <div class="danger-alert" id="danger-alert">
+      <div class="da-icon"><span data-icon="alert_octagon"></span></div>
+      <div><div class="da-title" id="da-title">Alerte allergène !</div><div class="da-text" id="da-text"></div></div>
+      <button onclick="document.getElementById('danger-alert').classList.remove('show')" style="margin-left:auto;background:none;border:none;font-size:18px;color:#c03030;cursor:pointer"><span data-icon="x"></span></button>
+    </div>
+
+    <div class="summary-grid">
+      <div class="sum-card"><div class="sum-val" id="s-plats">0</div><div class="sum-lbl">Plats référencés</div></div>
+      <div class="sum-card"><div class="sum-val" id="s-safe" style="color:#0E4B47">0</div><div class="sum-lbl">Sans allergène</div></div>
+      <div class="sum-card"><div class="sum-val" id="s-alert" style="color:#c03030">0</div><div class="sum-lbl">Avec allergène critique</div></div>
+      <div class="sum-card"><div class="sum-val">14</div><div class="sum-lbl">Allergènes couverts</div></div>
+    </div>
+
+    <div class="filter-section">
+      <div class="fs-title">Filtrer par allergène — affiche les plats le contenant :</div>
+      <div class="allergen-filters" id="allergen-filters"></div>
+    </div>
+
+    <div class="matrix-card">
+      <div class="matrix-toolbar">
+        <div class="search">
+          <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><circle cx="7" cy="7" r="5" stroke="#4D6260" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#4D6260" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <input id="search-input" placeholder="Rechercher un plat..." oninput="renderMatrix()"/>
+        </div>
+        <div id="cat-pills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+      <div class="matrix-wrap"><table id="matrix-table"></table></div>
+    </div>
+  </div>
+</div>
+<div id="toast-container"></div>
+
+<script>
+const ORIGIN = window.location.origin;
+const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+if (!user.email) window.location.href = '/login.html';
+const isAdmin = user.role === 'Admin';
+let currentRestaurantId = isAdmin ? null : (user.restaurantId || null);
+
+// 14 EU allergens (static — mandated by EU regulation)
+const ALLERGENS = [
+  {id:'gluten',name:'Gluten',icon:'<span data-icon="salad"></span>'},
+  {id:'crustaces',name:'Crustacés',icon:'🦞'},
+  {id:'oeufs',name:'Œufs',icon:'<span data-icon="egg"></span>'},
+  {id:'poisson',name:'Poisson',icon:'<span data-icon="fish"></span>'},
+  {id:'cacahuetes',name:'Cacahuètes',icon:'🥜'},
+  {id:'soja',name:'Soja',icon:'🫘'},
+  {id:'lait',name:'Lait',icon:'<span data-icon="wine"></span>'},
+  {id:'fruitsacoque',name:'Fruits à coque',icon:'🌰'},
+  {id:'celeri',name:'Céleri',icon:'<span data-icon="salad"></span>'},
+  {id:'moutarde',name:'Moutarde',icon:'<span data-icon="circle_dot"></span>'},
+  {id:'sesame',name:'Sésame',icon:'✦'},
+  {id:'sulfites',name:'Sulfites',icon:'<span data-icon="wine"></span>'},
+  {id:'lupin',name:'Lupin',icon:'🌼'},
+  {id:'mollusques',name:'Mollusques',icon:'🦑'},
+];
+
+let menuItems = [];
+let allergenConfig = {};  // { [dishName]: Set<allergenId> }
+let selectedAllergen = '';
+let activeCat = '';
+
+// Storage key per restaurant
+const storageKey = () => 'allergens_' + (currentRestaurantId || 'default');
+
+function loadConfig() {
+  const raw = localStorage.getItem(storageKey());
+  if (raw) {
+    try {
+      const obj = JSON.parse(raw);
+      allergenConfig = {};
+      Object.entries(obj).forEach(([k, v]) => { allergenConfig[k] = new Set(v); });
+    } catch(e) { allergenConfig = {}; }
+  } else {
+    allergenConfig = {};
+  }
+}
+function saveConfig() {
+  const obj = {};
+  Object.entries(allergenConfig).forEach(([k, v]) => { obj[k] = [...v]; });
+  localStorage.setItem(storageKey(), JSON.stringify(obj));
+  showSaveStatus();
+  // Server sync (for all employees of same restaurant)
+  if (currentRestaurantId) {
+    clearTimeout(saveConfig._t);
+    saveConfig._t = setTimeout(() => {
+      fetch(`${ORIGIN}/allergenes/${currentRestaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: obj, updatedAt: new Date().toISOString(), updatedBy: user.nom || user.email })
+      }).then(r => {
+        if (r.ok) {
+          const s = document.getElementById('save-status');
+          s.innerHTML = '<span data-icon="check"></span> Synchronisé';
+          if (window.ICONS?.replaceAll) window.ICONS.replaceAll(s);
+          s.classList.remove('hide');
+          setTimeout(() => s.classList.add('hide'), 2000);
+        }
+      }).catch(() => {});
+    }, 1500);
+  }
+}
+
+async function loadConfigFromServer() {
+  if (!currentRestaurantId) return false;
+  try {
+    const r = await fetch(`${ORIGIN}/allergenes/${currentRestaurantId}`);
+    if (r.ok) {
+      const data = await r.json();
+      if (data && data.config) {
+        allergenConfig = {};
+        Object.entries(data.config).forEach(([k, v]) => { allergenConfig[k] = new Set(v); });
+        // Update localStorage cache
+        localStorage.setItem(storageKey(), JSON.stringify(data.config));
+        return true;
+      }
+    }
+  } catch(e) {}
+  return false;
+}
+function showSaveStatus() {
+  const s = document.getElementById('save-status');
+  s.classList.remove('hide');
+  clearTimeout(s._t);
+  s._t = setTimeout(() => s.classList.add('hide'), 2000);
+}
+
+// ── ADMIN SELECTOR ──
+async function loadAdminRestaurants() {
+  try {
+    const r = await fetch(ORIGIN + '/admin/restaurants');
+    if (!r.ok) return;
+    const data = await r.json();
+    const sel = document.getElementById('admin-resto-sel');
+    sel.style.display = 'block';
+    sel.innerHTML = '<option value="">— Restaurant —</option>';
+    (data.restaurants || data).forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id || r.restaurantId;
+      opt.textContent = r.nom || r.name;
+      sel.appendChild(opt);
+    });
+  } catch(e) {}
+}
+function onRestaurantChange(id) {
+  currentRestaurantId = id || null;
+  loadConfig();
+  loadMenu();
+}
+
+// ── LOAD MENU ──
+async function loadMenu() {
+  if (!currentRestaurantId) {
+    document.getElementById('loading').style.display = 'none';
+    if (!isAdmin) showError('Identifiant restaurant manquant');
+    return;
+  }
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('content').style.display = 'none';
+  document.getElementById('empty-state').classList.remove('show');
+  document.getElementById('err-banner').classList.remove('show');
+
+  // Try to load config from server first (sync between employees)
+  const serverLoaded = await loadConfigFromServer();
+  if (!serverLoaded) loadConfig(); // fallback to localStorage
+
+  try {
+    const r = await fetch(`${ORIGIN}/mon-menu/${currentRestaurantId}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    // Normalize menu items
+    const raw = data.menu || data.items || data;
+    menuItems = (Array.isArray(raw) ? raw : []).map(item => ({
+      nom: item.nom || item.name || item.Nom || '',
+      categorie: item.categorie || item.category || item.Catégorie || item.cat || 'Menu',
+      prix: parseFloat(item.prix || item.price || item.Prix || 0),
+      disponible: item.disponible !== false && item.available !== false,
+    })).filter(i => i.nom);
+    document.getElementById('loading').style.display = 'none';
+    if (menuItems.length === 0) {
+      document.getElementById('empty-state').classList.add('show');
+    } else {
+      document.getElementById('content').style.display = 'block';
+      buildCategoryPills();
+      buildAllergenFilters();
+      renderMatrix();
+      updateSummary();
+    }
+  } catch(e) {
+    document.getElementById('loading').style.display = 'none';
+    showError('Impossible de charger le menu : ' + e.message);
+  }
+}
+function showError(msg) {
+  document.getElementById('err-text').textContent = msg;
+  document.getElementById('err-banner').classList.add('show');
+}
+
+function buildCategoryPills() {
+  const cats = [...new Set(menuItems.map(i => i.categorie))];
+  const container = document.getElementById('cat-pills');
+  container.innerHTML = `<button class="cat-pill active" onclick="setcat('',this)">Tous</button>`;
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-pill';
+    btn.textContent = cat;
+    btn.onclick = () => setcat(cat, btn);
+    container.appendChild(btn);
+  });
+}
+function setcat(cat, btn) {
+  activeCat = cat;
+  document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMatrix();
+}
+
+function buildAllergenFilters() {
+  document.getElementById('allergen-filters').innerHTML = ALLERGENS.map(a =>
+    `<button class="af-btn" id="af-${a.id}" onclick="toggleAllergenFilter('${a.id}',this)">
+      <span class="af-icon">${a.icon}</span>${a.name}
+    </button>`
+  ).join('');
+}
+
+function toggleAllergenFilter(id, btn) {
+  selectedAllergen = selectedAllergen === id ? '' : id;
+  document.querySelectorAll('.af-btn').forEach(b => b.classList.remove('selected'));
+  if (selectedAllergen) {
+    btn.classList.add('selected');
+    const count = menuItems.filter(d => (allergenConfig[d.nom] || new Set()).has(selectedAllergen)).length;
+    if (count > 0) {
+      document.getElementById('da-title').textContent = `${count} plat(s) contient "${ALLERGENS.find(a=>a.id===id).name}"`;
+      document.getElementById('da-text').textContent = `Filtrage actif — seuls les plats concernés sont mis en évidence.`;
+      document.getElementById('danger-alert').classList.add('show');
+    } else {
+      document.getElementById('danger-alert').classList.remove('show');
+    }
+  } else {
+    document.getElementById('danger-alert').classList.remove('show');
+  }
+  renderMatrix();
+}
+
+function toggleCell(dishName, allergenId) {
+  if (!allergenConfig[dishName]) allergenConfig[dishName] = new Set();
+  if (allergenConfig[dishName].has(allergenId)) {
+    allergenConfig[dishName].delete(allergenId);
+  } else {
+    allergenConfig[dishName].add(allergenId);
+  }
+  saveConfig();
+  updateSummary();
+  // Update just this cell
+  const cell = document.querySelector(`[data-dish="${CSS.escape(dishName)}"][data-allergen="${allergenId}"]`);
+  if (cell) {
+    const hasIt = allergenConfig[dishName].has(allergenId);
+    cell.className = 'a-dot ' + (hasIt ? 'a-yes' : 'a-no');
+    cell.title = hasIt ? `Retirer ${ALLERGENS.find(a=>a.id===allergenId)?.name}` : `Ajouter ${ALLERGENS.find(a=>a.id===allergenId)?.name}`;
+    cell.textContent = hasIt ? '<span data-icon="check"></span>' : '';
+  }
+}
+
+function renderMatrix() {
+  const query = document.getElementById('search-input').value.trim().toLowerCase();
+  let filtered = menuItems.filter(d => {
+    if (activeCat && d.categorie !== activeCat) return false;
+    if (query && !d.nom.toLowerCase().includes(query)) return false;
+    if (selectedAllergen && !(allergenConfig[d.nom] || new Set()).has(selectedAllergen)) return false;
+    return true;
+  });
+  const table = document.getElementById('matrix-table');
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th class="dish-col">Plat</th>
+        ${ALLERGENS.map(a=>`<th class="allergen-col"><span>${a.icon}</span>${a.name}</th>`).join('')}
+      </tr>
+    </thead>
+    <tbody>
+      ${filtered.map(d => {
+        const set = allergenConfig[d.nom] || new Set();
+        return `<tr>
+          <td class="dish-name-cell">
+            <div class="dish-name-main">${d.nom}</div>
+            <div class="dish-cat">${d.categorie}</div>
+          </td>
+          ${ALLERGENS.map(a => {
+            const has = set.has(a.id);
+            return `<td class="allergen-cell">
+              <div class="a-dot ${has?'a-yes':'a-no'}"
+                   data-dish="${d.nom.replace(/"/g,'&quot;')}"
+                   data-allergen="${a.id}"
+                   onclick="toggleCell(${JSON.stringify(d.nom)}, '${a.id}')"
+                   title="${has?'Retirer '+a.name:'Ajouter '+a.name}">
+                ${has?'<span data-icon="check"></span>':''}
+              </div>
+            </td>`;
+          }).join('')}
+        </tr>`;
+      }).join('')}
+    </tbody>`;
+}
+
+function updateSummary() {
+  document.getElementById('s-plats').textContent = menuItems.length;
+  const safe = menuItems.filter(d => !(allergenConfig[d.nom] || new Set()).size).length;
+  const withCritical = menuItems.filter(d => {
+    const set = allergenConfig[d.nom] || new Set();
+    return ['gluten','cacahuetes','crustaces','mollusques'].some(a => set.has(a));
+  }).length;
+  document.getElementById('s-safe').textContent = safe;
+  document.getElementById('s-alert').textContent = withCritical;
+}
+
+function exportCSV() {
+  if (!menuItems.length) return;
+  const headers = ['Plat', 'Catégorie', ...ALLERGENS.map(a => a.name)];
+  const rows = menuItems.map(d => {
+    const set = allergenConfig[d.nom] || new Set();
+    return [d.nom, d.categorie, ...ALLERGENS.map(a => set.has(a.id) ? 'OUI' : '')].map(v => `"${v}"`).join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('﻿' + csv);
+  a.download = 'allergenes_' + (currentRestaurantId || 'restaurant') + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  toast('<span data-icon="check"></span> Export CSV téléchargé');
+}
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ── INIT ──
+loadConfig();
+// ── SOCKET.IO sync allergènes ──
+try {
+  const algSocket = io(ORIGIN);
+  algSocket.on('connect', () => {
+    if (currentRestaurantId) algSocket.emit('join-restaurant', { restaurantId: currentRestaurantId });
+  });
+  algSocket.on('allergens-broadcast', (data) => {
+    if (data.restaurantId !== currentRestaurantId) return;
+    allergenConfig = {};
+    Object.entries(data.config || {}).forEach(([k, v]) => { allergenConfig[k] = new Set(v); });
+    const obj = {};
+    Object.entries(allergenConfig).forEach(([k, v]) => { obj[k] = [...v]; });
+    localStorage.setItem(storageKey(), JSON.stringify(obj));
+    renderMatrix();
+    updateSummary();
+    showSaveStatus();
+  });
+} catch(e) {}
+
+if (isAdmin) {
+  loadAdminRestaurants();
+} else {
+  loadMenu();
+}
+</script>
+
+<script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script src="/permissions.js"></script>
+<script>if (typeof requireAuth === 'function') requireAuth();</script>
+<script src=/burger-menu.js></script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+/* ================================================================
+   common.css — Thème Lagune partagé · Commande-IA
+   Inclure sur TOUTES les pages après les styles spécifiques :
+   <link rel="stylesheet" href="/css/common.css">
+   ================================================================ */
+
+/* ── Palette Lagune (variables globales) ─────────────────────── */
+:root {
+  --forest:      #0E4B47;
+  --forest-dark: #0A3D3A;
+  --sable:       #EEF5F2;
+  --paper:       #F8FBF9;
+  --miel:        #F2C14E;
+  --terracotta:  #E36C5B;
+  --teal-light:  #7BBBB5;
+  --border:      #B8D0C8;
+  --border-soft: #CFE0D9;
+  --ink:         #0F2A28;
+  --ink-soft:    #253F3B;
+  --ink-mute:    #4D6260;
+}
+
+/* ── Reset base ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--sable);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Topbar standard ─────────────────────────────────────────── */
+.topbar {
+  background: var(--forest) !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  gap: 16px;
+}
+.topbar-left  { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+
+/* ── Logo ────────────────────────────────────────────────────── */
+.logo {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  letter-spacing: -0.4px;
+  position: relative;
+  cursor: default;
+  user-select: none;
+}
+/* Override any stale logo-icon with frosted glass */
+.logo-icon,
+.logo > div:first-child {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  background: rgba(255,255,255,.14) !important;
+  border: 1px solid rgba(255,255,255,.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all .15s !important;
+  flex-shrink: 0 !important;
+}
+.logo-icon:hover { background: rgba(255,255,255,.24) !important; }
+
+/* ── Page badge (ex: "GESTION DES STOCKS") ───────────────────── */
+.page-badge, [class*="page-badge"] {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+  background: rgba(123,187,181,.18) !important;
+  color: var(--border) !important;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(123,187,181,.28) !important;
+}
+
+/* ── Badge live ──────────────────────────────────────────────── */
+.badge-live {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  background: rgba(255,255,255,.1) !important;
+  color: var(--border) !important;
+  padding: 5px 12px !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(123,187,181,.3) !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--teal-light);
+  animation: livePulse 1.5s infinite;
+  flex-shrink: 0;
+}
+@keyframes livePulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+/* ── Stat blocks (topbar) ────────────────────────────────────── */
+.topbar-stats {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  background: rgba(255,255,255,.08) !important;
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 1px;
+}
+.stat-block {
+  padding: 7px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255,255,255,.05);
+  border-radius: 10px;
+  min-width: 64px;
+}
+.stat-label {
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  color: rgba(184,208,200,.7) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  white-space: nowrap !important;
+}
+.stat-value            { font-size: 20px; font-weight: 700; color: #fff;                   line-height: 1; }
+.stat-value.accent     { color: var(--teal-light) !important; }
+.stat-value.warn       { color: var(--miel)       !important; }
+.stat-value.danger     { color: var(--terracotta) !important; }
+.stat-value.sm         { font-size: 13px; color: var(--border) !important; }
+
+/* ── Topbar buttons ──────────────────────────────────────────── */
+.top-btn {
+  font-size: 12px; padding: 7px 14px; border-radius: 8px;
+  border: 1.5px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.08); color: var(--border);
+  cursor: pointer; font-weight: 600; font-family: inherit;
+  transition: all .15s; display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.top-btn:hover { background: rgba(255,255,255,.18); color: #fff; }
+.top-btn.primary { background: var(--forest-dark); border-color: var(--forest-dark); color: #fff; }
+.top-btn.primary:hover { background: #083330; }
+
+/* ── Tab pills (topbar) ──────────────────────────────────────── */
+.tabs-wrap {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(0,0,0,.2); padding: 4px; border-radius: 10px;
+}
+.tab, .topbar-tab {
+  font-size: 13px; padding: 6px 14px; border-radius: 7px;
+  border: none; background: transparent; color: rgba(184,208,200,.7);
+  cursor: pointer; font-weight: 500; font-family: inherit;
+  transition: all .15s; white-space: nowrap;
+}
+.tab:hover, .topbar-tab:hover { color: #fff; background: rgba(255,255,255,.08); }
+.tab.active, .topbar-tab.active { background: #fff; color: var(--ink); font-weight: 600; }
+
+/* ── Masquer les anciens menus burger inline (remplacés par burger-menu.js) ── */
+#burger-menu, .burger-menu { display: none !important; }
+
+/* ── Nouveau menu burger (burger-menu.js) ────────────────────── */
+.bn-menu { font-family: 'Inter', system-ui, sans-serif !important; }
+
+/* ── Scrollbars ──────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Focus ring ──────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--teal-light);
+  outline-offset: 2px;
+}
+
+/* ── Snackbar ────────────────────────────────────────────────── */
+.snackbar {
+  background: var(--forest) !important;
+  color: #fff !important;
+}
