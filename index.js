@@ -3637,8 +3637,8 @@ app.post('/demo-accounts/:id/reset-password', (req, res) => {
 app.get('/ping', (req, res) => res.json({ message: 'Serveur en ligne ✅' }));
 
 // ─── ALLERGÈNES (persistant par restaurant) ─────────────────────────────────
-const ALLERGENS_DIR = path.join(__dirname, 'allergens');
-if (!fs.existsSync(ALLERGENS_DIR)) fs.mkdirSync(ALLERGENS_DIR);
+const ALLERGENS_DIR = process.env.VERCEL ? path.join('/tmp', 'allergens') : path.join(__dirname, 'allergens');
+if (!fs.existsSync(ALLERGENS_DIR)) fs.mkdirSync(ALLERGENS_DIR, { recursive: true });
 
 function allergensFile(restaurantId) {
   const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
