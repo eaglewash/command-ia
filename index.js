@@ -272,7 +272,7 @@ const notionHeaders = {
 };
 
 // ─── PERSISTENCE ARCHIVES (par restaurant) ───────────
-const ARCHIVES_DIR = path.join(__dirname, 'archives');
+const ARCHIVES_DIR = process.env.VERCEL ? path.join('/tmp', 'archives') : path.join(__dirname, 'archives');
 if (!fs.existsSync(ARCHIVES_DIR)) fs.mkdirSync(ARCHIVES_DIR);
 
 // ─── TICKETS SUPPORT ─────────────────────────────────
@@ -290,7 +290,7 @@ function nextTicketId() { return 'TKT-' + String(ticketCounter++).padStart(4, '0
 loadTickets();
 
 // ─── MESSAGERIE (persistante par restaurant) ──────────
-const MESSAGES_DIR = path.join(__dirname, 'messages');
+const MESSAGES_DIR = process.env.VERCEL ? path.join('/tmp', 'messages') : path.join(__dirname, 'messages');
 if (!fs.existsSync(MESSAGES_DIR)) fs.mkdirSync(MESSAGES_DIR);
 
 function msgFile(restaurantId) {
@@ -3672,7 +3672,7 @@ app.put('/allergenes/:restaurantId', (req, res) => {
 });
 
 // ─── CRM (persistant par restaurant) ────────────────────────────────────────
-const CRM_DIR = path.join(__dirname, 'crm');
+const CRM_DIR = process.env.VERCEL ? path.join('/tmp', 'crm') : path.join(__dirname, 'crm');
 if (!fs.existsSync(CRM_DIR)) fs.mkdirSync(CRM_DIR);
 
 function crmFile(restaurantId) {
@@ -3708,7 +3708,7 @@ app.put('/crm/:restaurantId', (req, res) => {
 });
 
 // ─── PLANNING (persistant par restaurant) ───────────────────────────────────
-const PLANNING_DIR = path.join(__dirname, 'planning');
+const PLANNING_DIR = process.env.VERCEL ? path.join('/tmp', 'planning') : path.join(__dirname, 'planning');
 if (!fs.existsSync(PLANNING_DIR)) fs.mkdirSync(PLANNING_DIR);
 
 function planningFile(restaurantId) {
@@ -3761,7 +3761,7 @@ app.put('/planning/:restaurantId', (req, res) => {
 });
 
 // ─── RÉSERVATIONS (persistantes par restaurant) ─────────────────────────────
-const RESERVATIONS_DIR = path.join(__dirname, 'reservations');
+const RESERVATIONS_DIR = process.env.VERCEL ? path.join('/tmp', 'reservations') : path.join(__dirname, 'reservations');
 if (!fs.existsSync(RESERVATIONS_DIR)) fs.mkdirSync(RESERVATIONS_DIR);
 
 function reservationsFile(restaurantId) {
@@ -3844,7 +3844,7 @@ dailyHistoryCleanup();
 setInterval(dailyHistoryCleanup, 6 * 60 * 60 * 1000);
 
 // ─── FEEDBACK (persistant par restaurant) ───────────────────────────────────
-const FEEDBACK_DIR = path.join(__dirname, 'feedback');
+const FEEDBACK_DIR = process.env.VERCEL ? path.join('/tmp', 'feedback') : path.join(__dirname, 'feedback');
 if (!fs.existsSync(FEEDBACK_DIR)) fs.mkdirSync(FEEDBACK_DIR);
 
 function feedbackFile(restaurantId) {
@@ -3884,7 +3884,7 @@ app.put('/feedback/:restaurantId', (req, res) => {
 });
 
 // ─── SÉCURITÉ (persistant par utilisateur) ──────────────────────────────────
-const SECURITY_DIR = path.join(__dirname, 'security');
+const SECURITY_DIR = process.env.VERCEL ? path.join('/tmp', 'security') : path.join(__dirname, 'security');
 if (!fs.existsSync(SECURITY_DIR)) fs.mkdirSync(SECURITY_DIR);
 
 function secFile(userId) {
@@ -3974,7 +3974,7 @@ app.post('/security/:userId/change-password', (req, res) => {
 });
 
 // ─── PLAN DE SALLE (persistant par restaurant) ──────────────────────────────
-const FLOORPLAN_DIR = path.join(__dirname, 'floor-plans');
+const FLOORPLAN_DIR = process.env.VERCEL ? path.join('/tmp', 'floor-plans') : path.join(__dirname, 'floor-plans');
 if (!fs.existsSync(FLOORPLAN_DIR)) fs.mkdirSync(FLOORPLAN_DIR);
 function floorPlanFile(restaurantId) {
   const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -4003,7 +4003,7 @@ app.put('/floor-plan/:restaurantId', (req, res) => {
 });
 
 // ─── MULTILANGUES (persistant par restaurant) ───────────────────────────────
-const MULTILANG_DIR = path.join(__dirname, 'multilangues');
+const MULTILANG_DIR = process.env.VERCEL ? path.join('/tmp', 'multilangues') : path.join(__dirname, 'multilangues');
 if (!fs.existsSync(MULTILANG_DIR)) fs.mkdirSync(MULTILANG_DIR);
 function multilangFile(restaurantId) {
   const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -4154,7 +4154,7 @@ function saveHiddenPages(list) {
 }
 
 // ─── UPLOAD PHOTO PLAT ───────────────────────────────────────────────────────
-const UPLOADS_PLATS_DIR = path.join(__dirname, 'public', 'uploads', 'plats');
+const UPLOADS_PLATS_DIR = process.env.VERCEL ? path.join('/tmp', 'uploads', 'plats') : path.join(__dirname, 'public', 'uploads', 'plats');
 if (!fs.existsSync(UPLOADS_PLATS_DIR)) fs.mkdirSync(UPLOADS_PLATS_DIR, { recursive: true });
 
 app.post('/upload/plat-photo',
