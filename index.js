@@ -3635,6 +3635,7 @@ app.post('/demo-accounts/:id/reset-password', (req, res) => {
 });
 
 app.get('/ping', (req, res) => res.json({ message: 'Serveur en ligne ✅' }));
+app.get('/', (req, res) => res.redirect('/login.html'));
 
 // ─── ALLERGÈNES (persistant par restaurant) ─────────────────────────────────
 const ALLERGENS_DIR = process.env.VERCEL ? path.join('/tmp', 'allergens') : path.join(__dirname, 'allergens');
