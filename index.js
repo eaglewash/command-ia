@@ -168,6 +168,7 @@ app.use((req, res, next) => {
   if (COOKIE_SECURE) res.set('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
   next();
 });
+app.get('/', (req, res) => res.redirect('/login.html'));
 app.use(express.static('public', {
   etag: false,
   lastModified: false,
@@ -3635,7 +3636,6 @@ app.post('/demo-accounts/:id/reset-password', (req, res) => {
 });
 
 app.get('/ping', (req, res) => res.json({ message: 'Serveur en ligne ✅' }));
-app.get('/', (req, res) => res.redirect('/login.html'));
 
 // ─── ALLERGÈNES (persistant par restaurant) ─────────────────────────────────
 const ALLERGENS_DIR = process.env.VERCEL ? path.join('/tmp', 'allergens') : path.join(__dirname, 'allergens');
