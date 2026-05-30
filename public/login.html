@@ -502,7 +502,7 @@ function checkCapsLock(e) {
 
 // ── Pré-remplissage URL ──
 const params = new URLSearchParams(window.location.search);
-const redirect = params.get('redirect') || '/';
+const redirect = params.get('redirect') || '/index.html';
 const urlEmail = params.get('email');
 if (urlEmail) { document.getElementById('email').value = urlEmail; document.getElementById('password').focus(); }
 if (sessionStorage.getItem('user')) window.location.href = redirect;
