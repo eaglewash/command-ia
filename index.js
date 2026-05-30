@@ -70,59 +70,41 @@ const io = new Server(server, {
   cors: { origin: ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : '*', credentials: true }
 });
 
-// ─── SESSIONS AUTH (cookie httpOnly, sans dépendance externe) ────────────────
-const activeSessions = new Map(); // token → { userId, email, role, exp }
-const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 heures
-const SESSIONS_FILE = process.env.VERCEL ? path.join('/tmp', 'sessions.json') : path.join(__dirname, 'sessions.json');
+// ─── SESSIONS AUTH (JWT stateless — compatible Vercel serverless) ─────────────
+const SESSION_TTL = 8 * 60 * 60; // 8 heures en secondes
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
-// Charge les sessions depuis le disque au démarrage (survie aux redémarrages)
-function loadSessionsFromFile() {
-  try {
-    if (!fs.existsSync(SESSIONS_FILE)) return;
-    const raw = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8') || '{}');
-    const now = Date.now();
-    let restored = 0;
-    for (const [token, sess] of Object.entries(raw)) {
-      if (sess.exp > now) { activeSessions.set(token, sess); restored++; }
-    }
-    if (restored) console.log(`✓ ${restored} session(s) restaurée(s) depuis le disque`);
-  } catch (e) { console.log('Sessions: impossible de charger le fichier :', e.message); }
+function base64url(str) {
+  return Buffer.from(str).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
-
-// Persiste toutes les sessions actives sur disque
-function saveSessionsToFile() {
-  try {
-    const obj = {};
-    for (const [token, sess] of activeSessions) obj[token] = sess;
-    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(obj), 'utf8');
-  } catch (e) { console.error('Sessions: erreur de sauvegarde :', e.message); }
-}
-
-// Chargement immédiat au démarrage
-loadSessionsFromFile();
 
 function createSession(userId, email, role) {
-  const token = crypto.randomBytes(32).toString('hex');
-  activeSessions.set(token, { userId, email, role, exp: Date.now() + SESSION_TTL });
-  saveSessionsToFile();
-  return token;
+  const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = base64url(JSON.stringify({ userId, email, role, exp: Math.floor(Date.now() / 1000) + SESSION_TTL }));
+  const sig = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${payload}`).digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  return `${header}.${payload}.${sig}`;
 }
 
 function getSession(req) {
-  // Cherche le token dans le cookie ou dans le header Authorization
   let token = null;
   const cookieHeader = req.headers.cookie || '';
-  const match = cookieHeader.match(/(?:^|;\s*)cia_session=([a-f0-9]+)/);
+  const match = cookieHeader.match(/(?:^|;\s*)cia_session=([A-Za-z0-9\-_.]+)/);
   if (match) token = match[1];
   if (!token) {
     const auth = req.headers.authorization || '';
     if (auth.startsWith('Bearer ')) token = auth.slice(7);
   }
   if (!token) return null;
-  const sess = activeSessions.get(token);
-  if (!sess) return null;
-  if (Date.now() > sess.exp) { activeSessions.delete(token); return null; }
-  return sess;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const [header, payload, sig] = parts;
+    const expected = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${payload}`).digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    if (sig !== expected) return null;
+    const data = JSON.parse(Buffer.from(payload, 'base64').toString());
+    if (Math.floor(Date.now() / 1000) > data.exp) return null;
+    return data;
+  } catch { return null; }
 }
 
 // Middleware : vérifie qu'une session valide existe
@@ -141,16 +123,6 @@ function requireAdmin(req, res, next) {
   req.session = sess;
   next();
 }
-
-// Nettoyage périodique des sessions expirées (toutes les heures) + sauvegarde
-setInterval(() => {
-  const now = Date.now();
-  let changed = false;
-  for (const [token, sess] of activeSessions) {
-    if (now > sess.exp) { activeSessions.delete(token); changed = true; }
-  }
-  if (changed) saveSessionsToFile();
-}, 60 * 60 * 1000);
 
 // Derrière un reverse-proxy (Nginx/Render/Heroku) : req.ip et Secure cookies corrects.
 app.set('trust proxy', 1);
