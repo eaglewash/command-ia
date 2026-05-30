@@ -73,7 +73,7 @@ const io = new Server(server, {
 // ─── SESSIONS AUTH (cookie httpOnly, sans dépendance externe) ────────────────
 const activeSessions = new Map(); // token → { userId, email, role, exp }
 const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 heures
-const SESSIONS_FILE = path.join(__dirname, 'sessions.json');
+const SESSIONS_FILE = process.env.VERCEL ? path.join('/tmp', 'sessions.json') : path.join(__dirname, 'sessions.json');
 
 // Charge les sessions depuis le disque au démarrage (survie aux redémarrages)
 function loadSessionsFromFile() {
