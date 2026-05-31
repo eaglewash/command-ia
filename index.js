@@ -4104,8 +4104,31 @@ io.on('connection', (socket) => {
   });
 });
 
-// ── PAGES CACHÉES — stockées dans permissions-matrix.json sous la clé _hiddenPages ─
-function loadHiddenPages() {
+// ── PAGES CACHÉES — stockées dans Notion (page config) ou fichier local ─────
+// Sur Vercel : utilise une page Notion dont l'ID est dans NOTION_CONFIG_PAGE_ID
+// En local : utilise le fichier permissions-matrix.json
+
+const NOTION_CONFIG_PAGE_ID = process.env.NOTION_CONFIG_PAGE_ID;
+
+async function loadHiddenPages() {
+  // Sur Vercel avec page config Notion
+  if (process.env.VERCEL && NOTION_CONFIG_PAGE_ID) {
+    try {
+      const r = await fetch(`https://api.notion.com/v1/blocks/${NOTION_CONFIG_PAGE_ID}/children`, {
+        headers: notionHeaders
+      });
+      const data = await r.json();
+      const blocks = data.results || [];
+      for (const block of blocks) {
+        const text = block.paragraph?.rich_text?.[0]?.plain_text || block.code?.rich_text?.[0]?.plain_text || '';
+        if (text.startsWith('HIDDEN_PAGES:')) {
+          return JSON.parse(text.replace('HIDDEN_PAGES:', '').trim());
+        }
+      }
+    } catch(e) { console.error('loadHiddenPages Notion error:', e.message); }
+    return [];
+  }
+  // En local : fichier
   try {
     if (fs.existsSync(PERMISSIONS_FILE)) {
       const data = JSON.parse(fs.readFileSync(PERMISSIONS_FILE, 'utf8'));
@@ -4114,7 +4137,39 @@ function loadHiddenPages() {
   } catch(e) {}
   return [];
 }
-function saveHiddenPages(list) {
+
+async function saveHiddenPages(list) {
+  // Sur Vercel avec page config Notion
+  if (process.env.VERCEL && NOTION_CONFIG_PAGE_ID) {
+    try {
+      // Lire les blocs existants pour trouver le bloc HIDDEN_PAGES
+      const r = await fetch(`https://api.notion.com/v1/blocks/${NOTION_CONFIG_PAGE_ID}/children`, {
+        headers: notionHeaders
+      });
+      const data = await r.json();
+      const blocks = data.results || [];
+      const existingBlock = blocks.find(b => {
+        const text = b.paragraph?.rich_text?.[0]?.plain_text || b.code?.rich_text?.[0]?.plain_text || '';
+        return text.startsWith('HIDDEN_PAGES:');
+      });
+      const newText = `HIDDEN_PAGES:${JSON.stringify(list)}`;
+      if (existingBlock) {
+        // Mettre à jour le bloc existant
+        await fetch(`https://api.notion.com/v1/blocks/${existingBlock.id}`, {
+          method: 'PATCH', headers: notionHeaders,
+          body: JSON.stringify({ paragraph: { rich_text: [{ type: 'text', text: { content: newText } }] } })
+        });
+      } else {
+        // Créer un nouveau bloc
+        await fetch(`https://api.notion.com/v1/blocks/${NOTION_CONFIG_PAGE_ID}/children`, {
+          method: 'PATCH', headers: notionHeaders,
+          body: JSON.stringify({ children: [{ object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: newText } }] } }] })
+        });
+      }
+      return;
+    } catch(e) { console.error('saveHiddenPages Notion error:', e.message); throw e; }
+  }
+  // En local : fichier
   let data = {};
   try {
     if (fs.existsSync(PERMISSIONS_FILE)) data = JSON.parse(fs.readFileSync(PERMISSIONS_FILE, 'utf8'));
@@ -4146,17 +4201,18 @@ app.post('/upload/plat-photo',
 );
 
 // Public — tous les clients ont besoin de savoir quelles pages masquer
-app.get('/config/hidden-pages', (req, res) => {
-  res.json({ hiddenPages: loadHiddenPages() });
+app.get('/config/hidden-pages', async (req, res) => {
+  const hiddenPages = await loadHiddenPages();
+  res.json({ hiddenPages });
 });
 
-// Admin seulement — mise à jour des pages cachées (stocké dans permissions-matrix.json)
-app.put('/admin/hidden-pages', requireSession, (req, res) => {
+// Admin seulement — mise à jour des pages cachées (stocké dans Notion ou fichier)
+app.put('/admin/hidden-pages', requireSession, async (req, res) => {
   if (req.session.role !== 'Admin') return res.status(403).json({ error: 'Admin requis' });
   const { hiddenPages } = req.body;
   if (!Array.isArray(hiddenPages)) return res.status(400).json({ error: 'Liste requise' });
   try {
-    saveHiddenPages(hiddenPages);
+    await saveHiddenPages(hiddenPages);
     io.emit('hidden-pages-updated', { hiddenPages, ts: Date.now() });
     res.json({ success: true });
   } catch (e) {
