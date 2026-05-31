@@ -814,7 +814,7 @@
       </div>
 
       <!-- ADDON CONFIG MENU -->
-      <div style="max-width:700px;margin:32px auto 0;background:linear-gradient(135deg,#1e40af 0%,#2563eb 100%);border-radius:16px;padding:28px 32px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;box-shadow:0 8px 32px rgba(37,99,235,0.25);">
+      <div style="max-width:700px;margin:32px auto 0;background:linear-gradient(135deg,#A67628 0%,#C9933A 100%);border-radius:16px;padding:28px 32px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;box-shadow:0 8px 32px rgba(166,118,40,0.25);">
         <div style="flex:1;min-width:220px;">
           <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:0.75;margin-bottom:8px;">Option disponible sur tous les plans</div>
           <div style="font-size:1.25rem;font-weight:800;margin-bottom:6px;">🍽️ Configuration de votre menu par notre équipe</div>
@@ -823,7 +823,7 @@
         <div style="text-align:center;flex-shrink:0;">
           <div style="font-size:2.2rem;font-weight:900;line-height:1;">49 <span style="font-size:1rem;font-weight:600;">€</span></div>
           <div style="font-size:0.8rem;opacity:0.8;margin-bottom:12px;">paiement unique</div>
-          <button onclick="openModal();setTimeout(function(){choisirBesoinAvecMenu('Profiter de −25%');},200);" style="background:#fff;color:#1e40af;border:none;border-radius:8px;padding:10px 22px;font-weight:700;font-size:0.95rem;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Ajouter cette option →</button>
+          <button onclick="openModal();setTimeout(function(){choisirBesoinAvecMenu('Profiter de −25%');},200);" style="background:#fff;color:#A67628;border:none;border-radius:8px;padding:10px 22px;font-weight:700;font-size:0.95rem;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Ajouter cette option →</button>
         </div>
       </div>
     </section>
@@ -1120,11 +1120,11 @@
             <textarea id="formMessage" placeholder="Précisez votre demande…" rows="3"></textarea>
           </div>
           <!-- ÉTAPE CONFIG MENU (avant envoi) -->
-          <div id="stepMenuConfig" style="display:none;margin-top:16px;background:#f0f9ff;border:2px solid #3b82f6;border-radius:12px;padding:18px 20px;">
-            <div style="font-weight:700;color:#1e40af;font-size:1rem;margin-bottom:6px;">🍽️ Voulez-vous qu'on configure votre menu ?</div>
-            <div style="font-size:0.88rem;color:#374151;margin-bottom:14px;">Notre équipe saisit vos plats, catégories et allergènes — votre carte en ligne en 24h.</div>
+          <div id="stepMenuConfig" style="display:none;margin-top:16px;background:#FEF7EC;border:2px solid #E8B86D;border-radius:12px;padding:18px 20px;">
+            <div style="font-weight:700;color:#A67628;font-size:1rem;margin-bottom:6px;">🍽️ Voulez-vous qu'on configure votre menu ?</div>
+            <div style="font-size:0.88rem;color:#4A3820;margin-bottom:14px;">Notre équipe saisit vos plats, catégories et allergènes — votre carte en ligne en 24h.</div>
             <div style="display:flex;gap:10px;">
-              <button type="button" id="btnMenuOui" style="flex:1;padding:10px;border-radius:8px;border:2px solid #3b82f6;background:#fff;color:#1e40af;font-weight:700;cursor:pointer;font-size:0.9rem;" onclick="selectMenuConfig(true)">✅ Oui — +49 €</button>
+              <button type="button" id="btnMenuOui" style="flex:1;padding:10px;border-radius:8px;border:2px solid #C9933A;background:#fff;color:#A67628;font-weight:700;cursor:pointer;font-size:0.9rem;" onclick="selectMenuConfig(true)">✅ Oui — +49 €</button>
               <button type="button" id="btnMenuNon" style="flex:1;padding:10px;border-radius:8px;border:2px solid #d1d5db;background:#fff;color:#6b7280;font-weight:600;cursor:pointer;font-size:0.9rem;" onclick="selectMenuConfig(false)">Non merci</button>
             </div>
           </div>
@@ -1225,7 +1225,7 @@
   function selectMenuConfig(oui) {
     document.getElementById('formMenuConfig').value = oui ? 'oui' : 'non';
     if (oui) {
-      document.getElementById('btnMenuOui').style.background = '#1e40af';
+      document.getElementById('btnMenuOui').style.background = '#C9933A';
       document.getElementById('btnMenuOui').style.color = '#fff';
       document.getElementById('btnMenuNon').style.background = '#fff';
       document.getElementById('btnMenuNon').style.color = '#6b7280';
