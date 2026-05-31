@@ -141,7 +141,7 @@ app.use((req, res, next) => {
   next();
 });
 app.get('/', (req, res) => res.redirect('/login.html'));
-app.use(express.static('public', {
+app.use(express.static(path.join(__dirname, 'public'), {
   etag: false,
   lastModified: false,
   setHeaders: (res, filePath) => {
