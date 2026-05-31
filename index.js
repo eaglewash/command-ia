@@ -4226,7 +4226,7 @@ app.put('/admin/hidden-pages', requireSession, async (req, res) => {
 
 // ─── RAPPORTS PDF ────────────────────────────────────────────────
 // Sauvegarde un rapport PDF (base64) dans Notion
-app.post('/admin/reports', requireAdmin, async (req, res) => {
+app.post('/admin/reports', requireAdmin, express.json({ limit: '10mb' }), async (req, res) => {
   const { restaurant, periode, nom, pdfBase64, taille } = req.body;
   if (!pdfBase64) return res.status(400).json({ error: 'PDF manquant' });
   try {
@@ -4245,21 +4245,24 @@ app.post('/admin/reports', requireAdmin, async (req, res) => {
       })
     }).then(r => r.json());
     if (page.object === 'error') return res.status(500).json({ error: page.message });
-    // Stocker le PDF base64 en blocs de 1900 chars
+    // Stocker le PDF base64 — un seul bloc avec tout le contenu splitté en rich_text objects
+    // Chaque rich_text object = 1900 chars max, on les groupe en batches de 95 (limite Notion)
     const CHUNK = 1900;
     const chunks = [];
     for (let i = 0; i < pdfBase64.length; i += CHUNK) chunks.push(pdfBase64.slice(i, i + CHUNK));
     const BATCH = 95;
-    for (let i = 0; i < chunks.length; i += BATCH) {
-      const batch = chunks.slice(i, i + BATCH).map(c => ({
-        object: 'block', type: 'paragraph',
-        paragraph: { rich_text: [{ type: 'text', text: { content: c } }] }
-      }));
-      await fetch(`https://api.notion.com/v1/blocks/${page.id}/children`, {
+    const batches = [];
+    for (let i = 0; i < chunks.length; i += BATCH) batches.push(chunks.slice(i, i + BATCH));
+    // Envoyer tous les batches en parallèle
+    await Promise.all(batches.map(batch =>
+      fetch(`https://api.notion.com/v1/blocks/${page.id}/children`, {
         method: 'PATCH', headers: notionHeaders,
-        body: JSON.stringify({ children: batch })
-      });
-    }
+        body: JSON.stringify({ children: batch.map(c => ({
+          object: 'block', type: 'paragraph',
+          paragraph: { rich_text: [{ type: 'text', text: { content: c } }] }
+        }))})
+      })
+    ));
     res.json({ success: true, id: page.id });
   } catch (e) {
     res.status(500).json({ error: e.message });

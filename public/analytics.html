@@ -422,12 +422,25 @@ async function exportPDF() {
       const activePtab = document.querySelector('.ptab.active');
       const periode = activePtab ? activePtab.textContent : '';
       const nom = `${resto} — ${periode} — ${dateStr}`;
-      await fetch('/admin/reports', {
+      const uploadRes = await fetch('/admin/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ restaurant: resto, periode, nom, pdfBase64, taille })
       });
-    } catch(e) { console.warn('Archivage PDF échoué:', e.message); }
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json();
+        console.warn('Archivage échoué:', err);
+        btn.innerHTML = '⚠️ PDF sauvé, archivage échoué';
+        setTimeout(() => { btn.innerHTML = '📄 Enregistrer PDF'; btn.disabled = false; }, 3000);
+        return;
+      }
+      btn.innerHTML = '✓ PDF sauvé & archivé';
+    } catch(e) {
+      console.warn('Archivage PDF échoué:', e.message);
+      btn.innerHTML = '⚠️ PDF sauvé, archivage échoué';
+    }
+    setTimeout(() => { btn.innerHTML = '📄 Enregistrer PDF'; btn.disabled = false; }, 2500);
+    return;
   } catch(e) {
     alert('Erreur génération PDF : ' + e.message);
   }
