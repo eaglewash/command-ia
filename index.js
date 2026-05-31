@@ -3378,9 +3378,11 @@ function readLeads() {
   try { return JSON.parse(fs.readFileSync(LEADS_FILE, 'utf8')); } catch { return []; }
 }
 function saveLead(lead) {
+  try {
   const leads = readLeads();
   leads.unshift(lead);
   fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2));
+  } catch (_) { /* filesystem read-only sur Vercel — ignoré */ }
 }
 
 app.post('/contact', async (req, res) => {
