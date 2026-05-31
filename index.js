@@ -237,6 +237,7 @@ const DB_EMPLOYES = '26a7bfc0e3b147aeae55e87dffeee763';
 const ADMIN_EMAIL = 'quentin@commande-ia.fr';
 const DB_MENUS = 'aa3d9c7174e641f2a82265a8fca8d251';
 const DB_STOCKS = '2bab39532bb24fe3b874a7eb92415f8e';
+const DB_REPORTS = '907eb7b8312842be8271662c5d05638f';
 
 const notionHeaders = {
   'Authorization': `Bearer ${NOTION_TOKEN}`,
@@ -4220,6 +4221,108 @@ app.put('/admin/hidden-pages', requireSession, async (req, res) => {
   } catch (e) {
     console.error('Erreur écriture pages cachées :', e.message);
     res.status(500).json({ error: 'Impossible de sauvegarder : ' + e.message });
+  }
+});
+
+// ─── RAPPORTS PDF ────────────────────────────────────────────────
+// Sauvegarde un rapport PDF (base64) dans Notion
+app.post('/admin/reports', requireAdmin, async (req, res) => {
+  const { restaurant, periode, nom, pdfBase64, taille } = req.body;
+  if (!pdfBase64) return res.status(400).json({ error: 'PDF manquant' });
+  try {
+    // Créer la page dans la DB Rapports
+    const page = await fetch('https://api.notion.com/v1/pages', {
+      method: 'POST', headers: notionHeaders,
+      body: JSON.stringify({
+        parent: { database_id: DB_REPORTS },
+        properties: {
+          'Nom': { title: [{ text: { content: nom || `Rapport ${restaurant}` } }] },
+          'Restaurant': { rich_text: [{ text: { content: restaurant || '' } }] },
+          'Période': { rich_text: [{ text: { content: periode || '' } }] },
+          'Date': { rich_text: [{ text: { content: new Date().toLocaleDateString('fr-FR') } }] },
+          'Taille': { rich_text: [{ text: { content: taille || '' } }] }
+        }
+      })
+    }).then(r => r.json());
+    if (page.object === 'error') return res.status(500).json({ error: page.message });
+    // Stocker le PDF base64 en blocs de 1900 chars
+    const CHUNK = 1900;
+    const chunks = [];
+    for (let i = 0; i < pdfBase64.length; i += CHUNK) chunks.push(pdfBase64.slice(i, i + CHUNK));
+    const BATCH = 95;
+    for (let i = 0; i < chunks.length; i += BATCH) {
+      const batch = chunks.slice(i, i + BATCH).map(c => ({
+        object: 'block', type: 'paragraph',
+        paragraph: { rich_text: [{ type: 'text', text: { content: c } }] }
+      }));
+      await fetch(`https://api.notion.com/v1/blocks/${page.id}/children`, {
+        method: 'PATCH', headers: notionHeaders,
+        body: JSON.stringify({ children: batch })
+      });
+    }
+    res.json({ success: true, id: page.id });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Liste les rapports
+app.get('/admin/reports', requireAdmin, async (req, res) => {
+  try {
+    const r = await fetch(`https://api.notion.com/v1/databases/${DB_REPORTS}/query`, {
+      method: 'POST', headers: notionHeaders,
+      body: JSON.stringify({ sorts: [{ timestamp: 'created_time', direction: 'descending' }] })
+    });
+    const data = await r.json();
+    const reports = (data.results || []).map(p => ({
+      id: p.id,
+      nom: p.properties['Nom']?.title?.[0]?.plain_text || '',
+      restaurant: p.properties['Restaurant']?.rich_text?.[0]?.plain_text || '',
+      periode: p.properties['Période']?.rich_text?.[0]?.plain_text || '',
+      date: p.properties['Date']?.rich_text?.[0]?.plain_text || '',
+      taille: p.properties['Taille']?.rich_text?.[0]?.plain_text || '',
+      createdAt: p.created_time
+    }));
+    res.json({ reports });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Télécharger un rapport (reconstituer le base64)
+app.get('/admin/reports/:id/download', requireAdmin, async (req, res) => {
+  try {
+    const pageId = req.params.id;
+    let base64 = '';
+    let cursor;
+    do {
+      const url = `https://api.notion.com/v1/blocks/${pageId}/children?page_size=100${cursor ? `&start_cursor=${cursor}` : ''}`;
+      const r = await fetch(url, { headers: notionHeaders });
+      const data = await r.json();
+      for (const b of data.results || []) {
+        base64 += b.paragraph?.rich_text?.[0]?.plain_text || '';
+      }
+      cursor = data.has_more ? data.next_cursor : null;
+    } while (cursor);
+    const buf = Buffer.from(base64, 'base64');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="rapport-${pageId.slice(0,8)}.pdf"`);
+    res.send(buf);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Supprimer un rapport
+app.delete('/admin/reports/:id', requireAdmin, async (req, res) => {
+  try {
+    await fetch(`https://api.notion.com/v1/pages/${req.params.id}`, {
+      method: 'PATCH', headers: notionHeaders,
+      body: JSON.stringify({ archived: true })
+    });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

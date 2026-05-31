@@ -658,6 +658,10 @@
       <svg class="sidebar-icon" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
       Export global
     </div>
+    <div class="sidebar-item" id="nav-rapports" onclick="switchSection('rapports',this);loadRapports()">
+      <svg class="sidebar-icon" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M4 4h6M4 7h6M4 10h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M9 9l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="10.5" cy="10.5" r="1.5" stroke="currentColor" stroke-width="1"/></svg>
+      Rapports PDF
+    </div>
     <div class="sidebar-item" id="nav-audit" onclick="switchSection('audit',this)">
       <svg class="sidebar-icon" viewBox="0 0 14 14" fill="none"><path d="M3 1h8a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V2a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2"/><path d="M4 5h6M4 8h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
       Journal d'audit
@@ -1131,6 +1135,21 @@
         <div><div class="export-label">Export complet — JSON</div><div class="export-desc">Restaurants + Employés dans un seul fichier</div></div>
         <div class="export-btn-wrap"><button class="btn-sm btn-primary"><span data-icon="arrow_down"></span> JSON</button></div>
       </div>
+    </div>
+
+    <!-- ══ RAPPORTS PDF ══ -->
+    <div class="section-view" id="section-rapports">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Rapports PDF</div>
+          <div class="page-subtitle">Historique des exports analytics par restaurant</div>
+        </div>
+        <button class="btn btn-secondary" onclick="loadRapports(true)" style="font-size:.82rem">↻ Actualiser</button>
+      </div>
+      <div id="rapports-filter" style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="rapports-search" placeholder="Filtrer par restaurant..." oninput="filterRapports()" style="padding:7px 12px;border:1.5px solid #B8D0C8;border-radius:8px;font-size:.83rem;font-family:inherit;min-width:200px">
+      </div>
+      <div id="rapports-list" style="display:grid;gap:10px"></div>
     </div>
 
     <!-- ══ AUDIT ══ -->
@@ -4584,6 +4603,74 @@ fetch('/tickets/stats').then(r=>r.json()).then(s => {
 }).catch(()=>{});
 addAudit('Connexion admin', currentUser.nom + ' s\'est connecté', '#5ac8fa');
 setInterval(refreshDashboard, 30000);
+
+// ── RAPPORTS PDF ──────────────────────────────────────────────────
+let _allRapports = [];
+async function loadRapports(force) {
+  const list = document.getElementById('rapports-list');
+  if (!list) return;
+  list.innerHTML = '<div style="color:#888;font-size:.85rem;padding:20px">Chargement...</div>';
+  try {
+    const r = await fetch('/admin/reports');
+    const data = await r.json();
+    _allRapports = data.reports || [];
+    renderRapports(_allRapports);
+  } catch(e) {
+    list.innerHTML = `<div style="color:#b91c1c;font-size:.85rem;padding:20px">Erreur : ${e.message}</div>`;
+  }
+}
+
+function filterRapports() {
+  const q = document.getElementById('rapports-search')?.value.toLowerCase() || '';
+  renderRapports(_allRapports.filter(r => (r.restaurant+r.nom+r.periode).toLowerCase().includes(q)));
+}
+
+function renderRapports(reports) {
+  const list = document.getElementById('rapports-list');
+  if (!list) return;
+  if (!reports.length) { list.innerHTML = '<div style="color:#888;font-size:.85rem;padding:20px">Aucun rapport enregistré.</div>'; return; }
+  // Grouper par restaurant
+  const byResto = {};
+  reports.forEach(r => { if (!byResto[r.restaurant]) byResto[r.restaurant] = []; byResto[r.restaurant].push(r); });
+  list.innerHTML = Object.entries(byResto).map(([resto, items]) => `
+    <div style="background:#fff;border:1.5px solid #B8D0C8;border-radius:12px;padding:16px 20px;margin-bottom:4px">
+      <div style="font-size:.78rem;font-weight:700;color:#0E4B47;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">${resto}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+        <thead><tr style="color:#888;font-size:.75rem">
+          <th style="text-align:left;padding:4px 8px;font-weight:600">Nom</th>
+          <th style="text-align:left;padding:4px 8px;font-weight:600">Période</th>
+          <th style="text-align:left;padding:4px 8px;font-weight:600">Date</th>
+          <th style="text-align:left;padding:4px 8px;font-weight:600">Taille</th>
+          <th style="padding:4px 8px"></th>
+        </tr></thead>
+        <tbody>${items.map(r => `
+          <tr style="border-top:1px solid #EEF5F2">
+            <td style="padding:7px 8px;color:#1a2e1a;font-weight:500">${r.nom}</td>
+            <td style="padding:7px 8px;color:#555">${r.periode}</td>
+            <td style="padding:7px 8px;color:#555">${r.date}</td>
+            <td style="padding:7px 8px;color:#555">${r.taille}</td>
+            <td style="padding:7px 8px;text-align:right;display:flex;gap:6px;justify-content:flex-end">
+              <button onclick="downloadRapport('${r.id}','${r.nom}')" class="btn-sm btn-primary" style="font-size:.75rem;padding:4px 10px">⬇ Télécharger</button>
+              <button onclick="deleteRapport('${r.id}')" class="btn-sm" style="font-size:.75rem;padding:4px 10px;background:#fee2e2;color:#b91c1c;border:none;border-radius:6px;cursor:pointer">✕</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`).join('');
+}
+
+async function downloadRapport(id, nom) {
+  const a = document.createElement('a');
+  a.href = `/admin/reports/${id}/download`;
+  a.download = (nom || 'rapport') + '.pdf';
+  a.click();
+}
+
+async function deleteRapport(id) {
+  if (!confirm('Supprimer ce rapport ?')) return;
+  await fetch(`/admin/reports/${id}`, { method: 'DELETE' });
+  loadRapports();
+}
 // setInterval(loadHealth, 60000); // désactivé — system-check gère le polling
 // Scan pending feedback deletions on load to update badge
 setTimeout(() => {

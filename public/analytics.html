@@ -6,6 +6,8 @@
 <title>Analytics – Commande-IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:100vh}
@@ -111,6 +113,7 @@ select.topbar-select option{background:#0E4B47;color:#fff}
     </div>
   </div>
   <div class="tr">
+    <button class="btn btn-ghost" id="pdf-btn" onclick="exportPDF()" title="Télécharger en PDF">📄 Enregistrer PDF</button>
     <a href="/index.html" class="back-btn">← Dashboard</a>
   </div>
 </div>
@@ -357,6 +360,81 @@ init();
 </script>
 
 <script>/* bfcache fix */window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});</script>
+<script>
+async function exportPDF() {
+  const btn = document.getElementById('pdf-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Génération...';
+  try {
+    const content = document.getElementById('main-content');
+    const canvas = await html2canvas(content, {
+      backgroundColor: '#EEF5F2',
+      scale: 2,
+      useCORS: true,
+      logging: false
+    });
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pdfW = pdf.internal.pageSize.getWidth();
+    const pdfH = pdf.internal.pageSize.getHeight();
+    const ratio = canvas.width / canvas.height;
+    const imgW = pdfW - 20;
+    const imgH = imgW / ratio;
+    // Header
+    pdf.setFillColor(14, 75, 71);
+    pdf.rect(0, 0, pdfW, 18, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Commande-IA — Analytics', 10, 12);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' }), pdfW - 10, 12, { align: 'right' });
+    // Content — paginate if needed
+    const startY = 22;
+    let yPos = startY;
+    let remaining = imgH;
+    let srcY = 0;
+    const pageContentH = pdfH - startY - 10;
+    while (remaining > 0) {
+      const sliceH = Math.min(remaining, pageContentH);
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = (sliceH / imgH) * canvas.height;
+      const ctx = sliceCanvas.getContext('2d');
+      ctx.drawImage(canvas, 0, srcY, canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
+      const sliceData = sliceCanvas.toDataURL('image/png');
+      pdf.addImage(sliceData, 'PNG', 10, yPos, imgW, sliceH);
+      remaining -= sliceH;
+      srcY += sliceCanvas.height;
+      if (remaining > 0) { pdf.addPage(); yPos = 10; }
+    }
+    const resto = document.getElementById('resto-select')?.selectedOptions?.[0]?.text || 'analytics';
+    const dateStr = new Date().toISOString().slice(0,10);
+    const filename = `analytics-${resto.replace(/\s+/g,'-')}-${dateStr}.pdf`;
+    pdf.save(filename);
+    // Upload vers le serveur pour archivage admin
+    try {
+      btn.textContent = '☁️ Archivage...';
+      const pdfBase64 = pdf.output('datauristring').split(',')[1];
+      const taille = Math.round(pdfBase64.length * 0.75 / 1024) + ' KB';
+      const activePtab = document.querySelector('.ptab.active');
+      const periode = activePtab ? activePtab.textContent : '';
+      const nom = `${resto} — ${periode} — ${dateStr}`;
+      await fetch('/admin/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restaurant: resto, periode, nom, pdfBase64, taille })
+      });
+    } catch(e) { console.warn('Archivage PDF échoué:', e.message); }
+  } catch(e) {
+    alert('Erreur génération PDF : ' + e.message);
+  }
+  btn.disabled = false;
+  btn.innerHTML = '📄 Enregistrer PDF';
+}
+</script>
 <script src=/burger-menu.js></script>
 </body>
 </html>
