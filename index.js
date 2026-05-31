@@ -799,7 +799,7 @@ app.post('/auth/login', async (req, res) => {
     if (demo.statut === 'créé') demo.statut = 'connecté';
     saveDemos(demos);
     const token = createSession(demo.id, demo.demoEmail, 'Manager');
-    res.setHeader('Set-Cookie', `cia_session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${SESSION_TTL / 1000}${COOKIE_SECURE ? '; Secure' : ''}`);
+    res.setHeader('Set-Cookie', `cia_session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${SESSION_TTL}${COOKIE_SECURE ? '; Secure' : ''}`);
     return res.json({
       success: true,
       accountType: 'demo',
@@ -846,7 +846,7 @@ app.post('/auth/login', async (req, res) => {
     const ROLE_NORM = { 'Hôte': 'Serveur', 'Cuisine': 'Cuisinier', 'Gérant': 'Manager' };
     const finalRole = ROLE_NORM[roleFromNotion] || roleFromNotion || 'Serveur';
     const token = createSession(page.id, email, finalRole);
-    res.setHeader('Set-Cookie', `cia_session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${SESSION_TTL / 1000}${COOKIE_SECURE ? '; Secure' : ''}`);
+    res.setHeader('Set-Cookie', `cia_session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${SESSION_TTL}${COOKIE_SECURE ? '; Secure' : ''}`);
     res.json({
       success: true,
       user: {
@@ -871,9 +871,6 @@ app.get('/auth/me', (req, res) => {
 
 // Route de déconnexion serveur
 app.post('/auth/logout', (req, res) => {
-  const cookieHeader = req.headers.cookie || '';
-  const match = cookieHeader.match(/(?:^|;\s*)cia_session=([a-f0-9]+)/);
-  if (match) { activeSessions.delete(match[1]); saveSessionsToFile(); }
   res.setHeader('Set-Cookie', `cia_session=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${COOKIE_SECURE ? '; Secure' : ''}`);
   res.json({ success: true });
 });
