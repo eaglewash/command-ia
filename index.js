@@ -1231,7 +1231,7 @@ app.patch('/admin/employes/:id/role', async (req, res) => {
 });
 
 // ─── MATRICE DE PERMISSIONS GRANULAIRES (Discord-style) ────────
-const PERMISSIONS_FILE = path.join(__dirname, 'permissions-matrix.json');
+const PERMISSIONS_FILE = process.env.VERCEL ? path.join('/tmp', 'permissions-matrix.json') : path.join(__dirname, 'permissions-matrix.json');
 
 app.get('/admin/permissions-matrix', (req, res) => {
   try {
