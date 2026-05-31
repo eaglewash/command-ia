@@ -798,7 +798,7 @@ app.post('/auth/login', async (req, res) => {
     demo.lastLogin = new Date().toISOString();
     demo.loginCount = (demo.loginCount || 0) + 1;
     if (demo.statut === 'créé') demo.statut = 'connecté';
-    saveDemos(demos);
+    try { saveDemos(demos); } catch (_) { /* filesystem read-only sur Vercel — ignoré */ }
     const token = createSession(demo.id, demo.demoEmail, 'Manager');
     res.setHeader('Set-Cookie', `cia_session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${SESSION_TTL}${COOKIE_SECURE ? '; Secure' : ''}`);
     return res.json({
