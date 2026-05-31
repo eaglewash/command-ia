@@ -4155,16 +4155,18 @@ async function saveHiddenPages(list) {
       const newText = `HIDDEN_PAGES:${JSON.stringify(list)}`;
       if (existingBlock) {
         // Mettre à jour le bloc existant
-        await fetch(`https://api.notion.com/v1/blocks/${existingBlock.id}`, {
+        const pr = await fetch(`https://api.notion.com/v1/blocks/${existingBlock.id}`, {
           method: 'PATCH', headers: notionHeaders,
           body: JSON.stringify({ paragraph: { rich_text: [{ type: 'text', text: { content: newText } }] } })
         });
+        if (!pr.ok) { const e = await pr.json(); throw new Error('Notion PATCH bloc: ' + JSON.stringify(e)); }
       } else {
         // Créer un nouveau bloc
-        await fetch(`https://api.notion.com/v1/blocks/${NOTION_CONFIG_PAGE_ID}/children`, {
+        const pr = await fetch(`https://api.notion.com/v1/blocks/${NOTION_CONFIG_PAGE_ID}/children`, {
           method: 'PATCH', headers: notionHeaders,
           body: JSON.stringify({ children: [{ object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: newText } }] } }] })
         });
+        if (!pr.ok) { const e = await pr.json(); throw new Error('Notion append bloc: ' + JSON.stringify(e)); }
       }
       return;
     } catch(e) { console.error('saveHiddenPages Notion error:', e.message); throw e; }
