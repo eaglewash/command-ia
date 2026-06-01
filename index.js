@@ -239,6 +239,12 @@ const DB_MENUS = 'aa3d9c7174e641f2a82265a8fca8d251';
 const DB_STOCKS = '2bab39532bb24fe3b874a7eb92415f8e';
 const DB_REPORTS = '907eb7b8312842be8271662c5d05638f';
 const DB_RESERVATIONS = (process.env.DB_RESERVATIONS || '628b003667334abba3cfa3dccf48ff64').trim();
+const DB_MESSAGES     = '78bd534a94354163b172b4cd03fa1724';
+const DB_ALLERGENS    = '91222ee97a71475cb75978bac6d476ab';
+const DB_PERMISSIONS  = '3f24aad6f9d443779a311e162bf47c6c';
+const DB_COMMANDES    = '65427c7fa8e34d42a77feeb81d17e893';
+const DB_BROADCASTS   = '4abeb8865a174f259c34c8c3520efa38';
+const DB_TICKETS      = '42deea5774974b6c90b3ee30292ddd21';
 
 const notionHeaders = {
   'Authorization': `Bearer ${NOTION_TOKEN}`,
@@ -246,56 +252,80 @@ const notionHeaders = {
   'Notion-Version': '2022-06-28'
 };
 
+// ─── NOTION KV STORE GÉNÉRIQUE ───────────────────────
+// Stocke/charge un objet JSON dans une base Notion clé-valeur (Restaurant ID → Data)
+async function notionKVGet(dbId, key) {
+  try {
+    const r = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+      method: 'POST', headers: notionHeaders,
+      body: JSON.stringify({ filter: { property: 'Restaurant ID', title: { equals: key } }, page_size: 1 })
+    });
+    const data = await r.json();
+    if (!data.results?.length) return null;
+    const raw = (data.results[0].properties['Data']?.rich_text || []).map(r => r.plain_text).join('');
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { console.error(`notionKVGet(${dbId},${key}):`, e.message); return null; }
+}
+
+async function notionKVSet(dbId, key, value) {
+  try {
+    const json = JSON.stringify(value);
+    const chunks = [];
+    for (let i = 0; i < json.length; i += 1990) chunks.push({ text: { content: json.slice(i, i + 1990) } });
+    const props = {
+      'Restaurant ID': { title: [{ text: { content: key } }] },
+      'Data': { rich_text: chunks }
+    };
+    const r = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+      method: 'POST', headers: notionHeaders,
+      body: JSON.stringify({ filter: { property: 'Restaurant ID', title: { equals: key } }, page_size: 1 })
+    });
+    const data = await r.json();
+    if (data.results?.length) {
+      await fetch(`https://api.notion.com/v1/pages/${data.results[0].id}`, {
+        method: 'PATCH', headers: notionHeaders, body: JSON.stringify({ properties: props })
+      });
+    } else {
+      await fetch('https://api.notion.com/v1/pages', {
+        method: 'POST', headers: notionHeaders,
+        body: JSON.stringify({ parent: { database_id: dbId }, properties: props })
+      });
+    }
+  } catch(e) { console.error(`notionKVSet(${dbId},${key}):`, e.message); }
+}
+// ─────────────────────────────────────────────────────
+
 // ─── PERSISTENCE ARCHIVES (par restaurant) ───────────
 const ARCHIVES_DIR = process.env.VERCEL ? path.join('/tmp', 'archives') : path.join(__dirname, 'archives');
 if (!fs.existsSync(ARCHIVES_DIR)) fs.mkdirSync(ARCHIVES_DIR);
 
 // ─── TICKETS SUPPORT ─────────────────────────────────
-const TICKETS_FILE = path.join(__dirname, 'tickets.json');
 let ticketCounter = 1;
-function loadTickets() {
-  try { if (fs.existsSync(TICKETS_FILE)) { const d = JSON.parse(fs.readFileSync(TICKETS_FILE, 'utf8')) || []; if (d.length) ticketCounter = Math.max(...d.map(t => parseInt((t.id||'0').replace(/\D/g,'')) || 0)) + 1; return d; } } catch(e) {}
-  return [];
+async function loadTickets() {
+  const d = (await notionKVGet(DB_TICKETS, 'global')) || [];
+  if (d.length) ticketCounter = Math.max(...d.map(t => parseInt((t.id||'0').replace(/\D/g,'')) || 0)) + 1;
+  return d;
 }
-function saveTickets(data) {
-  try { fs.writeFileSync(TICKETS_FILE, JSON.stringify(data, null, 2)); } catch(e) {}
+async function saveTickets(data) {
+  await notionKVSet(DB_TICKETS, 'global', data);
 }
 function nextTicketId() { return 'TKT-' + String(ticketCounter++).padStart(4, '0'); }
-// Initialiser le compteur
-loadTickets();
 
 // ─── MESSAGERIE (persistante par restaurant) ──────────
-const MESSAGES_DIR = process.env.VERCEL ? path.join('/tmp', 'messages') : path.join(__dirname, 'messages');
-if (!fs.existsSync(MESSAGES_DIR)) fs.mkdirSync(MESSAGES_DIR);
-
-function msgFile(restaurantId) {
-  const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
-  return path.join(MESSAGES_DIR, `messages_${safe}.json`);
+async function loadMessages(restaurantId) {
+  return (await notionKVGet(DB_MESSAGES, restaurantId)) || [];
 }
-function loadMessages(restaurantId) {
-  try {
-    const f = msgFile(restaurantId);
-    if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f, 'utf8')) || [];
-  } catch(e) {}
-  return [];
-}
-function saveMessages(restaurantId, data) {
-  try { fs.writeFileSync(msgFile(restaurantId), JSON.stringify(data, null, 2)); }
-  catch(e) { console.log('Erreur sauvegarde messages:', e.message); }
+async function saveMessages(restaurantId, data) {
+  await notionKVSet(DB_MESSAGES, restaurantId, data);
 }
 
 // ─── BROADCASTS (persistants sur fichier) ─────────────
-const BROADCASTS_FILE = path.join(__dirname, 'broadcasts.json');
-function loadBroadcasts() {
-  try { if (fs.existsSync(BROADCASTS_FILE)) return JSON.parse(fs.readFileSync(BROADCASTS_FILE, 'utf8')) || []; }
-  catch(e) {}
-  return [];
+async function loadBroadcasts() {
+  return (await notionKVGet(DB_BROADCASTS, 'global')) || [];
 }
-function saveBroadcasts(data) {
-  try { fs.writeFileSync(BROADCASTS_FILE, JSON.stringify(data, null, 2)); }
-  catch(e) {}
+async function saveBroadcasts(data) {
+  await notionKVSet(DB_BROADCASTS, 'global', data);
 }
-
 function archiveFile(restaurantId) {
   const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
   return path.join(ARCHIVES_DIR, `archives_${safe}.json`);
@@ -346,32 +376,14 @@ function getMemoryArchives(restaurantId) {
   return archivesMemory[rid];
 }
 
-// ─── PERSISTANCE DES COMMANDES ACTIVES ───────────────
-const COMMANDES_FILE = path.join(__dirname, 'commandes-actives.json');
-function saveCommandesActives() {
-  try { fs.writeFileSync(COMMANDES_FILE, JSON.stringify(commandes, null, 2)); } catch(e) {}
+// ─── PERSISTANCE DES COMMANDES ACTIVES (Notion) ───────────────
+async function loadCommandesActives() {
+  return (await notionKVGet(DB_COMMANDES, 'global')) || [];
 }
-function loadCommandesActives() {
-  try {
-    if (fs.existsSync(COMMANDES_FILE)) return JSON.parse(fs.readFileSync(COMMANDES_FILE, 'utf8')) || [];
-  } catch(e) {}
-  return [];
+async function saveCommandesActives(data) {
+  await notionKVSet(DB_COMMANDES, 'global', data);
 }
-
-let commandes = loadCommandesActives();
 let nextId = 1;
-// Calculer le prochain ID en lisant tous les fichiers d'archives
-try {
-  const files = fs.readdirSync(ARCHIVES_DIR).filter(f => f.endsWith('.json'));
-  let maxId = commandes.length ? Math.max(...commandes.map(c => c.id || 0)) : 0;
-  files.forEach(f => {
-    try {
-      const data = JSON.parse(fs.readFileSync(path.join(ARCHIVES_DIR, f), 'utf8')) || [];
-      data.forEach(a => { if ((a.id || 0) > maxId) maxId = a.id; });
-    } catch(e) {}
-  });
-  if (maxId >= nextId) nextId = maxId + 1;
-} catch(e) {}
 
 // Sessions vocales (déclaré ICI, avant les routes)
 const voiceSessions = {};
@@ -487,7 +499,10 @@ function generatePassword() {
 
 // ─── COMMANDES ───────────────────────────────────────
 
-app.get('/commandes', (req, res) => res.json(commandes));
+app.get('/commandes', async (req, res) => {
+  const commandes = await loadCommandesActives();
+  res.json(commandes);
+});
 
 app.get('/archives', (req, res) => {
   const { date, restaurantId } = req.query;
@@ -504,20 +519,27 @@ app.get('/archives/dates', (req, res) => {
   res.json(dates);
 });
 
-app.post('/commandes', (req, res) => {
+app.post('/commandes', async (req, res) => {
+  const commandes = await loadCommandesActives();
+  if (commandes.length) {
+    const maxId = Math.max(...commandes.map(c => c.id || 0));
+    if (maxId >= nextId) nextId = maxId + 1;
+  }
   const cmd = { id: nextId++, ...req.body, state: 'new', chronoStart: null, chronoEnd: null, createdAt: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) };
-  commandes.push(cmd); saveCommandesActives();
+  commandes.push(cmd);
+  await saveCommandesActives(commandes);
   io.emit('nouvelle_commande', cmd);
-  io.emit('new-order', cmd);        // alias écouté par kds.html et plan-salle.html
-  io.emit('kds-update', commandes); // met à jour l'affichage KDS en temps réel
+  io.emit('new-order', cmd);
+  io.emit('kds-update', commandes);
   res.json(cmd);
 });
 
 app.patch('/commandes/:id/valider', async (req, res) => {
+  const commandes = await loadCommandesActives();
   const cmd = commandes.find(c => c.id === parseInt(req.params.id));
   if (!cmd) return res.status(404).json({ error: 'Introuvable' });
   cmd.state = 'validated'; cmd.chronoStart = Date.now();
-  saveCommandesActives();
+  await saveCommandesActives(commandes);
   io.emit('commande_mise_a_jour', cmd);
   io.emit('kds-update', commandes);
 
@@ -665,7 +687,8 @@ app.patch('/commandes/:id/valider', async (req, res) => {
   res.json(cmd);
 });
 
-app.patch('/commandes/:id/prete', (req, res) => {
+app.patch('/commandes/:id/prete', async (req, res) => {
+  const commandes = await loadCommandesActives();
   const idx = commandes.findIndex(c => c.id === parseInt(req.params.id));
   if (idx === -1) return res.status(404).json({ error: 'Introuvable' });
   const cmd = commandes[idx];
@@ -677,13 +700,14 @@ app.patch('/commandes/:id/prete', (req, res) => {
   restArchives.unshift(cmd);
   saveArchivesForRestaurant(rid, restArchives);
   commandes.splice(idx, 1);
-  saveCommandesActives();
+  await saveCommandesActives(commandes);
   io.emit('commande_terminee', cmd);
   io.emit('kds-update', commandes);
   res.json(cmd);
 });
 
-app.patch('/commandes/:id/refuser', (req, res) => {
+app.patch('/commandes/:id/refuser', async (req, res) => {
+  const commandes = await loadCommandesActives();
   const idx = commandes.findIndex(c => c.id === parseInt(req.params.id));
   if (idx === -1) return res.status(404).json({ error: 'Introuvable' });
   const cmd = commandes[idx];
@@ -695,7 +719,7 @@ app.patch('/commandes/:id/refuser', (req, res) => {
   restArchives.unshift(cmd);
   saveArchivesForRestaurant(rid, restArchives);
   commandes.splice(idx, 1);
-  saveCommandesActives();
+  await saveCommandesActives(commandes);
   io.emit('commande_terminee', cmd);
   io.emit('order-cancelled', cmd);
   io.emit('kds-update', commandes);
@@ -708,9 +732,8 @@ app.patch('/commandes/:id/refuser', (req, res) => {
 function getPermissionsForRole(role) {
   try {
     let matrix = null;
-    if (fs.existsSync(PERMISSIONS_FILE)) {
-      matrix = JSON.parse(fs.readFileSync(PERMISSIONS_FILE, 'utf8'));
-    }
+    // Lecture sync depuis le cache en mémoire (mis à jour par les routes permissions)
+    if (global._permissionsCache) matrix = global._permissionsCache;
     // Charger la matrice par défaut côté serveur (copie depuis permissions.js)
     const DEFAULT = getDefaultPermissionsMatrix();
     // Fusion : par défaut + override stockée
@@ -1243,42 +1266,29 @@ app.patch('/admin/employes/:id/role', async (req, res) => {
 });
 
 // ─── MATRICE DE PERMISSIONS GRANULAIRES (Discord-style) ────────
-const PERMISSIONS_FILE = process.env.VERCEL ? path.join('/tmp', 'permissions-matrix.json') : path.join(__dirname, 'permissions-matrix.json');
-
-app.get('/admin/permissions-matrix', (req, res) => {
+app.get('/admin/permissions-matrix', async (req, res) => {
   try {
-    if (fs.existsSync(PERMISSIONS_FILE)) {
-      const matrix = JSON.parse(fs.readFileSync(PERMISSIONS_FILE, 'utf8'));
-      return res.json({ matrix, savedAt: fs.statSync(PERMISSIONS_FILE).mtime });
-    }
-    res.json({ matrix: null });
-  } catch (e) {
-    res.status(500).json({ error: 'Erreur lecture matrice : ' + e.message });
-  }
+    const data = await notionKVGet(DB_PERMISSIONS, 'global');
+    res.json({ matrix: data?.matrix || null, savedAt: data?.savedAt || null });
+  } catch (e) { res.status(500).json({ error: 'Erreur lecture matrice : ' + e.message }); }
 });
 
-app.put('/admin/permissions-matrix', (req, res) => {
+app.put('/admin/permissions-matrix', async (req, res) => {
   try {
     const { matrix } = req.body;
-    if (!matrix || typeof matrix !== 'object') {
-      return res.status(400).json({ error: 'Matrice invalide' });
-    }
-    fs.writeFileSync(PERMISSIONS_FILE, JSON.stringify(matrix, null, 2));
-    // Broadcast à tous les clients connectés : recharger la matrice
+    if (!matrix || typeof matrix !== 'object') return res.status(400).json({ error: 'Matrice invalide' });
+    await notionKVSet(DB_PERMISSIONS, 'global', { matrix, savedAt: new Date().toISOString() });
+    global._permissionsCache = matrix;
     try { io.emit('permissions-updated', { matrix, ts: Date.now() }); } catch {}
     res.json({ success: true, savedAt: new Date().toISOString() });
-  } catch (e) {
-    res.status(500).json({ error: 'Erreur sauvegarde matrice : ' + e.message });
-  }
+  } catch (e) { res.status(500).json({ error: 'Erreur sauvegarde matrice : ' + e.message }); }
 });
 
-app.delete('/admin/permissions-matrix', (req, res) => {
+app.delete('/admin/permissions-matrix', async (req, res) => {
   try {
-    if (fs.existsSync(PERMISSIONS_FILE)) fs.unlinkSync(PERMISSIONS_FILE);
+    await notionKVSet(DB_PERMISSIONS, 'global', null);
     res.json({ success: true });
-  } catch (e) {
-    res.status(500).json({ error: 'Erreur reset matrice : ' + e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ─── Modification du restaurant d'affectation d'un employé ─────
@@ -3006,67 +3016,62 @@ app.post('/admin/system-check/force', requireAdmin, async (req, res) => {
 
 
 // ─── BROADCASTS (persistants fichier) ────────────────
-app.get('/admin/broadcast', (req, res) => {
-  const bs = loadBroadcasts();
+app.get('/admin/broadcast', async (req, res) => {
+  const bs = await loadBroadcasts();
   const { restaurantId } = req.query;
-  if (restaurantId) {
-    // Pour un restaurant: exclure ceux qu'il a dismissés
-    return res.json(bs.filter(b => !(b.dismissedBy||[]).includes(restaurantId)));
-  }
+  if (restaurantId) return res.json(bs.filter(b => !(b.dismissedBy||[]).includes(restaurantId)));
   res.json(bs);
 });
 
-app.post('/admin/broadcast', (req, res) => {
+app.post('/admin/broadcast', async (req, res) => {
   const { message, type, author } = req.body;
   if (!message) return res.status(400).json({ error: 'Message requis' });
   const b = { id: Date.now().toString(), message, type: type || 'info', author: author || 'Admin', createdAt: new Date().toISOString(), dismissedBy: [] };
-  const bs = loadBroadcasts();
+  const bs = await loadBroadcasts();
   bs.unshift(b);
   if (bs.length > 200) bs.splice(200);
-  saveBroadcasts(bs);
+  await saveBroadcasts(bs);
   io.emit('broadcast', b);
   res.json({ success: true, broadcast: b });
 });
 
-app.delete('/admin/broadcast/:id', (req, res) => {
-  const bs = loadBroadcasts();
+app.delete('/admin/broadcast/:id', async (req, res) => {
+  const bs = await loadBroadcasts();
   const idx = bs.findIndex(b => b.id === req.params.id);
   if (idx !== -1) bs.splice(idx, 1);
-  saveBroadcasts(bs);
+  await saveBroadcasts(bs);
   res.json({ success: true });
 });
 
-// Dismiss d'un broadcast (côté restaurant)
-app.patch('/admin/broadcast/:id/dismiss', (req, res) => {
+app.patch('/admin/broadcast/:id/dismiss', async (req, res) => {
   const { restaurantId } = req.body;
-  const bs = loadBroadcasts();
+  const bs = await loadBroadcasts();
   const b = bs.find(b => b.id === req.params.id);
   if (b && restaurantId && !(b.dismissedBy||[]).includes(restaurantId)) {
     b.dismissedBy = b.dismissedBy || [];
     b.dismissedBy.push(restaurantId);
-    saveBroadcasts(bs);
+    await saveBroadcasts(bs);
   }
   res.json({ success: true });
 });
 
 // ─── MESSAGERIE ──────────────────────────────────────
 // GET messages d'un restaurant
-app.get('/messages/:restaurantId', (req, res) => {
-  res.json(loadMessages(req.params.restaurantId));
+app.get('/messages/:restaurantId', async (req, res) => {
+  res.json(await loadMessages(req.params.restaurantId));
 });
 
-// POST envoyer un message (admin → restaurant ou restaurant → admin)
-app.post('/messages/:restaurantId', (req, res) => {
+app.post('/messages/:restaurantId', async (req, res) => {
   const { from, fromName, content, type, meta } = req.body;
   if (!content) return res.status(400).json({ error: 'Contenu requis' });
-  const msgs = loadMessages(req.params.restaurantId);
+  const msgs = await loadMessages(req.params.restaurantId);
   const msg = {
     id: Date.now().toString(),
     restaurantId: req.params.restaurantId,
-    from: from || 'admin',      // 'admin' | 'restaurant'
+    from: from || 'admin',
     fromName: fromName || 'Admin',
     content,
-    type: type || 'message',    // 'message' | 'restock_alert' | 'system'
+    type: type || 'message',
     meta: meta || null,
     timestamp: new Date().toISOString(),
     readBy: [],
@@ -3074,60 +3079,52 @@ app.post('/messages/:restaurantId', (req, res) => {
   };
   msgs.push(msg);
   if (msgs.length > 500) msgs.splice(0, msgs.length - 500);
-  saveMessages(req.params.restaurantId, msgs);
-  // Notif temps réel
+  await saveMessages(req.params.restaurantId, msgs);
   io.emit(`msg_${req.params.restaurantId}`, msg);
   io.emit('admin_new_msg', { restaurantId: req.params.restaurantId, msg });
-  // Email à l'admin si le message vient d'un restaurant (pas de l'admin lui-même)
-  if (from === 'restaurant') {
-    sendAdminEmailNotif(fromName || 'Restaurant', content).catch(() => {});
-  }
+  if (from === 'restaurant') sendAdminEmailNotif(fromName || 'Restaurant', content).catch(() => {});
   res.json({ success: true, msg });
 });
 
-// PATCH marquer comme lu
-app.patch('/messages/:restaurantId/:msgId/read', (req, res) => {
+app.patch('/messages/:restaurantId/:msgId/read', async (req, res) => {
   const { by } = req.body;
-  const msgs = loadMessages(req.params.restaurantId);
+  const msgs = await loadMessages(req.params.restaurantId);
   const m = msgs.find(m => m.id === req.params.msgId);
   if (m && by && !m.readBy.includes(by)) m.readBy.push(by);
-  saveMessages(req.params.restaurantId, msgs);
+  await saveMessages(req.params.restaurantId, msgs);
   res.json({ success: true });
 });
 
-// PATCH marquer tous comme lus
-app.patch('/messages/:restaurantId/read-all', (req, res) => {
+app.patch('/messages/:restaurantId/read-all', async (req, res) => {
   const { by } = req.body;
   const rid = req.params.restaurantId;
-  const msgs = loadMessages(rid);
+  const msgs = await loadMessages(rid);
   msgs.forEach(m => { if (by && !m.readBy.includes(by)) m.readBy.push(by); });
-  saveMessages(rid, msgs);
-  // Notifier admin.html que les messages de ce resto ont été lus
-  if (by === 'admin') {
-    io.emit('admin_msgs_read', { restaurantId: rid });
-  }
+  await saveMessages(rid, msgs);
+  if (by === 'admin') io.emit('admin_msgs_read', { restaurantId: rid });
   res.json({ success: true });
 });
 
-// DELETE supprimer un message — réservé au compte Admin uniquement
-app.delete('/messages/:restaurantId/:msgId', requireSession, (req, res) => {
-  if (req.session.role !== 'Admin') {
-    return res.status(403).json({ error: 'Suppression réservée à l\'administrateur.' });
-  }
-  let msgs = loadMessages(req.params.restaurantId);
+app.delete('/messages/:restaurantId/:msgId', requireSession, async (req, res) => {
+  if (req.session.role !== 'Admin') return res.status(403).json({ error: 'Suppression réservée à l\'administrateur.' });
+  let msgs = await loadMessages(req.params.restaurantId);
   msgs = msgs.filter(m => m.id !== req.params.msgId);
-  saveMessages(req.params.restaurantId, msgs);
+  await saveMessages(req.params.restaurantId, msgs);
   res.json({ success: true });
 });
 
-// GET liste des conversations pour admin (résumé par restaurant)
 app.get('/admin/conversations', async (req, res) => {
   try {
-    const files = fs.readdirSync(MESSAGES_DIR).filter(f => f.endsWith('.json'));
+    // Récupérer toutes les entrées de la base messages Notion
+    const r = await fetch(`https://api.notion.com/v1/databases/${DB_MESSAGES}/query`, {
+      method: 'POST', headers: notionHeaders, body: JSON.stringify({ page_size: 100 })
+    });
+    const data = await r.json();
     const convos = [];
-    for (const f of files) {
-      const rid = f.replace('messages_', '').replace('.json', '');
-      const msgs = loadMessages(rid);
+    for (const page of (data.results || [])) {
+      const rid = page.properties['Restaurant ID']?.title?.[0]?.plain_text;
+      if (!rid) continue;
+      const msgs = await loadMessages(rid);
       if (!msgs.length) continue;
       const last = msgs[msgs.length - 1];
       const unread = msgs.filter(m => m.from === 'restaurant' && !m.readBy.includes('admin')).length;
@@ -3251,8 +3248,8 @@ app.post('/admin/restock-alert/:restaurantId', async (req, res) => {
 // ─── TICKETS SUPPORT ─────────────────────────────────
 
 // GET tous les tickets (admin)
-app.get('/tickets', (req, res) => {
-  const tickets = loadTickets();
+app.get('/tickets', async (req, res) => {
+  const tickets = await loadTickets();
   const { statut, type, priorite, restaurantId, q } = req.query;
   let result = [...tickets];
   if (restaurantId) result = result.filter(t => t.restaurantId === restaurantId);
@@ -3265,8 +3262,8 @@ app.get('/tickets', (req, res) => {
 });
 
 // GET stats tickets (admin dashboard)
-app.get('/tickets/stats', (req, res) => {
-  const tickets = loadTickets();
+app.get('/tickets/stats', async (req, res) => {
+  const tickets = await loadTickets();
   const now = Date.now();
   const stats = {
     total: tickets.length,
@@ -3283,13 +3280,13 @@ app.get('/tickets/stats', (req, res) => {
 });
 
 // GET tickets d'un restaurant
-app.get('/tickets/restaurant/:restaurantId', (req, res) => {
-  const tickets = loadTickets().filter(t => t.restaurantId === req.params.restaurantId);
+app.get('/tickets/restaurant/:restaurantId', async (req, res) => {
+  const tickets = (await loadTickets()).filter(t => t.restaurantId === req.params.restaurantId);
   res.json(tickets.sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)));
 });
 
 // POST créer un ticket
-app.post('/tickets', (req, res) => {
+app.post('/tickets', async (req, res) => {
   const { restaurantId, restaurantNom, titre, description, type, priorite, metadata } = req.body;
   if (!restaurantId || !titre || !description) return res.status(400).json({ error: 'restaurantId, titre et description requis' });
   const ticket = {
@@ -3311,17 +3308,17 @@ app.post('/tickets', (req, res) => {
     assignedTo: null,
     progress: 0
   };
-  const tickets = loadTickets();
+  const tickets = await loadTickets();
   tickets.unshift(ticket);
-  saveTickets(tickets);
+  await saveTickets(tickets);
   // Notifier l'admin
   io.emit('new_ticket', ticket);
   res.json({ success: true, ticket });
 });
 
 // PATCH mettre à jour un ticket (admin)
-app.patch('/tickets/:id', (req, res) => {
-  const tickets = loadTickets();
+app.patch('/tickets/:id', async (req, res) => {
+  const tickets = await loadTickets();
   const idx = tickets.findIndex(t => t.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Ticket introuvable' });
   const { statut, priorite, adminNote, assignedTo, tags, progress } = req.body;
@@ -3335,15 +3332,15 @@ app.patch('/tickets/:id', (req, res) => {
   if (statut === 'resolu' && !t.resolvedAt) t.resolvedAt = new Date().toISOString();
   t.updatedAt = new Date().toISOString();
   tickets[idx] = t;
-  saveTickets(tickets);
+  await saveTickets(tickets);
   io.emit(`ticket_update_${t.restaurantId}`, t);
   io.emit('admin_ticket_update', t);
   res.json({ success: true, ticket: t });
 });
 
 // POST ajouter un commentaire
-app.post('/tickets/:id/comment', (req, res) => {
-  const tickets = loadTickets();
+app.post('/tickets/:id/comment', async (req, res) => {
+  const tickets = await loadTickets();
   const idx = tickets.findIndex(t => t.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Ticket introuvable' });
   const { from, fromName, content, internal } = req.body;
@@ -3355,27 +3352,27 @@ app.post('/tickets/:id/comment', (req, res) => {
   tickets[idx].comments.push(comment);
   tickets[idx].updatedAt = new Date().toISOString();
   if (from === 'admin' && tickets[idx].statut === 'ouvert') tickets[idx].statut = 'en_cours';
-  saveTickets(tickets);
+  await saveTickets(tickets);
   io.emit(`ticket_comment_${tickets[idx].restaurantId}`, { ticketId: req.params.id, comment });
   io.emit('admin_ticket_comment', { ticketId: req.params.id, restaurantId: tickets[idx].restaurantId, comment });
   res.json({ success: true, comment, ticket: tickets[idx] });
 });
 
 // POST noter un ticket résolu (restaurant)
-app.patch('/tickets/:id/rate', (req, res) => {
-  const tickets = loadTickets();
+app.patch('/tickets/:id/rate', async (req, res) => {
+  const tickets = await loadTickets();
   const t = tickets.find(t => t.id === req.params.id);
   if (!t) return res.status(404).json({ error: 'Introuvable' });
   t.rating = Math.min(5, Math.max(1, parseInt(req.body.rating) || 3));
-  saveTickets(tickets);
+  await saveTickets(tickets);
   res.json({ success: true });
 });
 
 // DELETE un ticket
-app.delete('/tickets/:id', (req, res) => {
-  let tickets = loadTickets();
+app.delete('/tickets/:id', async (req, res) => {
+  let tickets = await loadTickets();
   tickets = tickets.filter(t => t.id !== req.params.id);
-  saveTickets(tickets);
+  await saveTickets(tickets);
   res.json({ success: true });
 });
 
@@ -3621,32 +3618,20 @@ app.post('/demo-accounts/:id/reset-password', (req, res) => {
 app.get('/ping', (req, res) => res.json({ message: 'Serveur en ligne ✅' }));
 
 // ─── ALLERGÈNES (persistant par restaurant) ─────────────────────────────────
-const ALLERGENS_DIR = process.env.VERCEL ? path.join('/tmp', 'allergens') : path.join(__dirname, 'allergens');
-if (!fs.existsSync(ALLERGENS_DIR)) fs.mkdirSync(ALLERGENS_DIR, { recursive: true });
-
-function allergensFile(restaurantId) {
-  const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
-  return path.join(ALLERGENS_DIR, `allergens_${safe}.json`);
+async function loadAllergens(restaurantId) {
+  return (await notionKVGet(DB_ALLERGENS, restaurantId)) || { config: {} };
 }
-function loadAllergens(restaurantId) {
-  try {
-    const f = allergensFile(restaurantId);
-    if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f, 'utf8')) || { config: {} };
-  } catch(e) {}
-  return { config: {} };
-}
-function saveAllergens(restaurantId, data) {
-  try { fs.writeFileSync(allergensFile(restaurantId), JSON.stringify(data, null, 2)); }
-  catch(e) { console.log('Erreur sauvegarde allergènes:', e.message); }
+async function saveAllergens(restaurantId, data) {
+  await notionKVSet(DB_ALLERGENS, restaurantId, data);
 }
 
-app.get('/allergenes/:restaurantId', (req, res) => {
-  res.json(loadAllergens(req.params.restaurantId));
+app.get('/allergenes/:restaurantId', async (req, res) => {
+  res.json(await loadAllergens(req.params.restaurantId));
 });
-app.put('/allergenes/:restaurantId', (req, res) => {
+app.put('/allergenes/:restaurantId', async (req, res) => {
   const data = req.body;
   if (!data.config) return res.status(400).json({ error: 'config requis' });
-  saveAllergens(req.params.restaurantId, { config: data.config, updatedAt: data.updatedAt, updatedBy: data.updatedBy });
+  await saveAllergens(req.params.restaurantId, { config: data.config, updatedAt: data.updatedAt, updatedBy: data.updatedBy });
   io.to(`restaurant:${req.params.restaurantId}`).emit('allergens-broadcast', {
     restaurantId: req.params.restaurantId,
     config: data.config,
