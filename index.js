@@ -3692,23 +3692,46 @@ app.put('/crm/:restaurantId', (req, res) => {
 });
 
 // ─── PLANNING (persistant par restaurant) ───────────────────────────────────
-const PLANNING_DIR = process.env.VERCEL ? path.join('/tmp', 'planning') : path.join(__dirname, 'planning');
-if (!fs.existsSync(PLANNING_DIR)) fs.mkdirSync(PLANNING_DIR);
+const DB_PLANNING = '5e780c8991e14910b8154f7825e33c02';
 
-function planningFile(restaurantId) {
-  const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
-  return path.join(PLANNING_DIR, `planning_${safe}.json`);
-}
-function loadPlanning(restaurantId) {
+async function loadPlanning(restaurantId) {
   try {
-    const f = planningFile(restaurantId);
-    if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f, 'utf8')) || { schedule: {} };
-  } catch(e) {}
-  return { schedule: {} };
+    const r = await fetch(`https://api.notion.com/v1/databases/${DB_PLANNING}/query`, {
+      method: 'POST', headers: notionHeaders,
+      body: JSON.stringify({ filter: { property: 'Restaurant ID', title: { equals: restaurantId } }, page_size: 1 })
+    });
+    const data = await r.json();
+    if (!data.results?.length) return { schedule: {} };
+    const raw = (data.results[0].properties['Data']?.rich_text || []).map(r => r.plain_text).join('') || '{}';
+    return JSON.parse(raw);
+  } catch(e) { return { schedule: {} }; }
 }
-function savePlanning(restaurantId, data) {
-  try { fs.writeFileSync(planningFile(restaurantId), JSON.stringify(data, null, 2)); }
-  catch(e) { console.log('Erreur sauvegarde planning:', e.message); }
+
+async function savePlanning(restaurantId, planData) {
+  const json = JSON.stringify(planData);
+  const chunks = [];
+  for (let i = 0; i < json.length; i += 1990) chunks.push({ text: { content: json.slice(i, i + 1990) } });
+  const props = {
+    'Restaurant ID': { title: [{ text: { content: restaurantId } }] },
+    'Data': { rich_text: chunks }
+  };
+  try {
+    const r = await fetch(`https://api.notion.com/v1/databases/${DB_PLANNING}/query`, {
+      method: 'POST', headers: notionHeaders,
+      body: JSON.stringify({ filter: { property: 'Restaurant ID', title: { equals: restaurantId } }, page_size: 1 })
+    });
+    const data = await r.json();
+    if (data.results?.length) {
+      await fetch(`https://api.notion.com/v1/pages/${data.results[0].id}`, {
+        method: 'PATCH', headers: notionHeaders, body: JSON.stringify({ properties: props })
+      });
+    } else {
+      await fetch('https://api.notion.com/v1/pages', {
+        method: 'POST', headers: notionHeaders,
+        body: JSON.stringify({ parent: { database_id: DB_PLANNING }, properties: props })
+      });
+    }
+  } catch(e) { console.log('Erreur sauvegarde planning Notion:', e.message); }
 }
 
 // Supprime les jours antérieurs à aujourd'hui dans un schedule { empId: { dateKey: [...] } }
@@ -3725,16 +3748,16 @@ function pruneScheduleHistory(schedule) {
   return schedule;
 }
 
-app.get('/planning/:restaurantId', (req, res) => {
-  const data = loadPlanning(req.params.restaurantId);
+app.get('/planning/:restaurantId', async (req, res) => {
+  const data = await loadPlanning(req.params.restaurantId);
   data.schedule = pruneScheduleHistory(data.schedule || {});
   res.json(data);
 });
-app.put('/planning/:restaurantId', (req, res) => {
+app.put('/planning/:restaurantId', async (req, res) => {
   const data = req.body;
   if (!data.schedule) return res.status(400).json({ error: 'schedule requis' });
   const cleanedSchedule = pruneScheduleHistory(data.schedule);
-  savePlanning(req.params.restaurantId, { schedule: cleanedSchedule, updatedAt: data.updatedAt, updatedBy: data.updatedBy });
+  await savePlanning(req.params.restaurantId, { schedule: cleanedSchedule, updatedAt: data.updatedAt, updatedBy: data.updatedBy });
   // Broadcast via socket.io
   io.to(`restaurant:${req.params.restaurantId}`).emit('planning-broadcast', {
     restaurantId: req.params.restaurantId,
