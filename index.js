@@ -4075,23 +4075,60 @@ app.post('/security/:userId/change-password', (req, res) => {
 });
 
 // ─── PLAN DE SALLE (persistant par restaurant) ──────────────────────────────
-const FLOORPLAN_DIR = process.env.VERCEL ? path.join('/tmp', 'floor-plans') : path.join(__dirname, 'floor-plans');
-if (!fs.existsSync(FLOORPLAN_DIR)) fs.mkdirSync(FLOORPLAN_DIR);
-function floorPlanFile(restaurantId) {
-  const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
-  return path.join(FLOORPLAN_DIR, `floorplan_${safe}.json`);
-}
-app.get('/floor-plan/:restaurantId', (req, res) => {
+const DB_FLOORPLANS = 'd9ff5f7eb752409e9eec1604e4ac91f2';
+
+// Charge le plan de salle depuis Notion
+async function loadFloorPlanNotion(restaurantId) {
   try {
-    const f = floorPlanFile(req.params.restaurantId);
-    if (fs.existsSync(f)) return res.json(JSON.parse(fs.readFileSync(f, 'utf8')));
-    res.json({ rooms: [], roomPaths: {} });
+    const r = await fetch(`https://api.notion.com/v1/databases/${DB_FLOORPLANS}/query`, {
+      method: 'POST', headers: notionHeaders,
+      body: JSON.stringify({ filter: { property: 'Restaurant ID', title: { equals: restaurantId } }, page_size: 1 })
+    });
+    const data = await r.json();
+    if (!data.results?.length) return { rooms: [], roomPaths: {} };
+    const raw = data.results[0].properties['Data']?.rich_text?.[0]?.plain_text || '{}';
+    return JSON.parse(raw);
+  } catch(e) { return { rooms: [], roomPaths: {} }; }
+}
+
+// Sauvegarde le plan de salle dans Notion (upsert)
+async function saveFloorPlanNotion(restaurantId, planData) {
+  const json = JSON.stringify(planData);
+  // Notion rich_text max 2000 chars — on tronque si besoin (plans simples < 2000)
+  const chunks = [];
+  for (let i = 0; i < json.length; i += 1990) chunks.push({ text: { content: json.slice(i, i + 1990) } });
+
+  // Chercher page existante
+  const r = await fetch(`https://api.notion.com/v1/databases/${DB_FLOORPLANS}/query`, {
+    method: 'POST', headers: notionHeaders,
+    body: JSON.stringify({ filter: { property: 'Restaurant ID', title: { equals: restaurantId } }, page_size: 1 })
+  });
+  const data = await r.json();
+  const props = {
+    'Restaurant ID': { title: [{ text: { content: restaurantId } }] },
+    'Data': { rich_text: chunks }
+  };
+  if (data.results?.length) {
+    await fetch(`https://api.notion.com/v1/pages/${data.results[0].id}`, {
+      method: 'PATCH', headers: notionHeaders, body: JSON.stringify({ properties: props })
+    });
+  } else {
+    await fetch('https://api.notion.com/v1/pages', {
+      method: 'POST', headers: notionHeaders,
+      body: JSON.stringify({ parent: { database_id: DB_FLOORPLANS }, properties: props })
+    });
+  }
+}
+
+app.get('/floor-plan/:restaurantId', async (req, res) => {
+  try {
+    res.json(await loadFloorPlanNotion(req.params.restaurantId));
   } catch (e) { res.status(500).json({ error: 'Erreur chargement plan : ' + e.message }); }
 });
-app.put('/floor-plan/:restaurantId', (req, res) => {
+app.put('/floor-plan/:restaurantId', async (req, res) => {
   try {
     const data = req.body || {};
-    fs.writeFileSync(floorPlanFile(req.params.restaurantId), JSON.stringify(data, null, 2));
+    await saveFloorPlanNotion(req.params.restaurantId, data);
     io.to(`restaurant:${req.params.restaurantId}`).emit('floor-plan-broadcast', {
       restaurantId: req.params.restaurantId,
       rooms: data.rooms,
