@@ -4105,7 +4105,7 @@ async function loadFloorPlanNotion(restaurantId) {
     });
     const data = await r.json();
     if (!data.results?.length) return { rooms: [], roomPaths: {} };
-    const raw = data.results[0].properties['Data']?.rich_text?.[0]?.plain_text || '{}';
+    const raw = (data.results[0].properties['Data']?.rich_text || []).map(r => r.plain_text).join('') || '{}';
     return JSON.parse(raw);
   } catch(e) { return { rooms: [], roomPaths: {} }; }
 }
@@ -4148,6 +4148,7 @@ app.put('/floor-plan/:restaurantId', async (req, res) => {
   try {
     const data = req.body || {};
     await saveFloorPlanNotion(req.params.restaurantId, data);
+    console.log(`✅ Floor plan sauvegardé pour ${req.params.restaurantId}`);
     io.to(`restaurant:${req.params.restaurantId}`).emit('floor-plan-broadcast', {
       restaurantId: req.params.restaurantId,
       rooms: data.rooms,
