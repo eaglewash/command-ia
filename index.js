@@ -376,12 +376,34 @@ function getMemoryArchives(restaurantId) {
   return archivesMemory[rid];
 }
 
-// ─── PERSISTANCE DES COMMANDES ACTIVES (Notion) ───────────────
-async function loadCommandesActives() {
-  return (await notionKVGet(DB_COMMANDES, 'global')) || [];
+// ─── PERSISTANCE DES COMMANDES ACTIVES (Notion, par restaurant) ───────────────
+// Chaque restaurant a sa propre clé → isolation + performance (max ~10 commandes/resto)
+async function loadCommandesActives(restaurantId) {
+  const key = restaurantId || 'global';
+  return (await notionKVGet(DB_COMMANDES, key)) || [];
 }
-async function saveCommandesActives(data) {
-  await notionKVSet(DB_COMMANDES, 'global', data);
+async function saveCommandesActives(data, restaurantId) {
+  const key = restaurantId || 'global';
+  await notionKVSet(DB_COMMANDES, key, data);
+}
+// Charger TOUTES les commandes actives (pour GET /commandes admin)
+async function loadAllCommandesActives() {
+  // On charge la liste des clés connues — on stocke les restaurantIds actifs dans une clé index
+  const index = (await notionKVGet(DB_COMMANDES, '_index')) || [];
+  const all = [];
+  await Promise.all(index.map(async rid => {
+    const cmds = await loadCommandesActives(rid);
+    all.push(...cmds);
+  }));
+  return all;
+}
+async function registerRestaurantInIndex(restaurantId) {
+  if (!restaurantId || restaurantId === 'global') return;
+  const index = (await notionKVGet(DB_COMMANDES, '_index')) || [];
+  if (!index.includes(restaurantId)) {
+    index.push(restaurantId);
+    await notionKVSet(DB_COMMANDES, '_index', index);
+  }
 }
 let nextId = 1;
 
@@ -500,7 +522,10 @@ function generatePassword() {
 // ─── COMMANDES ───────────────────────────────────────
 
 app.get('/commandes', async (req, res) => {
-  const commandes = await loadCommandesActives();
+  const { restaurantId } = req.query;
+  const commandes = restaurantId
+    ? await loadCommandesActives(restaurantId)
+    : await loadAllCommandesActives();
   res.json(commandes);
 });
 
@@ -520,14 +545,16 @@ app.get('/archives/dates', (req, res) => {
 });
 
 app.post('/commandes', async (req, res) => {
-  const commandes = await loadCommandesActives();
+  const rid = req.body.restaurantId || 'global';
+  await registerRestaurantInIndex(rid);
+  const commandes = await loadCommandesActives(rid);
   if (commandes.length) {
     const maxId = Math.max(...commandes.map(c => c.id || 0));
     if (maxId >= nextId) nextId = maxId + 1;
   }
   const cmd = { id: nextId++, ...req.body, state: 'new', chronoStart: null, chronoEnd: null, createdAt: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) };
   commandes.push(cmd);
-  await saveCommandesActives(commandes);
+  await saveCommandesActives(commandes, rid);
   io.emit('nouvelle_commande', cmd);
   io.emit('new-order', cmd);
   io.emit('kds-update', commandes);
@@ -535,11 +562,12 @@ app.post('/commandes', async (req, res) => {
 });
 
 app.patch('/commandes/:id/valider', async (req, res) => {
-  const commandes = await loadCommandesActives();
+  const rid = req.body.restaurantId || 'global';
+  const commandes = await loadCommandesActives(rid);
   const cmd = commandes.find(c => c.id === parseInt(req.params.id));
   if (!cmd) return res.status(404).json({ error: 'Introuvable' });
   cmd.state = 'validated'; cmd.chronoStart = Date.now();
-  await saveCommandesActives(commandes);
+  await saveCommandesActives(commandes, rid);
   io.emit('commande_mise_a_jour', cmd);
   io.emit('kds-update', commandes);
 
@@ -688,38 +716,38 @@ app.patch('/commandes/:id/valider', async (req, res) => {
 });
 
 app.patch('/commandes/:id/prete', async (req, res) => {
-  const commandes = await loadCommandesActives();
+  const rid = req.body.restaurantId || 'global';
+  const commandes = await loadCommandesActives(rid);
   const idx = commandes.findIndex(c => c.id === parseInt(req.params.id));
   if (idx === -1) return res.status(404).json({ error: 'Introuvable' });
   const cmd = commandes[idx];
   cmd.state = 'done'; cmd.chronoEnd = Date.now();
   cmd.archivedAt = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   cmd.archivedDate = todayStr();
-  const rid = cmd.restaurantId || 'global';
   const restArchives = getMemoryArchives(rid);
   restArchives.unshift(cmd);
   saveArchivesForRestaurant(rid, restArchives);
   commandes.splice(idx, 1);
-  await saveCommandesActives(commandes);
+  await saveCommandesActives(commandes, rid);
   io.emit('commande_terminee', cmd);
   io.emit('kds-update', commandes);
   res.json(cmd);
 });
 
 app.patch('/commandes/:id/refuser', async (req, res) => {
-  const commandes = await loadCommandesActives();
+  const rid = req.body.restaurantId || 'global';
+  const commandes = await loadCommandesActives(rid);
   const idx = commandes.findIndex(c => c.id === parseInt(req.params.id));
   if (idx === -1) return res.status(404).json({ error: 'Introuvable' });
   const cmd = commandes[idx];
   cmd.state = 'refused';
   cmd.archivedAt = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   cmd.archivedDate = todayStr();
-  const rid = cmd.restaurantId || 'global';
   const restArchives = getMemoryArchives(rid);
   restArchives.unshift(cmd);
   saveArchivesForRestaurant(rid, restArchives);
   commandes.splice(idx, 1);
-  await saveCommandesActives(commandes);
+  await saveCommandesActives(commandes, rid);
   io.emit('commande_terminee', cmd);
   io.emit('order-cancelled', cmd);
   io.emit('kds-update', commandes);
@@ -985,7 +1013,23 @@ app.post('/admin/restaurants', async (req, res) => {
     }
     console.log('Restaurant créé:', page.id, page.message);
     if (page.object === 'error') return res.status(500).json({ error: page.message });
-    try { io.emit('restaurants-updated', { action: 'create', id: page.id, ts: Date.now() }); } catch {}
+
+    // ── Initialisation des blobs Notion pour ce restaurant ────────────────────
+    const rid = page.id;
+    try {
+      await Promise.all([
+        notionKVSet(DB_COMMANDES,   rid, []),          // commandes actives
+        notionKVSet(DB_FLOORPLANS,  rid, { rooms: [] }), // plan de salle
+        notionKVSet(DB_PLANNING,    rid, {}),           // planning
+        notionKVSet(DB_MESSAGES,    rid, []),           // messages
+        notionKVSet(DB_ALLERGENS,   rid, []),           // allergènes
+        notionKVSet(DB_TICKETS,     rid, []),           // tickets
+        registerRestaurantInIndex(rid),                 // index pour GET /commandes global
+      ]);
+      console.log('Blobs Notion initialisés pour', rid);
+    } catch (e) { console.log('Init blobs Notion erreur (non bloquant):', e.message); }
+
+    try { io.emit('restaurants-updated', { action: 'create', id: rid, ts: Date.now() }); } catch {}
 
     // ── Email de bienvenue au restaurant ──────────────────────────────────────
     const loginUrl = (process.env.PUBLIC_BASE_URL || 'http://localhost:3000') + '/login.html';
