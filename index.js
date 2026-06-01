@@ -4077,6 +4077,25 @@ app.post('/security/:userId/change-password', (req, res) => {
 // ─── PLAN DE SALLE (persistant par restaurant) ──────────────────────────────
 const DB_FLOORPLANS = 'd9ff5f7eb752409e9eec1604e4ac91f2';
 
+app.get('/debug/floor-plan/:restaurantId', async (req, res) => {
+  const restaurantId = req.params.restaurantId;
+  const json = JSON.stringify({ rooms: [{ id: 'test', name: 'Salle', tables: [] }], roomPaths: {} });
+  const chunks = [];
+  for (let i = 0; i < json.length; i += 1990) chunks.push({ text: { content: json.slice(i, i + 1990) } });
+  const props = {
+    'Restaurant ID': { title: [{ text: { content: restaurantId } }] },
+    'Data': { rich_text: chunks }
+  };
+  try {
+    const r = await fetch('https://api.notion.com/v1/pages', {
+      method: 'POST', headers: notionHeaders,
+      body: JSON.stringify({ parent: { database_id: DB_FLOORPLANS }, properties: props })
+    });
+    const data = await r.json();
+    res.json({ ok: !data.message, notion: data.message || 'créé', id: data.id });
+  } catch(e) { res.json({ ok: false, error: e.message }); }
+});
+
 // Charge le plan de salle depuis Notion
 async function loadFloorPlanNotion(restaurantId) {
   try {
