@@ -865,6 +865,16 @@ app.post('/auth/login', async (req, res) => {
 });
 
 // Route de debug session — voir ce que le serveur lit dans le cookie
+app.get('/debug/notion-reservations', async (req, res) => {
+  try {
+    const r = await fetch(`https://api.notion.com/v1/databases/${DB_RESERVATIONS}/query`, {
+      method: 'POST', headers: notionHeaders, body: JSON.stringify({ page_size: 1 })
+    });
+    const data = await r.json();
+    res.json({ ok: !data.message, db_id: DB_RESERVATIONS, notion_response: data.message || `${data.results?.length} résultats`, code: data.code });
+  } catch(e) { res.json({ ok: false, error: e.message }); }
+});
+
 app.get('/auth/me', (req, res) => {
   const sess = getSession(req);
   if (!sess) return res.json({ session: null, cookie: req.headers.cookie ? 'présent' : 'absent' });
@@ -3772,6 +3782,7 @@ async function loadReservationsNotion(restaurantId) {
       body: JSON.stringify({ filter: { property: 'Restaurant ID', rich_text: { equals: restaurantId } }, page_size: 100 })
     });
     const data = await res.json();
+    if (data.message) console.error('Notion error loadResas:', data.message, data.code);
     return (data.results || []).map(notionPageToResa);
   } catch(e) {
     console.error('Erreur chargement réservations Notion:', e.message);
