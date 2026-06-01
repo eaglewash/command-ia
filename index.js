@@ -238,7 +238,7 @@ const ADMIN_EMAIL = 'quentin@commande-ia.fr';
 const DB_MENUS = 'aa3d9c7174e641f2a82265a8fca8d251';
 const DB_STOCKS = '2bab39532bb24fe3b874a7eb92415f8e';
 const DB_REPORTS = '907eb7b8312842be8271662c5d05638f';
-const DB_RESERVATIONS = process.env.DB_RESERVATIONS || '628b003667334abba3cfa3dccf48ff64';
+const DB_RESERVATIONS = (process.env.DB_RESERVATIONS || '628b003667334abba3cfa3dccf48ff64').trim();
 
 const notionHeaders = {
   'Authorization': `Bearer ${NOTION_TOKEN}`,
