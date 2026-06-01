@@ -3768,15 +3768,66 @@ app.get('/reservations/:restaurantId', (req, res) => {
   const cleaned = pruneReservationsHistory(loadReservations(req.params.restaurantId));
   res.json(cleaned);
 });
-app.put('/reservations/:restaurantId', (req, res) => {
+app.put('/reservations/:restaurantId', async (req, res) => {
   const list = Array.isArray(req.body) ? req.body : (req.body && Array.isArray(req.body.reservations) ? req.body.reservations : null);
   if (!list) return res.status(400).json({ error: 'liste de réservations requise' });
+
+  // Détecter les nouvelles réservations (IDs absents avant la sauvegarde)
+  const existing = loadReservations(req.params.restaurantId);
+  const existingIds = new Set(existing.map(r => r.id));
+  const nouvelles = list.filter(r => r.id && !existingIds.has(r.id) && r.email);
+
   const cleaned = pruneReservationsHistory(list);
   saveReservations(req.params.restaurantId, cleaned);
   io.to(`restaurant:${req.params.restaurantId}`).emit('reservations-broadcast', {
     restaurantId: req.params.restaurantId,
     reservations: cleaned
   });
+
+  // Envoi email de confirmation pour chaque nouvelle réservation avec email
+  const mailer = getMailer();
+  const ADMIN_MAIL = process.env.GMAIL_USER || 'quentin.despres6869@gmail.com';
+  if (mailer && nouvelles.length > 0) {
+    for (const r of nouvelles) {
+      const joursNoms = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+      const dateObj = new Date(r.date + 'T12:00:00');
+      const dateStr = joursNoms[dateObj.getDay()] + ' ' + dateObj.toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+      const htmlClient = `
+        <div style="font-family:Inter,sans-serif;max-width:540px;margin:0 auto;padding:28px;border:1px solid #e0e8d8;border-radius:14px;background:#fff;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+            <div style="background:#1a4a20;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;">
+              <span style="color:#7BBBB5;font-size:18px;">⌘</span>
+            </div>
+            <span style="font-size:17px;font-weight:700;color:#0F2A28;">Commande<span style="color:#7BBBB5;">IA</span></span>
+          </div>
+          <h2 style="color:#1a4a20;margin:0 0 8px;font-size:20px;">Votre réservation est confirmée ✅</h2>
+          <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 20px;">
+            Bonjour ${r.prenom ? r.prenom + ' ' + r.nom : r.nom}, nous avons bien enregistré votre réservation.
+          </p>
+          <div style="background:#f4faf0;border-left:4px solid #1a4a20;border-radius:0 8px 8px 0;padding:16px 18px;margin-bottom:20px;font-size:14px;color:#333;line-height:1.8;">
+            <div>📅 <strong>Date :</strong> ${dateStr}</div>
+            <div>🕐 <strong>Heure :</strong> ${r.heure}</div>
+            <div>👥 <strong>Couverts :</strong> ${r.covers || 2}</div>
+            ${r.table ? `<div>🪑 <strong>Table :</strong> ${r.table}</div>` : ''}
+            ${r.note ? `<div>📝 <strong>Note :</strong> ${r.note}</div>` : ''}
+          </div>
+          <p style="font-size:13px;color:#888;margin:0;">Pour annuler ou modifier, contactez-nous directement.<br>À très bientôt !</p>
+          <p style="margin-top:24px;font-size:11px;color:#ccc;border-top:1px solid #f0f0f0;padding-top:14px;">© ${new Date().getFullYear()} Commande-IA</p>
+        </div>`;
+      try {
+        await mailer.sendMail({
+          from: `"Commande-IA" <${ADMIN_MAIL}>`,
+          to: r.email,
+          subject: `Confirmation de réservation — ${dateStr} à ${r.heure}`,
+          html: htmlClient
+        });
+        console.log(`✅ Email confirmation réservation envoyé à ${r.email}`);
+      } catch(e) {
+        console.error('❌ Erreur email réservation:', e.message);
+      }
+    }
+  }
+
   res.json({ success: true, count: cleaned.length });
 });
 
