@@ -3835,18 +3835,17 @@ app.put('/reservations/:restaurantId', async (req, res) => {
   // Nouvelles réservations (pour email de confirmation)
   const nouvelles = list.filter(r => r.id && !existingMap.has(r.id) && r.email);
 
-  // Upsert toutes les réservations entrantes
-  for (const r of list) {
+  // Upsert toutes les réservations entrantes (en parallèle)
+  await Promise.all(list.map(r => {
     const existingResa = existingMap.get(r.id);
-    await upsertResaNotion({ ...r, restaurantId, notionPageId: existingResa?.notionPageId || null });
-  }
+    return upsertResaNotion({ ...r, restaurantId, notionPageId: existingResa?.notionPageId || null });
+  }));
 
-  // Archiver les réservations supprimées côté client
-  for (const r of existing) {
-    if (!incomingIds.has(r.id) && r.notionPageId) {
-      await archiveResaNotion(r.notionPageId);
-    }
-  }
+  // Archiver les réservations supprimées côté client (en parallèle)
+  await Promise.all(
+    existing.filter(r => !incomingIds.has(r.id) && r.notionPageId)
+            .map(r => archiveResaNotion(r.notionPageId))
+  );
 
   const cleaned = pruneReservationsHistory(list);
   io.to(`restaurant:${restaurantId}`).emit('reservations-broadcast', { restaurantId, reservations: cleaned });

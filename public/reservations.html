@@ -396,7 +396,11 @@ let detailId = null;
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 function todayStr() {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function localDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 function parseDate(s) { return new Date(s + 'T00:00:00'); }
 function fmtDate(s) {
@@ -520,7 +524,7 @@ function renderCal() {
   let d = 1 - startDow;
   for (let cell = 0; cell < 42; cell++) {
     const cellDate = new Date(calYear, calMonth, d);
-    const ds = cellDate.toISOString().split('T')[0];
+    const ds = localDateStr(cellDate);
     const isThis = cellDate.getMonth() === calMonth;
     const isTodayCell = ds === today;
     const isSel = ds === selectedDate;
