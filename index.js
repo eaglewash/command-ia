@@ -238,6 +238,7 @@ const ADMIN_EMAIL = 'quentin@commande-ia.fr';
 const DB_MENUS = 'aa3d9c7174e641f2a82265a8fca8d251';
 const DB_STOCKS = '2bab39532bb24fe3b874a7eb92415f8e';
 const DB_REPORTS = '907eb7b8312842be8271662c5d05638f';
+const DB_RESERVATIONS = process.env.DB_RESERVATIONS || '628b003667334abba3cfa3dccf48ff64';
 
 const notionHeaders = {
   'Authorization': `Bearer ${NOTION_TOKEN}`,
@@ -3733,58 +3734,124 @@ app.put('/planning/:restaurantId', (req, res) => {
   res.json({ success: true });
 });
 
-// ─── RÉSERVATIONS (persistantes par restaurant) ─────────────────────────────
-const RESERVATIONS_DIR = process.env.VERCEL ? path.join('/tmp', 'reservations') : path.join(__dirname, 'reservations');
-if (!fs.existsSync(RESERVATIONS_DIR)) fs.mkdirSync(RESERVATIONS_DIR);
+// ─── RÉSERVATIONS (Notion) ───────────────────────────────────────────────────
 
-function reservationsFile(restaurantId) {
-  const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
-  return path.join(RESERVATIONS_DIR, `reservations_${safe}.json`);
-}
-function loadReservations(restaurantId) {
-  try {
-    const f = reservationsFile(restaurantId);
-    if (fs.existsSync(f)) {
-      const data = JSON.parse(fs.readFileSync(f, 'utf8'));
-      return Array.isArray(data) ? data : [];
-    }
-  } catch(e) {}
-  return [];
-}
-function saveReservations(restaurantId, list) {
-  try { fs.writeFileSync(reservationsFile(restaurantId), JSON.stringify(list, null, 2)); }
-  catch(e) { console.log('Erreur sauvegarde réservations:', e.message); }
-}
-
-// Supprime les réservations dont la date est strictement antérieure à aujourd'hui.
-// Conserve aujourd'hui et tous les jours futurs (comme les anciennes commandes archivées).
 function pruneReservationsHistory(list) {
   const today = todayStr();
   if (!Array.isArray(list)) return [];
   return list.filter(r => !r || !r.date || r.date >= today);
 }
 
-app.get('/reservations/:restaurantId', (req, res) => {
-  const cleaned = pruneReservationsHistory(loadReservations(req.params.restaurantId));
-  res.json(cleaned);
+// Convertit une page Notion en objet réservation
+function notionPageToResa(page) {
+  const p = page.properties || {};
+  const txt = (prop) => prop?.rich_text?.[0]?.plain_text || prop?.title?.[0]?.plain_text || '';
+  return {
+    id: txt(p['Reservation ID']) || page.id,
+    notionPageId: page.id,
+    nom: txt(p['Nom']),
+    prenom: txt(p['Prénom']),
+    restaurantId: txt(p['Restaurant ID']),
+    date: txt(p['Date']),
+    heure: txt(p['Heure']),
+    covers: p['Couverts']?.number || 2,
+    table: txt(p['Table']),
+    email: p['Email']?.email || '',
+    tel: p['Téléphone']?.phone_number || '',
+    status: p['Statut']?.select?.name || 'pending',
+    note: txt(p['Note']),
+    createdAt: page.created_time
+  };
+}
+
+// Charge toutes les réservations d'un restaurant depuis Notion
+async function loadReservationsNotion(restaurantId) {
+  try {
+    const res = await fetch(`https://api.notion.com/v1/databases/${DB_RESERVATIONS}/query`, {
+      method: 'POST', headers: notionHeaders,
+      body: JSON.stringify({ filter: { property: 'Restaurant ID', rich_text: { equals: restaurantId } }, page_size: 100 })
+    });
+    const data = await res.json();
+    return (data.results || []).map(notionPageToResa);
+  } catch(e) {
+    console.error('Erreur chargement réservations Notion:', e.message);
+    return [];
+  }
+}
+
+// Crée ou met à jour une réservation dans Notion
+async function upsertResaNotion(r) {
+  const props = {
+    'Nom': { title: [{ text: { content: r.nom || '' } }] },
+    'Prénom': { rich_text: [{ text: { content: r.prenom || '' } }] },
+    'Restaurant ID': { rich_text: [{ text: { content: r.restaurantId || '' } }] },
+    'Date': { rich_text: [{ text: { content: r.date || '' } }] },
+    'Heure': { rich_text: [{ text: { content: r.heure || '' } }] },
+    'Couverts': { number: parseInt(r.covers) || 2 },
+    'Table': { rich_text: [{ text: { content: r.table || '' } }] },
+    'Email': { email: r.email || null },
+    'Téléphone': { phone_number: r.tel || null },
+    'Statut': { select: { name: r.status || 'pending' } },
+    'Note': { rich_text: [{ text: { content: r.note || '' } }] },
+    'Reservation ID': { rich_text: [{ text: { content: r.id || '' } }] }
+  };
+  if (r.notionPageId) {
+    // Mise à jour
+    await fetch(`https://api.notion.com/v1/pages/${r.notionPageId}`, {
+      method: 'PATCH', headers: notionHeaders, body: JSON.stringify({ properties: props })
+    });
+  } else {
+    // Création
+    await fetch('https://api.notion.com/v1/pages', {
+      method: 'POST', headers: notionHeaders,
+      body: JSON.stringify({ parent: { database_id: DB_RESERVATIONS }, properties: props })
+    });
+  }
+}
+
+// Archive (supprime) une réservation Notion par son notionPageId
+async function archiveResaNotion(notionPageId) {
+  try {
+    await fetch(`https://api.notion.com/v1/pages/${notionPageId}`, {
+      method: 'PATCH', headers: notionHeaders, body: JSON.stringify({ archived: true })
+    });
+  } catch(e) {}
+}
+
+app.get('/reservations/:restaurantId', async (req, res) => {
+  const list = await loadReservationsNotion(req.params.restaurantId);
+  res.json(pruneReservationsHistory(list));
 });
+
 app.put('/reservations/:restaurantId', async (req, res) => {
   const list = Array.isArray(req.body) ? req.body : (req.body && Array.isArray(req.body.reservations) ? req.body.reservations : null);
   if (!list) return res.status(400).json({ error: 'liste de réservations requise' });
 
-  // Détecter les nouvelles réservations (IDs absents avant la sauvegarde)
-  const existing = loadReservations(req.params.restaurantId);
-  const existingIds = new Set(existing.map(r => r.id));
-  const nouvelles = list.filter(r => r.id && !existingIds.has(r.id) && r.email);
+  const restaurantId = req.params.restaurantId;
+  const existing = await loadReservationsNotion(restaurantId);
+  const existingMap = new Map(existing.map(r => [r.id, r]));
+  const incomingIds = new Set(list.map(r => r.id));
+
+  // Nouvelles réservations (pour email de confirmation)
+  const nouvelles = list.filter(r => r.id && !existingMap.has(r.id) && r.email);
+
+  // Upsert toutes les réservations entrantes
+  for (const r of list) {
+    const existingResa = existingMap.get(r.id);
+    await upsertResaNotion({ ...r, restaurantId, notionPageId: existingResa?.notionPageId || null });
+  }
+
+  // Archiver les réservations supprimées côté client
+  for (const r of existing) {
+    if (!incomingIds.has(r.id) && r.notionPageId) {
+      await archiveResaNotion(r.notionPageId);
+    }
+  }
 
   const cleaned = pruneReservationsHistory(list);
-  saveReservations(req.params.restaurantId, cleaned);
-  io.to(`restaurant:${req.params.restaurantId}`).emit('reservations-broadcast', {
-    restaurantId: req.params.restaurantId,
-    reservations: cleaned
-  });
+  io.to(`restaurant:${restaurantId}`).emit('reservations-broadcast', { restaurantId, reservations: cleaned });
 
-  // Envoi email de confirmation pour chaque nouvelle réservation avec email
+  // Email de confirmation pour les nouvelles réservations
   const mailer = getMailer();
   const ADMIN_MAIL = process.env.GMAIL_USER || 'quentin.despres6869@gmail.com';
   if (mailer && nouvelles.length > 0) {
