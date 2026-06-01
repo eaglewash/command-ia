@@ -922,9 +922,9 @@ async function loadPlan() {
       const res = await fetch(`${ORIGIN}/floor-plan/${restaurantId}`);
       if (res.ok) {
         const data = await res.json();
-        if (data) {
-          if (data.rooms?.length) { initRooms(data.rooms); }
-          else if (Array.isArray(data.items)) { initRooms([{ id: 'rm-main', name: 'Salle principale', items: data.items }]); }
+        if (data && data.rooms?.length) {
+          initRooms(data.rooms);
+          localStorage.setItem(PLAN_KEY(), JSON.stringify(data)); // sync localStorage avec Notion
           renderAll(); setSaveStatus('<span data-icon="check"></span> Synchronisé'); return;
         }
       }
