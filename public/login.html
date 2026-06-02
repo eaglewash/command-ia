@@ -4,418 +4,246 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Connexion — Commande-IA</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --paper:    #F3ECDD;
-      --paper-2:  #EAE0CC;
-      --card:     #FBF7EE;
-      --ink:      #20251F;
-      --ink-soft: #5A5F52;
-      --ink-faint:#8E9181;
-      --forest:   #1E4034;
-      --forest-2: #2C5B49;
-      --accent:   #B4502B;   /* terracotta */
-      --accent-2: #C9683F;
-      --line:     #DCD2BD;
-      --line-2:   #CDC1A8;
-      --serif:    'Fraunces', Georgia, serif;
-      --read:     'Newsreader', Georgia, serif;
-      --mono:     'Spline Sans Mono', monospace;
-    }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body { height: 100%; }
     body {
-      font-family: var(--read);
-      color: var(--ink);
-      background: var(--paper);
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #EEF5F2;
       min-height: 100vh;
-      display: grid;
-      grid-template-columns: 1.05fr 1fr;
-      overflow: hidden;
-    }
-
-    ::selection { background: var(--accent); color: #fff; }
-
-    /* paper grain overlay */
-    body::after {
-      content: '';
-      position: fixed; inset: 0; pointer-events: none; z-index: 50;
-      opacity: .5; mix-blend-mode: multiply;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
-    }
-
-    /* ───────────── PANNEAU GAUCHE — éditorial ───────────── */
-    .left-panel {
-      position: relative;
-      padding: 52px 56px;
+      color: #111;
       display: flex;
       flex-direction: column;
-      background:
-        radial-gradient(120% 80% at 0% 0%, var(--paper-2), transparent 60%),
-        var(--paper);
-      border-right: 1px solid var(--line);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
       overflow: hidden;
     }
-    /* hairline rule frame */
-    .left-panel::before {
+
+    /* fond : grille discrète + lueurs teal, cohérent dashboard */
+    body::before {
       content: '';
-      position: absolute; inset: 24px;
-      border: 1px solid var(--line-2);
-      pointer-events: none;
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(14,75,71,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14,75,71,.035) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+    body::after {
+      content: '';
+      position: fixed; z-index: 0; pointer-events: none;
+      width: 520px; height: 520px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(123,187,181,.22), transparent 65%);
+      top: -160px; right: -120px;
     }
 
-    .lp-inner { position: relative; z-index: 2; display: flex; flex-direction: column; height: 100%; }
+    .auth-wrap { position: relative; z-index: 1; width: 100%; max-width: 400px; }
 
-    .masthead {
-      display: flex; align-items: center; justify-content: space-between;
-      padding-bottom: 18px; border-bottom: 1.5px solid var(--ink);
-    }
-    .mast-brand {
-      font-family: var(--serif); font-weight: 600;
-      font-size: 19px; letter-spacing: -.3px; color: var(--ink);
-    }
-    .mast-brand em { font-style: italic; color: var(--accent); }
-    .mast-meta {
-      font-family: var(--mono); font-size: 10.5px; letter-spacing: 1.5px;
-      text-transform: uppercase; color: var(--ink-faint);
-    }
-
-    .edition-row {
-      display: flex; justify-content: space-between;
-      font-family: var(--mono); font-size: 10px; letter-spacing: 1.2px;
-      text-transform: uppercase; color: var(--ink-faint);
-      padding: 9px 0; border-bottom: 1px solid var(--line-2);
-    }
-
-    .lp-body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 30px 0; }
-
-    .kicker {
-      font-family: var(--mono); font-size: 11px; letter-spacing: 3px;
-      text-transform: uppercase; color: var(--accent);
+    /* logo au-dessus de la carte (style topbar dashboard) */
+    .brand {
+      display: flex; align-items: center; justify-content: center; gap: 11px;
       margin-bottom: 22px;
-      display: inline-flex; align-items: center; gap: 10px;
     }
-    .kicker::before { content: ''; width: 28px; height: 1px; background: var(--accent); }
+    .brand-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: #0E4B47; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 18px rgba(14,75,71,.28);
+    }
+    .brand-icon svg { width: 22px; height: 22px; }
+    .brand-text { font-size: 19px; font-weight: 700; color: #0F2A28; letter-spacing: -0.4px; }
+    .brand-text span { color: #0E4B47; }
 
-    .headline {
-      font-family: var(--serif);
-      font-weight: 400;
-      font-size: clamp(40px, 5.2vw, 66px);
-      line-height: .98;
-      letter-spacing: -1.5px;
-      color: var(--ink);
-    }
-    .headline em { font-style: italic; color: var(--forest); }
-    .headline .lead {
-      display: block;
-      font-family: var(--serif);
-      font-style: italic;
-      font-size: clamp(40px, 5.2vw, 66px);
-      color: var(--accent);
-    }
-
-    .dek {
-      font-family: var(--read);
-      font-size: 17px; line-height: 1.55; color: var(--ink-soft);
-      max-width: 30ch; margin-top: 26px;
-    }
-    .dek .dropcap {
-      float: left; font-family: var(--serif); font-weight: 500;
-      font-size: 52px; line-height: .8; padding: 6px 10px 0 0; color: var(--accent);
-    }
-
-    /* index list of features, editorial style */
-    .index {
-      margin-top: 38px; border-top: 1px solid var(--line-2);
-    }
-    .index-item {
-      display: flex; align-items: baseline; gap: 16px;
-      padding: 13px 0; border-bottom: 1px solid var(--line-2);
-    }
-    .ix-num {
-      font-family: var(--mono); font-size: 11px; color: var(--ink-faint);
-      letter-spacing: 1px; min-width: 26px;
-    }
-    .ix-title {
-      font-family: var(--serif); font-size: 17px; color: var(--ink);
-      letter-spacing: -.2px; flex: 1;
-    }
-    .ix-note { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-faint); }
-
-    .lp-foot {
-      display: flex; justify-content: space-between; align-items: center;
-      padding-top: 16px; border-top: 1.5px solid var(--ink);
-      font-family: var(--mono); font-size: 10px; letter-spacing: 1.2px;
-      text-transform: uppercase; color: var(--ink-faint);
-    }
-    .back-to-site {
-      display: inline-flex; align-items: center; gap: 7px;
-      color: var(--ink); text-decoration: none; font-weight: 500;
-      transition: color .15s, gap .2s;
-    }
-    .back-to-site:hover { color: var(--accent); gap: 11px; }
-    .back-to-site svg { width: 13px; height: 13px; }
-
-    /* ───────────── PANNEAU DROIT — formulaire ───────────── */
-    .right-panel {
-      position: relative;
-      display: flex; align-items: center; justify-content: center;
-      padding: 48px;
-      background: var(--card);
-    }
-    /* faint ledger lines behind card */
-    .right-panel::before {
-      content: ''; position: absolute; inset: 0; pointer-events: none;
-      background-image: linear-gradient(var(--line) 1px, transparent 1px);
-      background-size: 100% 34px; opacity: .35;
-      -webkit-mask-image: radial-gradient(80% 70% at 50% 45%, #000, transparent 80%);
-              mask-image: radial-gradient(80% 70% at 50% 45%, #000, transparent 80%);
-    }
-
+    /* carte */
     .login-card {
-      position: relative; z-index: 2;
-      width: 100%; max-width: 384px;
+      background: #fff;
+      border: 1.5px solid #B8D0C8;
+      border-radius: 16px;
+      box-shadow: 0 8px 28px rgba(14,75,71,.10);
+      padding: 30px;
+      animation: cardIn .35s ease both;
     }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
-    .card-header { margin-bottom: 26px; }
+    .card-header { margin-bottom: 22px; }
     .card-greeting {
-      font-family: var(--mono); font-size: 11px; letter-spacing: 2.5px;
-      text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+      display: inline-block; font-size: 11px; font-weight: 600; color: #0E4B47;
+      background: #DCF0ED; border: 1px solid #7BBBB5; border-radius: 20px;
+      padding: 4px 12px; margin-bottom: 12px;
     }
-    .card-title {
-      font-family: var(--serif); font-weight: 400; font-style: italic;
-      font-size: 46px; line-height: 1; letter-spacing: -1px; color: var(--ink);
-    }
-    .card-line { width: 46px; height: 2px; background: var(--ink); margin-top: 18px; }
+    .card-title { font-size: 24px; font-weight: 700; color: #0F2A28; letter-spacing: -0.5px; }
+    .card-sub { font-size: 13px; color: #4D6260; margin-top: 4px; }
 
     /* compte récent */
     .recent-account {
-      display: none; align-items: center; gap: 12px;
-      background: var(--paper); border: 1px solid var(--line-2);
-      padding: 12px 14px; margin-bottom: 18px; cursor: pointer;
+      display: none; align-items: center; gap: 11px;
+      background: #F8FBF9; border: 1.5px solid #B8D0C8; border-radius: 12px;
+      padding: 11px 13px; margin-bottom: 16px; cursor: pointer;
       transition: border-color .15s, background .15s, transform .15s;
     }
-    .recent-account:hover { border-color: var(--forest); transform: translateX(2px); }
+    .recent-account:hover { border-color: #0E4B47; background: #DCF0ED; transform: translateY(-1px); }
     .recent-account.show { display: flex; }
     .ra-avatar {
-      width: 34px; height: 34px; border-radius: 50%;
-      background: var(--forest); color: var(--paper);
+      width: 34px; height: 34px; border-radius: 9px;
+      background: #0E4B47; color: #fff;
       display: flex; align-items: center; justify-content: center;
-      font-family: var(--serif); font-weight: 600; font-size: 15px; flex-shrink: 0;
+      font-weight: 700; font-size: 14px; flex-shrink: 0;
     }
     .ra-info { flex: 1; min-width: 0; }
-    .ra-name { font-family: var(--serif); font-size: 14px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ra-email { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ra-cta { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+    .ra-name { font-size: 13px; font-weight: 600; color: #0F2A28; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ra-email { font-size: 11px; color: #4D6260; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ra-cta { font-size: 11px; font-weight: 700; color: #0E4B47; white-space: nowrap; }
 
     /* alerte */
     .login-alert {
-      padding: 11px 14px; font-size: 14px; font-family: var(--read);
-      margin-bottom: 18px; display: none; border-left: 3px solid;
-      animation: aIn .25s ease;
+      padding: 11px 13px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      margin-bottom: 16px; display: none; animation: aIn .2s ease;
     }
     @keyframes aIn { from { opacity:0; transform:translateY(-3px);} to { opacity:1; transform:none;} }
-    .login-alert.error { background: #FBEDE8; color: #9A3214; border-color: var(--accent); display: block; }
-    .login-alert.warn  { background: #FAF2DF; color: #8A5A00; border-color: #C99A2E; display: block; }
-    .login-alert.info  { background: #ECF1EC; color: var(--forest); border-color: var(--forest-2); display: block; }
+    .login-alert.error { background: #fef0f0; color: #b03030; border: 1.5px solid #f0c0c0; display: block; }
+    .login-alert.warn  { background: #fff8e8; color: #906010; border: 1.5px solid #e8d090; display: block; }
+    .login-alert.info  { background: #DCF0ED; color: #0E4B47; border: 1.5px solid #7BBBB5; display: block; }
 
     /* champs */
-    .form-group { margin-bottom: 18px; }
+    .form-group { margin-bottom: 14px; }
     .form-label {
-      font-family: var(--mono); font-size: 10.5px; font-weight: 500;
-      letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-soft);
-      margin-bottom: 8px; display: block;
+      font-size: 12px; font-weight: 600; color: #4D6260;
+      margin-bottom: 7px; display: block;
     }
     .input-wrap { position: relative; }
     .input-icon {
-      position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-      color: var(--ink-faint); pointer-events: none; display: flex;
+      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      color: #7BBBB5; pointer-events: none; display: flex;
     }
     .input-icon svg { width: 16px; height: 16px; }
     .form-input {
-      width: 100%; padding: 11px 40px 11px 26px;
-      border: none; border-bottom: 1.5px solid var(--line-2);
-      background: transparent; font-size: 16px; font-family: var(--read);
-      color: var(--ink); outline: none;
-      transition: border-color .18s;
+      width: 100%; padding: 12px 42px 12px 40px;
+      border-radius: 10px; border: 1.5px solid #B8D0C8;
+      background: #F8FBF9; font-size: 14px;
+      font-family: 'Inter', sans-serif; color: #0F2A28;
+      outline: none; transition: border-color .15s, box-shadow .15s, background .15s;
     }
-    .form-input::placeholder { color: var(--ink-faint); font-style: italic; }
-    .form-input:focus { border-bottom-color: var(--forest); }
-    .form-input:focus ~ .input-icon, .input-wrap:focus-within .input-icon { color: var(--forest); }
+    .form-input::placeholder { color: #9fb8b0; }
+    .form-input:focus { border-color: #0E4B47; background: #fff; box-shadow: 0 0 0 3px rgba(14,75,71,.08); }
+    .form-input:hover:not(:focus) { border-color: #7BBBB5; }
     .form-input.shake { animation: shake .3s ease; }
     @keyframes shake { 0%,100%{transform:none} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
 
-    .input-right { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
+    .input-right { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); }
     .toggle-pwd {
-      background: none; border: none; cursor: pointer; color: var(--ink-faint);
-      padding: 4px; transition: color .12s; display: flex;
+      background: none; border: none; cursor: pointer; color: #7BBBB5;
+      padding: 4px; border-radius: 6px; transition: color .12s; display: flex;
     }
-    .toggle-pwd:hover { color: var(--forest); }
+    .toggle-pwd:hover { color: #0E4B47; }
 
     .caps-warn {
       display: none; align-items: center; gap: 5px;
-      font-family: var(--mono); font-size: 10px; letter-spacing: .5px;
-      color: #8A5A00; margin-top: 7px;
+      font-size: 11px; color: #906010; font-weight: 600; margin-top: 5px;
     }
     .caps-warn.show { display: flex; }
 
-    .field-options { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 22px; }
+    .field-options { display: flex; justify-content: space-between; align-items: center; margin: 16px 0; }
     .remember-me {
-      display: flex; align-items: center; gap: 8px; cursor: pointer;
-      font-family: var(--mono); font-size: 11px; letter-spacing: .5px;
-      text-transform: uppercase; color: var(--ink-soft); user-select: none;
+      display: flex; align-items: center; gap: 7px; cursor: pointer;
+      font-size: 13px; color: #4D6260; user-select: none;
     }
-    .remember-me input { width: 14px; height: 14px; accent-color: var(--forest); cursor: pointer; }
+    .remember-me input { width: 15px; height: 15px; accent-color: #0E4B47; cursor: pointer; }
 
-    /* bouton */
+    /* bouton — style .btn dashboard */
     .login-btn {
-      width: 100%; padding: 15px; border: 1.5px solid var(--ink);
-      background: var(--ink); color: var(--paper);
-      font-family: var(--mono); font-size: 12px; font-weight: 500;
-      letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      transition: background .18s, color .18s, transform .12s;
-      position: relative; overflow: hidden;
+      width: 100%; padding: 13px; border-radius: 10px; border: none;
+      background: #0E4B47; color: #fff; font-size: 14px; font-weight: 600;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      transition: background .15s, transform .15s, box-shadow .15s;
+      box-shadow: 0 4px 14px rgba(14,75,71,.22);
     }
-    .login-btn:hover:not(:disabled) { background: var(--forest); border-color: var(--forest); }
-    .login-btn:active:not(:disabled) { transform: translateY(1px); }
-    .login-btn:disabled { opacity: .45; cursor: not-allowed; }
-    .login-btn svg { width: 15px; height: 15px; transition: transform .2s; }
-    .login-btn:hover:not(:disabled) svg { transform: translateX(3px); }
+    .login-btn:hover:not(:disabled) { background: #0A3D3A; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(14,75,71,.28); }
+    .login-btn:active:not(:disabled) { transform: none; }
+    .login-btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; transform: none; }
+    .login-btn svg { width: 16px; height: 16px; }
 
-    .attempts-info { display: none; text-align: center; margin-top: 14px; font-family: var(--mono); font-size: 11px; letter-spacing: .5px; color: var(--accent); }
+    .attempts-info { display: none; text-align: center; margin-top: 12px; font-size: 12px; font-weight: 600; color: #a05020; }
     .attempts-info.show { display: block; }
-    .lockout-countdown { font-family: var(--serif); font-size: 22px; font-weight: 600; color: var(--accent); text-align: center; display: none; margin-top: 8px; }
+    .lockout-countdown { font-size: 18px; font-weight: 800; color: #b03030; text-align: center; display: none; margin-top: 6px; }
 
     .card-footer {
-      text-align: center; margin-top: 28px; padding-top: 18px;
-      border-top: 1px solid var(--line-2);
-      font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
-      text-transform: uppercase; color: var(--ink-faint);
+      text-align: center; margin-top: 20px; padding-top: 18px;
+      border-top: 1px solid #DCF0ED;
+      font-size: 12px; color: #9fb8b0;
     }
-    .card-footer a { color: var(--ink-soft); text-decoration: none; transition: color .15s; }
-    .card-footer a:hover { color: var(--accent); }
+    .card-footer a { color: #4D6260; text-decoration: none; font-weight: 500; }
+    .card-footer a:hover { color: #0E4B47; }
 
-    /* statut serveur */
-    .server-badge {
-      position: absolute; bottom: 26px; right: 28px; z-index: 3;
-      display: flex; align-items: center; gap: 8px;
-      font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
-      text-transform: uppercase; color: var(--ink-soft);
+    /* lien retour + statut sous la carte */
+    .auth-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 18px; padding: 0 4px;
     }
-    .sb-dot { width: 7px; height: 7px; border-radius: 50%; background: #5DA06E; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+    .back-to-site {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 500; color: #4D6260;
+      text-decoration: none; transition: color .15s, gap .2s;
+    }
+    .back-to-site:hover { color: #0E4B47; gap: 10px; }
+    .back-to-site svg { width: 14px; height: 14px; }
+    .server-badge { display: flex; align-items: center; gap: 7px; }
+    .sb-dot { width: 7px; height: 7px; border-radius: 50%; background: #5ab52a; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .sb-text { font-size: 11px; font-weight: 600; color: #4D6260; }
 
     /* overlay succès */
     .success-overlay {
-      position: fixed; inset: 0; background: var(--paper);
+      position: fixed; inset: 0; background: rgba(238,245,242,.97); backdrop-filter: blur(4px);
       z-index: 999; display: none;
       flex-direction: column; align-items: center; justify-content: center;
     }
-    .success-overlay.show { display: flex; animation: fadeIn .35s ease; }
+    .success-overlay.show { display: flex; animation: fadeIn .3s ease; }
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-    .so-check { width: 76px; height: 76px; margin-bottom: 26px; animation: popIn .45s cubic-bezier(.34,1.56,.64,1); }
+    .so-check { width: 76px; height: 76px; margin-bottom: 22px; animation: popIn .4s cubic-bezier(.34,1.56,.64,1); }
     @keyframes popIn { 0%{transform:scale(0);opacity:0} 100%{transform:scale(1);opacity:1} }
-    .so-circle { stroke: var(--forest); stroke-width:3; fill:none; stroke-dasharray:220; stroke-dashoffset:220; animation:drawCircle .6s ease .1s forwards; }
+    .so-circle { stroke:#0E4B47; stroke-width:4; fill:none; stroke-dasharray:220; stroke-dashoffset:220; animation:drawCircle .55s ease .1s forwards; }
     @keyframes drawCircle { to{stroke-dashoffset:0} }
-    .so-tick { stroke: var(--accent); stroke-width:4; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:60; stroke-dashoffset:60; animation:drawTick .35s ease .65s forwards; }
+    .so-tick { stroke:#0E4B47; stroke-width:5; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:60; stroke-dashoffset:60; animation:drawTick .3s ease .6s forwards; }
     @keyframes drawTick { to{stroke-dashoffset:0} }
-    .so-name { font-family: var(--serif); font-style: italic; font-size: 32px; color: var(--ink); letter-spacing: -.5px; margin-bottom: 8px; }
-    .so-sub { font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-faint); }
-    .so-bar { width: 200px; height: 1.5px; background: var(--line-2); margin-top: 28px; overflow: hidden; }
-    .so-bar-fill { height: 100%; background: var(--accent); animation: soProgress 1.2s ease forwards; }
+    .so-name { font-size: 24px; font-weight: 700; color: #0F2A28; letter-spacing: -.4px; margin-bottom: 6px; }
+    .so-sub { font-size: 13px; color: #4D6260; }
+    .so-bar { width: 190px; height: 3px; background: #DCF0ED; border-radius: 3px; margin-top: 24px; overflow: hidden; }
+    .so-bar-fill { height: 100%; background: #0E4B47; border-radius: 3px; animation: soProgress 1.2s ease forwards; }
     @keyframes soProgress { from{width:0} to{width:100%} }
 
-    /* reveal au chargement */
-    .reveal { opacity: 0; transform: translateY(14px); animation: reveal .7s cubic-bezier(.2,.7,.2,1) forwards; }
-    @keyframes reveal { to { opacity: 1; transform: none; } }
-    .d1{animation-delay:.05s}.d2{animation-delay:.13s}.d3{animation-delay:.21s}
-    .d4{animation-delay:.29s}.d5{animation-delay:.37s}.d6{animation-delay:.45s}
-
-    @media (max-width: 860px) {
-      body { grid-template-columns: 1fr; }
-      .left-panel { display: none; }
-      .right-panel { padding: 32px 22px; background: var(--paper); }
-      .right-panel::before { display: none; }
-      .server-badge { bottom: 16px; right: 16px; }
+    @media (max-width: 480px) {
+      body { padding: 16px; }
+      .login-card { padding: 22px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ══ PANNEAU GAUCHE ══ -->
-<div class="left-panel">
-  <div class="lp-inner">
+<div class="auth-wrap">
 
-    <div class="masthead reveal d1">
-      <div class="mast-brand">Commande<em>IA</em></div>
-      <div class="mast-meta">Édition&nbsp;·&nbsp;2026</div>
+  <!-- Logo -->
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 20 20" fill="none">
+        <path d="M3 6h14M3 10h9M3 14h11" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
     </div>
-
-    <div class="edition-row reveal d2">
-      <span>Plateforme de restauration</span>
-      <span>N&deg; 02.0</span>
-    </div>
-
-    <div class="lp-body">
-      <div class="kicker reveal d2">Intelligence en cuisine</div>
-      <h1 class="headline reveal d3">
-        La prise de<br>
-        commande<br>
-        <span class="lead">réinventée.</span>
-      </h1>
-      <p class="dek reveal d4">
-        <span class="dropcap">U</span>ne IA qui décroche, comprend et envoie chaque commande en cuisine — sans erreur, à toute heure du jour et de la nuit.
-      </p>
-
-      <div class="index reveal d5">
-        <div class="index-item">
-          <span class="ix-num">01</span>
-          <span class="ix-title">Tableau de bord</span>
-          <span class="ix-note">Temps réel</span>
-        </div>
-        <div class="index-item">
-          <span class="ix-num">02</span>
-          <span class="ix-title">Gestion des stocks</span>
-          <span class="ix-note">Auto</span>
-        </div>
-        <div class="index-item">
-          <span class="ix-num">03</span>
-          <span class="ix-title">Analyse &amp; rapports</span>
-          <span class="ix-note">Insights</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="lp-foot reveal d6">
-      <a href="/landing.html" class="back-to-site">
-        <svg viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Retour au site
-      </a>
-      <span>v2.0 · © 2026</span>
-    </div>
-
+    <div class="brand-text">Commande<span>IA</span></div>
   </div>
-</div>
 
-<!-- ══ PANNEAU DROIT ══ -->
-<div class="right-panel">
-
+  <!-- Carte -->
   <div class="login-card">
 
-    <div class="card-header reveal d2">
+    <div class="card-header">
       <div class="card-greeting" id="card-greeting">Bienvenue</div>
       <div class="card-title">Connexion</div>
-      <div class="card-line"></div>
+      <div class="card-sub">Accédez à votre espace de gestion.</div>
     </div>
 
     <!-- Compte récent mémorisé -->
-    <div class="recent-account reveal d3" id="recent-account" onclick="useRecentAccount()" title="Cliquer pour utiliser ce compte">
+    <div class="recent-account" id="recent-account" onclick="useRecentAccount()" title="Cliquer pour utiliser ce compte">
       <div class="ra-avatar" id="ra-avatar">?</div>
       <div class="ra-info">
         <div class="ra-name" id="ra-name">—</div>
@@ -427,25 +255,25 @@
     <div class="login-alert" id="alert"></div>
 
     <!-- Email -->
-    <div class="form-group reveal d3">
+    <div class="form-group">
       <label class="form-label" for="email">Email</label>
       <div class="input-wrap">
-        <input class="form-input" type="email" id="email" placeholder="votre@email.com" autocomplete="email" />
         <span class="input-icon">
           <svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12v8H2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M2 4l6 4.5L14 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         </span>
+        <input class="form-input" type="email" id="email" placeholder="votre@email.com" autocomplete="email" />
       </div>
     </div>
 
     <!-- Mot de passe -->
-    <div class="form-group reveal d4">
+    <div class="form-group">
       <label class="form-label" for="password">Mot de passe</label>
       <div class="input-wrap">
-        <input class="form-input" type="password" id="password" placeholder="••••••••"
-          onkeyup="checkCapsLock(event)" autocomplete="current-password" />
         <span class="input-icon">
           <svg viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         </span>
+        <input class="form-input" type="password" id="password" placeholder="••••••••"
+          onkeyup="checkCapsLock(event)" autocomplete="current-password" />
         <span class="input-right">
           <button class="toggle-pwd" type="button" onclick="togglePwd()" title="Afficher/masquer">
             <svg id="eye-icon" viewBox="0 0 16 16" fill="none" width="16" height="16">
@@ -461,31 +289,38 @@
       </div>
     </div>
 
-    <div class="field-options reveal d5">
+    <div class="field-options">
       <label class="remember-me">
-        <input type="checkbox" id="remember" /> Se souvenir
+        <input type="checkbox" id="remember" /> Se souvenir de moi
       </label>
     </div>
 
-    <button class="login-btn reveal d5" id="login-btn" onclick="login()">
+    <button class="login-btn" id="login-btn" onclick="login()">
+      <svg viewBox="0 0 16 16" fill="none" width="16" height="16"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 5l3 3-3 3M13 8H6" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Se connecter
-      <svg viewBox="0 0 16 16" fill="none" width="15" height="15"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 5l3 3-3 3M13 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
 
     <div class="attempts-info" id="attempts-info"></div>
     <div class="lockout-countdown" id="lockout-countdown"></div>
 
-    <div class="card-footer reveal d6">
+    <div class="card-footer">
       <a href="/landing.html">Site web</a> &nbsp;·&nbsp;
       <a href="mailto:contact@commande-ia.com">Support</a>
     </div>
   </div>
 
-  <!-- Statut serveur -->
-  <div class="server-badge">
-    <div class="sb-dot" id="sb-dot"></div>
-    <div class="sb-text" id="sb-text">Vérification…</div>
+  <!-- Pied : retour site + statut serveur -->
+  <div class="auth-foot">
+    <a href="/landing.html" class="back-to-site">
+      <svg viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Retour au site
+    </a>
+    <div class="server-badge">
+      <div class="sb-dot" id="sb-dot"></div>
+      <div class="sb-text" id="sb-text">Vérification…</div>
+    </div>
   </div>
+
 </div>
 
 <!-- ══ OVERLAY SUCCÈS ══ -->
@@ -513,10 +348,10 @@
     const t0 = Date.now();
     await fetch('/ping', { signal: AbortSignal.timeout(4000) });
     const ms = Date.now() - t0;
-    document.getElementById('sb-dot').style.background = ms > 600 ? '#C99A2E' : '#5DA06E';
+    document.getElementById('sb-dot').style.background = ms > 600 ? '#ffcc00' : '#5ab52a';
     document.getElementById('sb-text').textContent = ms > 600 ? 'Latence élevée' : 'Système opérationnel';
   } catch {
-    document.getElementById('sb-dot').style.background = '#B4502B';
+    document.getElementById('sb-dot').style.background = '#ff5050';
     document.getElementById('sb-text').textContent = 'Hors ligne';
   }
   setTimeout(checkServer, 30000);
@@ -645,7 +480,7 @@ async function login() {
 
 function resetBtn() {
   const btn = document.getElementById('login-btn');
-  btn.innerHTML = 'Se connecter <svg viewBox="0 0 16 16" fill="none" width="15" height="15"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 5l3 3-3 3M13 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" width="16" height="16"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 5l3 3-3 3M13 8H6" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Se connecter';
 }
 
 function showAlert(type, msg) {
