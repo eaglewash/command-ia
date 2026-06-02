@@ -127,7 +127,7 @@ function requireAdmin(req, res, next) {
 // Derrière un reverse-proxy (Nginx/Render/Heroku) : req.ip et Secure cookies corrects.
 app.set('trust proxy', 1);
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '2mb' })); // limite anti-DoS sur les gros payloads
+app.use(express.json({ limit: '2mb', verify: (req, res, buf) => { req.rawBody = buf; } })); // limite anti-DoS sur les gros payloads ; rawBody conservé pour la vérif de signature (webhooks)
 // En-têtes de sécurité. (Pas de CSP stricte ici pour ne pas casser les scripts
 // inline existants — voir le rapport pour la marche à suivre côté CSP.)
 app.use((req, res, next) => {
@@ -4641,6 +4641,22 @@ async function sendAdminEmailNotif(restaurantNom, messageContent) {
     console.error('[Email] Erreur notification:', e.message);
   }
 }
+
+// ─── INTÉGRATION UBER EATS ───────────────────────────────────────────────
+// Webhook + auto-accept des commandes Uber Eats, affichées sur le KDS.
+const { registerUberEats } = require('./integrations/ubereats');
+registerUberEats({
+  app, io,
+  loadCommandesActives, saveCommandesActives, registerRestaurantInIndex,
+  // Génère un id unique en se basant sur les commandes existantes + le compteur global
+  getNextId: (commandes) => {
+    if (commandes && commandes.length) {
+      const maxId = Math.max(...commandes.map(c => c.id || 0));
+      if (maxId >= nextId) nextId = maxId + 1;
+    }
+    return nextId++;
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

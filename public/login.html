@@ -4,310 +4,345 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Connexion — Commande-IA</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      background: #fff;
+    :root {
+      --paper:    #F3ECDD;
+      --paper-2:  #EAE0CC;
+      --card:     #FBF7EE;
+      --ink:      #20251F;
+      --ink-soft: #5A5F52;
+      --ink-faint:#8E9181;
+      --forest:   #1E4034;
+      --forest-2: #2C5B49;
+      --accent:   #B4502B;   /* terracotta */
+      --accent-2: #C9683F;
+      --line:     #DCD2BD;
+      --line-2:   #CDC1A8;
+      --serif:    'Fraunces', Georgia, serif;
+      --read:     'Newsreader', Georgia, serif;
+      --mono:     'Spline Sans Mono', monospace;
     }
 
-    /* ─── PANNEAU GAUCHE ─── */
-    .left-panel {
-      background: linear-gradient(160deg, #0B1F18 0%, #0F2E22 60%, #0D2620 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 48px;
-      position: relative;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; }
+    body {
+      font-family: var(--read);
+      color: var(--ink);
+      background: var(--paper);
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
       overflow: hidden;
     }
 
-    /* Grille de carrés en fond */
+    ::selection { background: var(--accent); color: #fff; }
+
+    /* paper grain overlay */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 50;
+      opacity: .5; mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+    }
+
+    /* ───────────── PANNEAU GAUCHE — éditorial ───────────── */
+    .left-panel {
+      position: relative;
+      padding: 52px 56px;
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(120% 80% at 0% 0%, var(--paper-2), transparent 60%),
+        var(--paper);
+      border-right: 1px solid var(--line);
+      overflow: hidden;
+    }
+    /* hairline rule frame */
     .left-panel::before {
       content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* Lueur subtile en haut à droite */
-    .left-panel::after {
-      content: '';
-      position: absolute;
-      width: 320px; height: 320px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(90,181,90,.09), transparent 65%);
-      top: -80px; right: -80px;
+      position: absolute; inset: 24px;
+      border: 1px solid var(--line-2);
       pointer-events: none;
     }
 
-    .left-top { position: relative; z-index: 1; flex: 1; }
+    .lp-inner { position: relative; z-index: 2; display: flex; flex-direction: column; height: 100%; }
 
-    .left-logo {
-      display: flex; align-items: center; gap: 12px;
-      margin-bottom: 56px;
+    .masthead {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-bottom: 18px; border-bottom: 1.5px solid var(--ink);
     }
-    .left-logo-icon {
-      width: 38px; height: 38px; border-radius: 10px;
-      background: #1a4a46;
-      border: 1px solid rgba(184,208,200,.2);
-      display: flex; align-items: center; justify-content: center;
+    .mast-brand {
+      font-family: var(--serif); font-weight: 600;
+      font-size: 19px; letter-spacing: -.3px; color: var(--ink);
     }
-    .left-logo-icon svg { width: 20px; height: 20px; }
-    .left-logo-text { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
-    .left-logo-text span { color: #7BBBB5; }
-
-    .left-headline {
-      font-size: 36px; font-weight: 700; color: #fff;
-      line-height: 1.15; letter-spacing: -1.5px;
-      margin-bottom: 14px;
-    }
-    .left-headline span { color: #7BBBB5; }
-
-    .left-sub {
-      font-size: 14px; color: rgba(255,255,255,.4);
-      line-height: 1.7; max-width: 300px;
+    .mast-brand em { font-style: italic; color: var(--accent); }
+    .mast-meta {
+      font-family: var(--mono); font-size: 10.5px; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--ink-faint);
     }
 
-    /* Points clés */
-    .left-features {
-      display: flex; flex-direction: column; gap: 12px;
-      margin-top: 40px;
+    .edition-row {
+      display: flex; justify-content: space-between;
+      font-family: var(--mono); font-size: 10px; letter-spacing: 1.2px;
+      text-transform: uppercase; color: var(--ink-faint);
+      padding: 9px 0; border-bottom: 1px solid var(--line-2);
     }
-    .lf-item {
-      display: flex; align-items: center; gap: 12px;
-    }
-    .lf-icon {
-      width: 32px; height: 32px; border-radius: 8px;
-      background: rgba(184,208,200,.07);
-      border: 1px solid rgba(184,208,200,.12);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .lf-icon svg { width: 15px; height: 15px; }
-    .lf-text { font-size: 13px; color: rgba(255,255,255,.5); }
-    .lf-text strong { color: rgba(255,255,255,.8); font-weight: 600; }
 
-    .left-bottom {
-      position: relative; z-index: 1;
-      border-top: 1px solid rgba(255,255,255,.07);
-      padding-top: 20px;
-    }
-    .left-version { font-size: 11px; color: rgba(255,255,255,.2); }
+    .lp-body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 30px 0; }
 
-    /* Lien retour site */
+    .kicker {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 22px;
+      display: inline-flex; align-items: center; gap: 10px;
+    }
+    .kicker::before { content: ''; width: 28px; height: 1px; background: var(--accent); }
+
+    .headline {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: clamp(40px, 5.2vw, 66px);
+      line-height: .98;
+      letter-spacing: -1.5px;
+      color: var(--ink);
+    }
+    .headline em { font-style: italic; color: var(--forest); }
+    .headline .lead {
+      display: block;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: clamp(40px, 5.2vw, 66px);
+      color: var(--accent);
+    }
+
+    .dek {
+      font-family: var(--read);
+      font-size: 17px; line-height: 1.55; color: var(--ink-soft);
+      max-width: 30ch; margin-top: 26px;
+    }
+    .dek .dropcap {
+      float: left; font-family: var(--serif); font-weight: 500;
+      font-size: 52px; line-height: .8; padding: 6px 10px 0 0; color: var(--accent);
+    }
+
+    /* index list of features, editorial style */
+    .index {
+      margin-top: 38px; border-top: 1px solid var(--line-2);
+    }
+    .index-item {
+      display: flex; align-items: baseline; gap: 16px;
+      padding: 13px 0; border-bottom: 1px solid var(--line-2);
+    }
+    .ix-num {
+      font-family: var(--mono); font-size: 11px; color: var(--ink-faint);
+      letter-spacing: 1px; min-width: 26px;
+    }
+    .ix-title {
+      font-family: var(--serif); font-size: 17px; color: var(--ink);
+      letter-spacing: -.2px; flex: 1;
+    }
+    .ix-note { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-faint); }
+
+    .lp-foot {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 16px; border-top: 1.5px solid var(--ink);
+      font-family: var(--mono); font-size: 10px; letter-spacing: 1.2px;
+      text-transform: uppercase; color: var(--ink-faint);
+    }
     .back-to-site {
       display: inline-flex; align-items: center; gap: 7px;
-      font-size: 12px; font-weight: 500; color: rgba(255,255,255,.35);
-      text-decoration: none; margin-bottom: 32px;
-      transition: color .15s;
+      color: var(--ink); text-decoration: none; font-weight: 500;
+      transition: color .15s, gap .2s;
     }
-    .back-to-site:hover { color: rgba(255,255,255,.7); }
-    .back-to-site svg { width: 14px; height: 14px; }
+    .back-to-site:hover { color: var(--accent); gap: 11px; }
+    .back-to-site svg { width: 13px; height: 13px; }
 
-    /* ─── PANNEAU DROIT ─── */
+    /* ───────────── PANNEAU DROIT — formulaire ───────────── */
     .right-panel {
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 48px;
-      background: #F2EDE3;
       position: relative;
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px;
+      background: var(--card);
+    }
+    /* faint ledger lines behind card */
+    .right-panel::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background-image: linear-gradient(var(--line) 1px, transparent 1px);
+      background-size: 100% 34px; opacity: .35;
+      -webkit-mask-image: radial-gradient(80% 70% at 50% 45%, #000, transparent 80%);
+              mask-image: radial-gradient(80% 70% at 50% 45%, #000, transparent 80%);
     }
 
-    /* Carte */
     .login-card {
-      width: 100%; max-width: 360px;
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 2px 0 rgba(0,0,0,.06), 0 8px 32px rgba(0,0,0,.08), 0 32px 64px rgba(0,0,0,.05);
-      padding: 32px;
-      position: relative; z-index: 1;
+      position: relative; z-index: 2;
+      width: 100%; max-width: 384px;
     }
 
-    /* En-tête carte */
-    .card-header { margin-bottom: 24px; }
-    .card-greeting { font-size: 12px; color: #8aaa8a; font-weight: 500; margin-bottom: 4px; }
-    .card-title { font-size: 22px; font-weight: 700; color: #0F2A28; letter-spacing: -0.4px; }
-    .card-line {
-      width: 28px; height: 2px; border-radius: 2px;
-      background: linear-gradient(90deg, #0E4B47, #7BBBB5);
-      margin-top: 10px;
+    .card-header { margin-bottom: 26px; }
+    .card-greeting {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
     }
+    .card-title {
+      font-family: var(--serif); font-weight: 400; font-style: italic;
+      font-size: 46px; line-height: 1; letter-spacing: -1px; color: var(--ink);
+    }
+    .card-line { width: 46px; height: 2px; background: var(--ink); margin-top: 18px; }
 
-    /* Compte récent */
+    /* compte récent */
     .recent-account {
-      display: none; align-items: center; gap: 10px;
-      background: #f6faf2; border: 1.5px solid #d4e8b0;
-      border-radius: 10px; padding: 10px 12px;
-      margin-bottom: 16px; cursor: pointer;
-      transition: border-color .15s, background .15s;
+      display: none; align-items: center; gap: 12px;
+      background: var(--paper); border: 1px solid var(--line-2);
+      padding: 12px 14px; margin-bottom: 18px; cursor: pointer;
+      transition: border-color .15s, background .15s, transform .15s;
     }
-    .recent-account:hover { border-color: #0E4B47; background: #eef6e4; }
+    .recent-account:hover { border-color: var(--forest); transform: translateX(2px); }
     .recent-account.show { display: flex; }
     .ra-avatar {
-      width: 30px; height: 30px; border-radius: 8px;
-      background: #0E4B47; color: #fff;
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--forest); color: var(--paper);
       display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 13px; flex-shrink: 0;
+      font-family: var(--serif); font-weight: 600; font-size: 15px; flex-shrink: 0;
     }
     .ra-info { flex: 1; min-width: 0; }
-    .ra-name { font-size: 12px; font-weight: 600; color: #0F2A28; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ra-email { font-size: 11px; color: #9abaa0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ra-cta { font-size: 11px; font-weight: 700; color: #0E4B47; white-space: nowrap; }
+    .ra-name { font-family: var(--serif); font-size: 14px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ra-email { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ra-cta { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
 
-    /* Alerte */
+    /* alerte */
     .login-alert {
-      padding: 11px 13px; border-radius: 8px;
-      font-size: 13px; font-weight: 500;
-      margin-bottom: 16px; display: none;
-      animation: aIn .2s ease;
+      padding: 11px 14px; font-size: 14px; font-family: var(--read);
+      margin-bottom: 18px; display: none; border-left: 3px solid;
+      animation: aIn .25s ease;
     }
-    @keyframes aIn { from { opacity:0; transform:translateY(-3px); } to { opacity:1; transform:none; } }
-    .login-alert.error  { background: #fef0f0; color: #b03030; border: 1px solid #f0c0c0; display: block; }
-    .login-alert.warn   { background: #fff8ec; color: #8a5a00; border: 1px solid #f0d890; display: block; }
-    .login-alert.info   { background: #f0f6ff; color: #2050a0; border: 1px solid #c0d8f0; display: block; }
+    @keyframes aIn { from { opacity:0; transform:translateY(-3px);} to { opacity:1; transform:none;} }
+    .login-alert.error { background: #FBEDE8; color: #9A3214; border-color: var(--accent); display: block; }
+    .login-alert.warn  { background: #FAF2DF; color: #8A5A00; border-color: #C99A2E; display: block; }
+    .login-alert.info  { background: #ECF1EC; color: var(--forest); border-color: var(--forest-2); display: block; }
 
-    /* Champs */
-    .form-group { margin-bottom: 12px; }
+    /* champs */
+    .form-group { margin-bottom: 18px; }
     .form-label {
-      font-size: 11px; font-weight: 600; color: #4D6260;
-      text-transform: uppercase; letter-spacing: 0.7px;
-      margin-bottom: 6px; display: block;
+      font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+      letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-soft);
+      margin-bottom: 8px; display: block;
     }
     .input-wrap { position: relative; }
     .input-icon {
-      position: absolute; left: 12px; top: 50%;
-      transform: translateY(-50%); color: #B8D0C8;
-      pointer-events: none; display: flex;
+      position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      color: var(--ink-faint); pointer-events: none; display: flex;
     }
-    .input-icon svg { width: 15px; height: 15px; }
+    .input-icon svg { width: 16px; height: 16px; }
     .form-input {
-      width: 100%; padding: 12px 40px 12px 38px;
-      border-radius: 9px; border: 1.5px solid #e0e8d8;
-      background: #f9fbf6; font-size: 14px;
-      font-family: 'Inter', sans-serif; color: #0F2A28;
-      outline: none; transition: border-color .15s, box-shadow .15s, background .15s;
+      width: 100%; padding: 11px 40px 11px 26px;
+      border: none; border-bottom: 1.5px solid var(--line-2);
+      background: transparent; font-size: 16px; font-family: var(--read);
+      color: var(--ink); outline: none;
+      transition: border-color .18s;
     }
-    .form-input:focus {
-      border-color: #0E4B47; background: #fff;
-      box-shadow: 0 0 0 3px rgba(14,75,71,.07);
-    }
-    .form-input:hover:not(:focus) { border-color: #c0d8a8; }
+    .form-input::placeholder { color: var(--ink-faint); font-style: italic; }
+    .form-input:focus { border-bottom-color: var(--forest); }
+    .form-input:focus ~ .input-icon, .input-wrap:focus-within .input-icon { color: var(--forest); }
     .form-input.shake { animation: shake .3s ease; }
     @keyframes shake { 0%,100%{transform:none} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
 
-    .input-right {
-      position: absolute; right: 10px; top: 50%;
-      transform: translateY(-50%);
-    }
+    .input-right { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
     .toggle-pwd {
-      background: none; border: none; cursor: pointer;
-      color: #B8D0C8; padding: 4px; border-radius: 5px;
-      transition: color .12s; display: flex;
+      background: none; border: none; cursor: pointer; color: var(--ink-faint);
+      padding: 4px; transition: color .12s; display: flex;
     }
-    .toggle-pwd:hover { color: #0E4B47; }
+    .toggle-pwd:hover { color: var(--forest); }
 
-    /* Caps lock */
     .caps-warn {
       display: none; align-items: center; gap: 5px;
-      font-size: 11px; color: #a06000; font-weight: 600;
-      margin-top: 4px;
+      font-family: var(--mono); font-size: 10px; letter-spacing: .5px;
+      color: #8A5A00; margin-top: 7px;
     }
     .caps-warn.show { display: flex; }
 
-    /* Options */
-    .field-options { display: flex; justify-content: space-between; align-items: center; margin: 14px 0; }
+    .field-options { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 22px; }
     .remember-me {
-      display: flex; align-items: center; gap: 7px;
-      cursor: pointer; font-size: 13px; color: #8aaa8a; user-select: none;
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+      font-family: var(--mono); font-size: 11px; letter-spacing: .5px;
+      text-transform: uppercase; color: var(--ink-soft); user-select: none;
     }
-    .remember-me input { width: 14px; height: 14px; accent-color: #0E4B47; cursor: pointer; }
+    .remember-me input { width: 14px; height: 14px; accent-color: var(--forest); cursor: pointer; }
 
-    /* Bouton */
+    /* bouton */
     .login-btn {
-      width: 100%; padding: 13px; border-radius: 9px; border: none;
-      background: linear-gradient(135deg, #1a4a20, #2d6b1a);
-      color: #fff; font-size: 14px; font-weight: 600;
-      font-family: 'Inter', sans-serif; cursor: pointer;
-      transition: transform .15s, box-shadow .15s, opacity .15s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      box-shadow: 0 3px 12px rgba(30,80,20,.25);
+      width: 100%; padding: 15px; border: 1.5px solid var(--ink);
+      background: var(--ink); color: var(--paper);
+      font-family: var(--mono); font-size: 12px; font-weight: 500;
+      letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background .18s, color .18s, transform .12s;
       position: relative; overflow: hidden;
     }
-    .login-btn::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,.1), transparent);
-    }
-    .login-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(30,80,20,.32); }
-    .login-btn:active:not(:disabled) { transform: none; }
-    .login-btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; transform: none; }
-    .login-btn svg { width: 15px; height: 15px; }
+    .login-btn:hover:not(:disabled) { background: var(--forest); border-color: var(--forest); }
+    .login-btn:active:not(:disabled) { transform: translateY(1px); }
+    .login-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .login-btn svg { width: 15px; height: 15px; transition: transform .2s; }
+    .login-btn:hover:not(:disabled) svg { transform: translateX(3px); }
 
-    /* Tentatives */
-    .attempts-info { display: none; text-align: center; margin-top: 10px; font-size: 12px; font-weight: 600; color: #a05020; }
+    .attempts-info { display: none; text-align: center; margin-top: 14px; font-family: var(--mono); font-size: 11px; letter-spacing: .5px; color: var(--accent); }
     .attempts-info.show { display: block; }
-    .lockout-countdown { font-size: 18px; font-weight: 800; color: #b03030; text-align: center; display: none; margin-top: 6px; }
+    .lockout-countdown { font-family: var(--serif); font-size: 22px; font-weight: 600; color: var(--accent); text-align: center; display: none; margin-top: 8px; }
 
-    /* Footer carte */
     .card-footer {
-      text-align: center; margin-top: 20px;
-      font-size: 11px; color: #c0cfc0;
+      text-align: center; margin-top: 28px; padding-top: 18px;
+      border-top: 1px solid var(--line-2);
+      font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--ink-faint);
     }
-    .card-footer a { color: #9ab09a; text-decoration: none; }
-    .card-footer a:hover { color: #0E4B47; }
+    .card-footer a { color: var(--ink-soft); text-decoration: none; transition: color .15s; }
+    .card-footer a:hover { color: var(--accent); }
 
-    /* Badge statut serveur */
+    /* statut serveur */
     .server-badge {
-      position: absolute; bottom: 24px; right: 24px; z-index: 2;
-      display: flex; align-items: center; gap: 7px;
-      background: rgba(255,255,255,.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(14,75,71,.1);
-      padding: 6px 14px; border-radius: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+      position: absolute; bottom: 26px; right: 28px; z-index: 3;
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--ink-soft);
     }
-    .sb-dot { width: 6px; height: 6px; border-radius: 50%; background: #5ab52a; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-    .sb-text { font-size: 11px; font-weight: 600; color: #4D6260; }
+    .sb-dot { width: 7px; height: 7px; border-radius: 50%; background: #5DA06E; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
 
-    /* Overlay succès */
+    /* overlay succès */
     .success-overlay {
-      position: fixed; inset: 0;
-      background: rgba(10,24,8,.96);
+      position: fixed; inset: 0; background: var(--paper);
       z-index: 999; display: none;
       flex-direction: column; align-items: center; justify-content: center;
     }
-    .success-overlay.show { display: flex; animation: fadeIn .3s ease; }
+    .success-overlay.show { display: flex; animation: fadeIn .35s ease; }
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-    .so-check { width: 72px; height: 72px; margin-bottom: 20px; animation: popIn .4s cubic-bezier(.34,1.56,.64,1); }
+    .so-check { width: 76px; height: 76px; margin-bottom: 26px; animation: popIn .45s cubic-bezier(.34,1.56,.64,1); }
     @keyframes popIn { 0%{transform:scale(0);opacity:0} 100%{transform:scale(1);opacity:1} }
-    .so-circle { stroke:#5ab52a; stroke-width:4; fill:none; stroke-dasharray:220; stroke-dashoffset:220; animation:drawCircle .55s ease .1s forwards; }
+    .so-circle { stroke: var(--forest); stroke-width:3; fill:none; stroke-dasharray:220; stroke-dashoffset:220; animation:drawCircle .6s ease .1s forwards; }
     @keyframes drawCircle { to{stroke-dashoffset:0} }
-    .so-tick { stroke:#5ab52a; stroke-width:5; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:60; stroke-dashoffset:60; animation:drawTick .3s ease .6s forwards; }
+    .so-tick { stroke: var(--accent); stroke-width:4; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:60; stroke-dashoffset:60; animation:drawTick .35s ease .65s forwards; }
     @keyframes drawTick { to{stroke-dashoffset:0} }
-    .so-name { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -.4px; margin-bottom: 6px; }
-    .so-sub { font-size: 13px; color: rgba(255,255,255,.4); }
-    .so-bar { width: 180px; height: 2px; background: rgba(255,255,255,.1); border-radius: 2px; margin-top: 24px; overflow: hidden; }
-    .so-bar-fill { height: 100%; background: #5ab52a; border-radius: 2px; animation: soProgress 1.2s ease forwards; }
+    .so-name { font-family: var(--serif); font-style: italic; font-size: 32px; color: var(--ink); letter-spacing: -.5px; margin-bottom: 8px; }
+    .so-sub { font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-faint); }
+    .so-bar { width: 200px; height: 1.5px; background: var(--line-2); margin-top: 28px; overflow: hidden; }
+    .so-bar-fill { height: 100%; background: var(--accent); animation: soProgress 1.2s ease forwards; }
     @keyframes soProgress { from{width:0} to{width:100%} }
 
-    @media (max-width: 768px) {
+    /* reveal au chargement */
+    .reveal { opacity: 0; transform: translateY(14px); animation: reveal .7s cubic-bezier(.2,.7,.2,1) forwards; }
+    @keyframes reveal { to { opacity: 1; transform: none; } }
+    .d1{animation-delay:.05s}.d2{animation-delay:.13s}.d3{animation-delay:.21s}
+    .d4{animation-delay:.29s}.d5{animation-delay:.37s}.d6{animation-delay:.45s}
+
+    @media (max-width: 860px) {
       body { grid-template-columns: 1fr; }
       .left-panel { display: none; }
-      .right-panel { padding: 24px; background: #fff; }
-      #pentagon-bg { display: none; }
-      .login-card { box-shadow: none; padding: 0; max-width: 100%; }
+      .right-panel { padding: 32px 22px; background: var(--paper); }
+      .right-panel::before { display: none; }
+      .server-badge { bottom: 16px; right: 16px; }
     }
   </style>
 </head>
@@ -315,65 +350,72 @@
 
 <!-- ══ PANNEAU GAUCHE ══ -->
 <div class="left-panel">
+  <div class="lp-inner">
 
-  <div class="left-top">
-    <a href="/landing.html" class="back-to-site">
-      <svg viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Retour au site
-    </a>
-    <div class="left-logo">
-      <div class="left-logo-icon">
-        <svg viewBox="0 0 20 20" fill="none">
-          <path d="M3 6h14M3 10h9M3 14h11" stroke="#7BBBB5" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <div class="left-logo-text">Commande<span>IA</span></div>
+    <div class="masthead reveal d1">
+      <div class="mast-brand">Commande<em>IA</em></div>
+      <div class="mast-meta">Édition&nbsp;·&nbsp;2026</div>
     </div>
 
-    <div class="left-headline">La prise de<br>commande<br><span>réinventée.</span></div>
-    <div class="left-sub">Une IA qui décroche, comprend et envoie chaque commande en cuisine — sans erreur, 24h/24.</div>
+    <div class="edition-row reveal d2">
+      <span>Plateforme de restauration</span>
+      <span>N&deg; 02.0</span>
+    </div>
 
-    <div class="left-features">
-      <div class="lf-item">
-        <div class="lf-icon">
-          <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#7BBBB5" stroke-width="1.3"/><path d="M5 8h6M5 5h6M5 11h4" stroke="#7BBBB5" stroke-width="1.3" stroke-linecap="round"/></svg>
+    <div class="lp-body">
+      <div class="kicker reveal d2">Intelligence en cuisine</div>
+      <h1 class="headline reveal d3">
+        La prise de<br>
+        commande<br>
+        <span class="lead">réinventée.</span>
+      </h1>
+      <p class="dek reveal d4">
+        <span class="dropcap">U</span>ne IA qui décroche, comprend et envoie chaque commande en cuisine — sans erreur, à toute heure du jour et de la nuit.
+      </p>
+
+      <div class="index reveal d5">
+        <div class="index-item">
+          <span class="ix-num">01</span>
+          <span class="ix-title">Tableau de bord</span>
+          <span class="ix-note">Temps réel</span>
         </div>
-        <div class="lf-text"><strong>Dashboard</strong></div>
-      </div>
-      <div class="lf-item">
-        <div class="lf-icon">
-          <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="4" rx="1" stroke="#7BBBB5" stroke-width="1.3"/><rect x="2" y="8" width="12" height="4" rx="1" stroke="#7BBBB5" stroke-width="1.3"/></svg>
+        <div class="index-item">
+          <span class="ix-num">02</span>
+          <span class="ix-title">Gestion des stocks</span>
+          <span class="ix-note">Auto</span>
         </div>
-        <div class="lf-text"><strong>Stocks</strong></div>
-      </div>
-      <div class="lf-item">
-        <div class="lf-icon">
-          <svg viewBox="0 0 16 16" fill="none"><path d="M2 12L6 7l3 3 3-4 3 2" stroke="#7BBBB5" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="index-item">
+          <span class="ix-num">03</span>
+          <span class="ix-title">Analyse &amp; rapports</span>
+          <span class="ix-note">Insights</span>
         </div>
-        <div class="lf-text"><strong>Analyse & Rapports</strong></div>
       </div>
     </div>
-  </div>
 
-  <div class="left-bottom">
-    <div class="left-version">Commande-IA &nbsp;·&nbsp; v2.0 &nbsp;·&nbsp; © 2026</div>
+    <div class="lp-foot reveal d6">
+      <a href="/landing.html" class="back-to-site">
+        <svg viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Retour au site
+      </a>
+      <span>v2.0 · © 2026</span>
+    </div>
+
   </div>
 </div>
 
 <!-- ══ PANNEAU DROIT ══ -->
 <div class="right-panel">
 
-
   <div class="login-card">
 
-    <div class="card-header">
+    <div class="card-header reveal d2">
       <div class="card-greeting" id="card-greeting">Bienvenue</div>
       <div class="card-title">Connexion</div>
       <div class="card-line"></div>
     </div>
 
     <!-- Compte récent mémorisé -->
-    <div class="recent-account" id="recent-account" onclick="useRecentAccount()" title="Cliquer pour utiliser ce compte">
+    <div class="recent-account reveal d3" id="recent-account" onclick="useRecentAccount()" title="Cliquer pour utiliser ce compte">
       <div class="ra-avatar" id="ra-avatar">?</div>
       <div class="ra-info">
         <div class="ra-name" id="ra-name">—</div>
@@ -385,28 +427,28 @@
     <div class="login-alert" id="alert"></div>
 
     <!-- Email -->
-    <div class="form-group">
+    <div class="form-group reveal d3">
       <label class="form-label" for="email">Email</label>
       <div class="input-wrap">
+        <input class="form-input" type="email" id="email" placeholder="votre@email.com" autocomplete="email" />
         <span class="input-icon">
           <svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12v8H2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M2 4l6 4.5L14 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         </span>
-        <input class="form-input" type="email" id="email" placeholder="votre@email.com" autocomplete="email" />
       </div>
     </div>
 
     <!-- Mot de passe -->
-    <div class="form-group">
+    <div class="form-group reveal d4">
       <label class="form-label" for="password">Mot de passe</label>
       <div class="input-wrap">
+        <input class="form-input" type="password" id="password" placeholder="••••••••"
+          onkeyup="checkCapsLock(event)" autocomplete="current-password" />
         <span class="input-icon">
           <svg viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         </span>
-        <input class="form-input" type="password" id="password" placeholder="••••••••"
-          onkeyup="checkCapsLock(event)" autocomplete="current-password" />
         <span class="input-right">
           <button class="toggle-pwd" type="button" onclick="togglePwd()" title="Afficher/masquer">
-            <svg id="eye-icon" viewBox="0 0 16 16" fill="none" width="15" height="15">
+            <svg id="eye-icon" viewBox="0 0 16 16" fill="none" width="16" height="16">
               <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.3"/>
               <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/>
             </svg>
@@ -419,15 +461,21 @@
       </div>
     </div>
 
-    <button class="login-btn" id="login-btn" onclick="login()">
-      <svg viewBox="0 0 16 16" fill="none" width="15" height="15"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 5l3 3-3 3M13 8H6" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="field-options reveal d5">
+      <label class="remember-me">
+        <input type="checkbox" id="remember" /> Se souvenir
+      </label>
+    </div>
+
+    <button class="login-btn reveal d5" id="login-btn" onclick="login()">
       Se connecter
+      <svg viewBox="0 0 16 16" fill="none" width="15" height="15"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 5l3 3-3 3M13 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
 
     <div class="attempts-info" id="attempts-info"></div>
     <div class="lockout-countdown" id="lockout-countdown"></div>
 
-    <div class="card-footer">
+    <div class="card-footer reveal d6">
       <a href="/landing.html">Site web</a> &nbsp;·&nbsp;
       <a href="mailto:contact@commande-ia.com">Support</a>
     </div>
@@ -465,10 +513,10 @@
     const t0 = Date.now();
     await fetch('/ping', { signal: AbortSignal.timeout(4000) });
     const ms = Date.now() - t0;
-    document.getElementById('sb-dot').style.background = ms > 600 ? '#ffcc00' : '#5ab52a';
+    document.getElementById('sb-dot').style.background = ms > 600 ? '#C99A2E' : '#5DA06E';
     document.getElementById('sb-text').textContent = ms > 600 ? 'Latence élevée' : 'Système opérationnel';
   } catch {
-    document.getElementById('sb-dot').style.background = '#ff5050';
+    document.getElementById('sb-dot').style.background = '#B4502B';
     document.getElementById('sb-text').textContent = 'Hors ligne';
   }
   setTimeout(checkServer, 30000);
@@ -576,6 +624,13 @@ async function login() {
     sessionStorage.setItem('user', JSON.stringify(data.user));
     try { localStorage.removeItem('permissions_matrix_v1'); } catch {}
 
+    // Mémorisation du compte si "Se souvenir" est coché
+    try {
+      if (document.getElementById('remember')?.checked) {
+        localStorage.setItem('cia_remember', JSON.stringify({ email, name: data.user.prenom || data.user.nom || '' }));
+      }
+    } catch {}
+
     const name = data.user.prenom || data.user.nom || 'Vous';
     document.getElementById('so-name').textContent = 'Bienvenue, ' + name + ' !';
     document.getElementById('success-overlay').classList.add('show');
@@ -590,7 +645,7 @@ async function login() {
 
 function resetBtn() {
   const btn = document.getElementById('login-btn');
-  btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" width="15" height="15"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 5l3 3-3 3M13 8H6" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Se connecter';
+  btn.innerHTML = 'Se connecter <svg viewBox="0 0 16 16" fill="none" width="15" height="15"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 5l3 3-3 3M13 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 }
 
 function showAlert(type, msg) {

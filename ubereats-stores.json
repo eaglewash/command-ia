@@ -1,0 +1,4 @@
+{
+  "_commentaire": "Associe chaque store Uber Eats à un restaurant interne. Clé = store_id Uber, valeur = restaurantId. La clé \"*\" sert de valeur par défaut.",
+  "VOTRE_STORE_ID_UBER": "VOTRE_RESTAURANT_ID_INTERNE"
+}
