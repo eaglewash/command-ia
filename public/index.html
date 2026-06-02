@@ -12,7 +12,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: #EEF5F2; min-height: 100vh; color: #111; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #EEF5F2; min-height: 100vh; color: #111; position: relative; }
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(14,75,71,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14,75,71,.03) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+    body::after {
+      content: ''; position: fixed; z-index: 0; pointer-events: none;
+      width: 560px; height: 560px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(123,187,181,.16), transparent 65%);
+      top: -200px; right: -160px;
+    }
+    .topbar, .main, .sub-bar, .arch-view, .kds-view { position: relative; z-index: 1; }
 
     /* ═══ TOPBAR ═══ */
     .topbar {
@@ -47,7 +61,7 @@
     .topbar-stats { display: flex; align-items: stretch; gap: 1px; background: rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; padding: 1px; }
     .stat-block { padding: 8px 22px; display: flex; flex-direction: column; align-items: center; gap: 3px; background: rgba(255,255,255,0.05); border-radius: 10px; min-width: 80px; }
     .stat-label { font-size: 9px; font-weight: 600; color: rgba(184,208,200,0.7); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
-    .stat-value { font-size: 24px; font-weight: 700; color: #fff; line-height: 1; }
+    .stat-value { font-size: 24px; font-weight: 700; color: #fff; line-height: 1; font-variant-numeric: tabular-nums; }
     .stat-value.accent { color: #B8D0C8; }
     .stat-value.small { font-size: 14px; padding-top: 5px; color: #B8D0C8; }
 
@@ -134,12 +148,23 @@
     /* ═══ ORDER CARDS (redesign) ═══ */
     .cmd-card {
       background: #fff; border: 1.5px solid #B8D0C8; border-radius: 16px;
-      padding: 0; cursor: pointer; transition: all 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden;
-      animation: cardIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+      padding: 0; cursor: pointer;
+      transition: border-color .2s ease, box-shadow .25s ease, transform .2s cubic-bezier(0.22,1,0.36,1);
+      box-shadow: 0 2px 6px rgba(14,75,71,0.06); overflow: hidden;
+      animation: cardIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
       position: relative;
     }
-    @keyframes cardIn { from { opacity:0; transform: translateY(14px) scale(0.97); } to { opacity:1; transform: none; } }
+    @keyframes cardIn { from { opacity:0; transform: translateY(16px) scale(0.97); } to { opacity:1; transform: none; } }
+    /* apparition echelonnee des premieres cartes */
+    #cards-container .cmd-card:nth-child(1){animation-delay:.02s}
+    #cards-container .cmd-card:nth-child(2){animation-delay:.06s}
+    #cards-container .cmd-card:nth-child(3){animation-delay:.10s}
+    #cards-container .cmd-card:nth-child(4){animation-delay:.14s}
+    #cards-container .cmd-card:nth-child(5){animation-delay:.18s}
+    #cards-container .cmd-card:nth-child(6){animation-delay:.22s}
+    #cards-container .cmd-card:nth-child(7){animation-delay:.26s}
+    #cards-container .cmd-card:nth-child(8){animation-delay:.30s}
+    #cards-container .cmd-card:nth-child(9){animation-delay:.34s}
     .cmd-card:hover { border-color: #7BBBB5; box-shadow: 0 8px 24px rgba(14,75,71,0.1); transform: translateY(-2px); }
     .cmd-card.selected { border-color: #0E4B47; border-width: 2px; box-shadow: 0 8px 28px rgba(14,75,71,0.15); }
 
@@ -424,7 +449,7 @@
 
     /* ═══ CUISINE ═══ */
     .cuisine-panel { display: none; padding: 24px; gap: 14px; flex-wrap: wrap; align-content: flex-start; grid-column: 1/-1; }
-    .kitchen-card { background: #fff; border: 1.5px solid #B8D0C8; border-radius: 14px; padding: 18px; width: calc(33.33% - 10px); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .kitchen-card { background: #fff; border: 1.5px solid #B8D0C8; border-radius: 14px; padding: 18px; width: calc(33.33% - 10px); box-shadow: 0 2px 6px rgba(14,75,71,0.06); }
     .kitchen-name { font-size: 16px; font-weight: 700; color: #0F2A28; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1.5px solid #CFE0D9; }
     .kitchen-item { font-size: 13px; color: #4D6260; padding: 4px 0; }
 
