@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-512.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0E4B47">
+  <meta name="description" content="Commande-IA — gestion de restaurant en temps réel : commandes, cuisine, stocks, réservations.">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <meta http-equiv="Expires" content="0"/>
@@ -302,7 +307,7 @@
     .assign-cancel-btn:hover { background:rgba(0,0,0,.22); }
     /* Pulse sur tables en mode assignation */
     .canvas-area.assign-mode .tbl-block:not(.decor-item) { cursor:crosshair !important; animation:tablePulse 1.2s ease-in-out infinite alternate; }
-    @keyframes tablePulse { from{box-shadow:0 2px 8px rgba(0,0,0,.12)} to{box-shadow:0 0 0 3px rgba(242,193,78,.6),0 4px 16px rgba(0,0,0,.12)} }
+    @keyframes tablePulse { from{box-shadow:0 2px 8px rgba(14,75,71,.12)} to{box-shadow:0 0 0 3px rgba(242,193,78,.6),0 4px 16px rgba(14,75,71,.12)} }
 
     /* ══ SNACKBAR ══ */
     .snackbar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #0E4B47; color: #fff; padding: 12px 24px; border-radius: 10px; font-size: 13px; font-weight: 600; z-index: 3000; transition: transform .3s; pointer-events: none; white-space: nowrap; }

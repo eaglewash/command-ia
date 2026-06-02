@@ -2,6 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-512.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0E4B47">
+  <meta name="description" content="Commande-IA — gestion de restaurant en temps réel : commandes, cuisine, stocks, réservations.">
 <title>Réservations — Commande-IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -107,7 +112,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;background-imag
 .slot-content{flex:1;padding:6px 12px;border-bottom:1px solid #f8faf5;display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
 .slot-content:last-child{border-bottom:none}
 .resa-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;cursor:pointer;transition:all .15s;border:1.5px solid transparent;position:relative;min-width:160px}
-.resa-chip:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.resa-chip:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(14,75,71,.1)}
 .resa-chip.s-confirmed{background:#dcfce7;border-color:#86efac}
 .resa-chip.s-pending{background:#fef9c3;border-color:#fde047}
 .resa-chip.s-cancelled{background:#fee2e2;border-color:#fca5a5;opacity:.7}
@@ -169,7 +174,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;background-imag
 .btn-sms:hover{background:#e0f4d0}
 
 /* ── DETAIL PANEL (slide-in from right) ──────────────────────────────── */
-.detail-panel{position:fixed;top:72px;right:-380px;bottom:0;width:360px;background:#fff;border-left:1.5px solid #B8D0C8;z-index:150;transition:right .25s cubic-bezier(.4,0,.2,1);overflow-y:auto;box-shadow:-8px 0 24px rgba(0,0,0,.08)}
+.detail-panel{position:fixed;top:72px;right:-380px;bottom:0;width:360px;background:#fff;border-left:1.5px solid #B8D0C8;z-index:150;transition:right .25s cubic-bezier(.4,0,.2,1);overflow-y:auto;box-shadow:-8px 0 24px rgba(14,75,71,.08)}
 .detail-panel.open{right:0}
 .dp-header{padding:20px;border-bottom:1px solid #f0f6ee;position:sticky;top:0;background:#fff;z-index:1}
 .dp-close{width:28px;height:28px;border-radius:7px;border:none;background:#EEF5F2;cursor:pointer;font-size:16px;font-family:'Inter',sans-serif;transition:background .1s}

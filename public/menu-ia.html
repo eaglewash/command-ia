@@ -2,6 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-512.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0E4B47">
+  <meta name="description" content="Commande-IA — gestion de restaurant en temps réel : commandes, cuisine, stocks, réservations.">
 <title>Carte & Menu — Commande-IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -154,7 +159,7 @@ tbody tr:hover td{background:#fafdf7}
 /* ── Drawer (modale latérale) ── */
 .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;opacity:0;pointer-events:none;transition:opacity .25s}
 .drawer-overlay.open{opacity:1;pointer-events:all}
-.drawer{position:fixed;top:0;right:-540px;width:540px;max-width:100vw;height:100vh;background:#fff;z-index:301;display:flex;flex-direction:column;transition:right .3s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 40px rgba(0,0,0,.15)}
+.drawer{position:fixed;top:0;right:-540px;width:540px;max-width:100vw;height:100vh;background:#fff;z-index:301;display:flex;flex-direction:column;transition:right .3s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 40px rgba(14,75,71,.15)}
 .drawer.open{right:0}
 .drawer-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1.5px solid #EEF5F2;flex-shrink:0}
 .drawer-title{font-size:17px;font-weight:800;color:#0F2A28;letter-spacing:-.3px}
@@ -230,7 +235,7 @@ tbody tr:hover td{background:#fafdf7}
 /* ── Confirm modal ── */
 .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .confirm-overlay.open{opacity:1;pointer-events:all}
-.confirm-box{background:#fff;border-radius:16px;padding:28px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.confirm-box{background:#fff;border-radius:16px;padding:28px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(14,75,71,.2)}
 .confirm-title{font-size:16px;font-weight:800;color:#0F2A28;margin-bottom:8px}
 .confirm-sub{font-size:13px;color:#4D6260;margin-bottom:20px;line-height:1.5}
 .confirm-actions{display:flex;gap:10px;justify-content:flex-end}

@@ -38,10 +38,19 @@
    BODY & PAGE
 ══════════════════════════════════════════════════════ */
 body {
-  background: #EEF5F2 !important;
+  background-color: #EEF5F2 !important;
+  background-image:
+    radial-gradient(560px circle at top right, rgba(123,187,181,.16), transparent 60%),
+    linear-gradient(rgba(14,75,71,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14,75,71,.03) 1px, transparent 1px) !important;
+  background-size: auto, 44px 44px, 44px 44px !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat, repeat, repeat !important;
   color: #0F2A28 !important;
   font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
 }
+/* Chiffres stables (stats temps réel) */
+.stat-value, .panel-count, .chrono-big, .cmd-number { font-variant-numeric: tabular-nums; }
 
 /* ══════════════════════════════════════════════════════
    TOPBAR
@@ -638,3 +647,55 @@ a:not([class]):hover { color: #0A3D3A !important; }
    NOUVEAU MENU BURGER (burger-menu.js)
 ══════════════════════════════════════════════════════ */
 .bn-menu { font-family: 'Inter', system-ui, sans-serif !important; }
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE (tablette / mobile) — partagé toutes pages
+══════════════════════════════════════════════════════ */
+
+/* Tablette */
+@media (max-width: 1024px) {
+  #cards-container { grid-template-columns: repeat(2, 1fr) !important; }
+  .arch-stats-bar { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+/* Tablette portrait / petit écran */
+@media (max-width: 900px) {
+  .topbar {
+    height: auto !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    padding: 12px 16px !important;
+  }
+  .topbar-stats { width: 100%; overflow-x: auto; justify-content: flex-start !important; }
+  .topbar-left, .topbar-right { flex-wrap: wrap; }
+
+  /* Dashboard : passe en une colonne, le panneau détail se met dessous */
+  .main { grid-template-columns: 1fr !important; }
+  .detail-panel {
+    border-left: none !important;
+    border-top: 1.5px solid #B8D0C8 !important;
+    max-height: 60vh;
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  #cards-container { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .arch-stats-bar { grid-template-columns: repeat(2, 1fr) !important; }
+  .kitchen-card { width: 100% !important; }
+
+  .stat-block { padding: 6px 14px !important; min-width: 64px !important; }
+  .stat-value { font-size: 19px !important; }
+
+  /* zones scrollables horizontalement plutôt que cassées */
+  .arch-table, .tabs, .sub-bar { overflow-x: auto; }
+
+  /* confort tactile : cibles un peu plus grandes */
+  .btn, .tab, .menu-item { min-height: 38px; }
+}
+
+/* Très petit mobile */
+@media (max-width: 380px) {
+  .stat-block:nth-child(n+4) { display: none; }
+  .topbar { padding: 10px 12px !important; }
+}

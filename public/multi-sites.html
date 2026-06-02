@@ -3,12 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-512.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0E4B47">
+  <meta name="description" content="Commande-IA — gestion de restaurant en temps réel : commandes, cuisine, stocks, réservations.">
 <title>Multi-Sites – Commande-IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:100vh}
-.topbar{background:#0E4B47;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.topbar{background:#0E4B47;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(14,75,71,.3)}
 .tl{display:flex;align-items:center;gap:14px}
 .logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:1.1rem}
 .logo-icon{width:32px;height:32px;background:#0E4B47;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -50,7 +55,7 @@ body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:
 /* Restaurant grid */
 .restos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
 .resto-card{background:#fff;border-radius:12px;border:1.5px solid #B8D0C8;padding:18px;transition:all .2s;cursor:pointer;position:relative}
-.resto-card:hover{border-color:#0E4B47;box-shadow:0 4px 16px rgba(0,0,0,.07);transform:translateY(-1px)}
+.resto-card:hover{border-color:#0E4B47;box-shadow:0 4px 16px rgba(14,75,71,.07);transform:translateY(-1px)}
 .rc-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
 .rc-avatar{width:42px;height:42px;border-radius:10px;background:var(--ac);display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:800;color:#fff;flex-shrink:0}
 .rc-name{font-size:.95rem;font-weight:800;color:#1a2e1a;line-height:1.2;margin-bottom:2px}
@@ -82,7 +87,7 @@ body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:
 .vbtn{padding:4px 10px;border-radius:5px;font-size:.75rem;font-weight:600;cursor:pointer;color:rgba(255,255,255,.55);transition:all .2s;border:none;background:transparent;font-family:'Inter',sans-serif}
 .vbtn.active{background:rgba(255,255,255,.18);color:#fff}
 
-.detail-drawer{position:fixed;right:0;top:56px;bottom:0;width:360px;background:#fff;border-left:1.5px solid #B8D0C8;z-index:50;transform:translateX(100%);transition:transform .3s;overflow-y:auto;box-shadow:-8px 0 24px rgba(0,0,0,.1)}
+.detail-drawer{position:fixed;right:0;top:56px;bottom:0;width:360px;background:#fff;border-left:1.5px solid #B8D0C8;z-index:50;transform:translateX(100%);transition:transform .3s;overflow-y:auto;box-shadow:-8px 0 24px rgba(14,75,71,.1)}
 .detail-drawer.open{transform:translateX(0)}
 .dd-head{padding:18px;border-bottom:1.5px solid #B8D0C8;display:flex;align-items:center;justify-content:space-between}
 .dd-title{font-size:.95rem;font-weight:800;color:#1a2e1a}

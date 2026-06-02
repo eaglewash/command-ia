@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-512.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0E4B47">
+  <meta name="description" content="Commande-IA — gestion de restaurant en temps réel : commandes, cuisine, stocks, réservations.">
 <title>Multi-Langues – Commande-IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -10,7 +15,7 @@
 body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:100vh}
 
 /* ── TOPBAR ── */
-.topbar{background:#0E4B47;padding:0 24px;height:72px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.topbar{background:#0E4B47;padding:0 24px;height:72px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(14,75,71,.3)}
 .tl{display:flex;align-items:center;gap:16px}
 .logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:1.1rem;text-decoration:none}
 .logo-icon{width:36px;height:36px;background:#0E4B47;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -138,7 +143,7 @@ body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:
 
 /* ── MODAL ── */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:#fff;border-radius:16px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:slideUp .2s ease}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(14,75,71,.2);animation:slideUp .2s ease}
 @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 .modal-head{padding:20px 24px 16px;border-bottom:1.5px solid #B8D0C8;display:flex;align-items:center;justify-content:space-between}
 .modal-head h3{font-size:1rem;font-weight:700}

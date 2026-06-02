@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-512.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0E4B47">
+  <meta name="description" content="Commande-IA — gestion de restaurant en temps réel : commandes, cuisine, stocks, réservations.">
   <title>Admin — Commande-IA</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -72,7 +77,7 @@
 
     /* ── RESTAURANT CARD ── */
     .rcard { background: #fff; border: 1px solid #eaeeea; border-radius: 12px; padding: 20px; transition: box-shadow 0.15s; }
-    .rcard:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .rcard:hover { box-shadow: 0 4px 20px rgba(14,75,71,0.06); }
     .rcard-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
     .rcard-identity { display: flex; align-items: center; gap: 11px; }
     .rcard-avatar { width: 38px; height: 38px; border-radius: 10px; background: #f0f7e8; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #0E4B47; flex-shrink: 0; }
@@ -274,13 +279,13 @@
     .toggle-switch { position: relative; width: 36px; height: 20px; display: inline-block; }
     .toggle-switch input { opacity: 0; width: 0; height: 0; }
     .toggle-slider { position: absolute; inset: 0; background: #ddd; border-radius: 20px; cursor: pointer; transition: 0.2s; }
-    .toggle-slider:before { content:''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+    .toggle-slider:before { content:''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(14,75,71,0.15); }
     input:checked + .toggle-slider { background: #5ab52a; }
     input:checked + .toggle-slider:before { transform: translateX(16px); }
 
     /* ── EXPORT ── */
     .export-card { background: #fff; border: 1px solid #eaeeea; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 10px; transition: all 0.15s; cursor: pointer; }
-    .export-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); border-color: #c8e0c8; }
+    .export-card:hover { box-shadow: 0 4px 16px rgba(14,75,71,0.06); border-color: #c8e0c8; }
     .export-icon { width: 42px; height: 42px; border-radius: 10px; background: #f0f7e8; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
     .export-label { font-size: 13px; font-weight: 600; color: #111; }
     .export-desc { font-size: 12px; color: #aaa; margin-top: 2px; }
@@ -288,7 +293,7 @@
 
     /* ── RECHERCHE GLOBALE — COMMAND PALETTE ── */
     /* Floating dropdown from topbar */
-    .gs-drop { display:none; position:fixed; top:54px; left:50%; transform:translateX(-50%); width:min(720px,88vw); background:#fff; border:1.5px solid #B8D0C8; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,0.18),0 4px 16px rgba(0,0,0,0.08); z-index:2000; overflow:hidden; }
+    .gs-drop { display:none; position:fixed; top:54px; left:50%; transform:translateX(-50%); width:min(720px,88vw); background:#fff; border:1.5px solid #B8D0C8; border-radius:16px; box-shadow:0 20px 60px rgba(14,75,71,0.18),0 4px 16px rgba(14,75,71,0.08); z-index:2000; overflow:hidden; }
     .gs-drop.open { display:block; animation:gsDrop 0.16s ease; }
     @keyframes gsDrop { from{opacity:0;transform:translateX(-50%) translateY(-6px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
     .gs-drop-tip { padding:8px 16px; background:#fafdf8; border-bottom:1px solid #f0f4ee; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
@@ -337,7 +342,7 @@
     .gs-section-block { margin-bottom:26px; }
     .gs-section-title { font-size:11px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
     .gs-full-item { background:#fff; border:1px solid #eaeeea; border-radius:10px; padding:13px 16px; margin-bottom:8px; cursor:pointer; transition:box-shadow 0.12s,border-color 0.12s; display:flex; align-items:flex-start; gap:13px; }
-    .gs-full-item:hover { box-shadow:0 3px 14px rgba(0,0,0,0.07); border-color:#B8D0C8; }
+    .gs-full-item:hover { box-shadow:0 3px 14px rgba(14,75,71,0.07); border-color:#B8D0C8; }
     .gs-full-item-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
     .gs-full-item-body { flex:1; min-width:0; }
     .gs-full-item-name { font-size:13px; font-weight:600; color:#111; margin-bottom:2px; }
@@ -350,7 +355,7 @@
     /* ── MODAL ── */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 999; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
     .modal-overlay.open { display: flex; }
-    .modal { background: #fff; border-radius: 16px; padding: 32px; width: 100%; max-width: 460px; box-shadow: 0 24px 60px rgba(0,0,0,0.12); }
+    .modal { background: #fff; border-radius: 16px; padding: 32px; width: 100%; max-width: 460px; box-shadow: 0 24px 60px rgba(14,75,71,0.12); }
     .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
     .modal-title { font-size: 17px; font-weight: 700; color: #111; letter-spacing: -0.3px; }
     .modal-close { width: 28px; height: 28px; border-radius: 6px; border: none; background: #f5f5f5; color: #666; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.12s; }
@@ -380,7 +385,7 @@
 
     /* ── NOTIFICATIONS TOAST ── */
     #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
-    .toast { background: #fff; border: 1px solid #eaeeea; border-radius: 10px; padding: 12px 16px; font-size: 12px; font-weight: 600; color: #333; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); animation: slideUp 0.3s ease; max-width: 320px; }
+    .toast { background: #fff; border: 1px solid #eaeeea; border-radius: 10px; padding: 12px 16px; font-size: 12px; font-weight: 600; color: #333; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 16px rgba(14,75,71,0.1); animation: slideUp 0.3s ease; max-width: 320px; }
     @keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     .toast.success { border-color: #c8e8a0; }
     .toast.error { border-color: #f5c5c5; color: #b03030; }
@@ -461,7 +466,7 @@
     .am-tabs { display:flex; gap:4px; margin-bottom:20px; background:#f6f8f6; padding:4px; border-radius:10px; width:fit-content; }
     .am-tab { padding:7px 18px; border-radius:7px; border:none; font-size:12px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; background:transparent; color:#6a8a6a; transition:all .14s; }
     .am-tab:hover { background:rgba(14,75,71,.06); color:#0E4B47; }
-    .am-tab.active { background:#fff; color:#0E4B47; box-shadow:0 1px 4px rgba(0,0,0,.10); }
+    .am-tab.active { background:#fff; color:#0E4B47; box-shadow:0 1px 4px rgba(14,75,71,.10); }
     .am-tab-content { display:none; }
     .am-tab-content.active { display:block; }
 
@@ -470,7 +475,7 @@
     .am-toggle-track { width:38px; height:22px; background:#ccc; border-radius:11px; position:relative; transition:background .2s; flex-shrink:0; }
     .am-master-toggle input:checked + .am-toggle-track { background:#0E4B47; }
     .am-master-toggle input { display:none; }
-    .am-toggle-thumb { position:absolute; top:3px; left:3px; width:16px; height:16px; background:#fff; border-radius:50%; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+    .am-toggle-thumb { position:absolute; top:3px; left:3px; width:16px; height:16px; background:#fff; border-radius:50%; transition:left .2s; box-shadow:0 1px 3px rgba(14,75,71,.2); }
     .am-master-toggle input:checked + .am-toggle-track .am-toggle-thumb { left:19px; }
     .am-toggle-label { font-size:12px; font-weight:600; color:#444; }
 
@@ -487,7 +492,7 @@
     .am-cat-toggle input { display:none; }
     .am-cat-toggle-track { position:absolute; inset:0; background:#ccc; border-radius:10px; cursor:pointer; transition:background .2s; }
     .am-cat-toggle input:checked + .am-cat-toggle-track { background:#0E4B47; }
-    .am-cat-toggle-thumb { position:absolute; top:2px; left:2px; width:16px; height:16px; background:#fff; border-radius:50%; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,.2); pointer-events:none; }
+    .am-cat-toggle-thumb { position:absolute; top:2px; left:2px; width:16px; height:16px; background:#fff; border-radius:50%; transition:left .2s; box-shadow:0 1px 3px rgba(14,75,71,.2); pointer-events:none; }
     .am-cat-toggle input:checked ~ .am-cat-toggle-thumb { left:18px; }
     .am-cat-settings { padding:0 16px 14px; border-top:1px solid #f0f5f3; padding-top:12px; display:none; }
     .am-cat-card.enabled .am-cat-settings, .am-cat-settings.force-show { display:block; }
@@ -564,7 +569,7 @@
       <div id="admin-bell-badge" style="position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;background:#e05555;border-radius:9px;font-size:9px;font-weight:800;color:#fff;display:none;align-items:center;justify-content:center;padding:0 4px;border:2px solid #0E4B47">0</div>
     </div>
     <!-- Panel notifications -->
-    <div id="admin-bell-panel" style="display:none;position:fixed;top:68px;right:16px;width:380px;background:#fff;border:1.5px solid #e0e8e0;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.14);z-index:9999;overflow:hidden">
+    <div id="admin-bell-panel" style="display:none;position:fixed;top:68px;right:16px;width:380px;background:#fff;border:1.5px solid #e0e8e0;border-radius:14px;box-shadow:0 12px 40px rgba(14,75,71,.14);z-index:9999;overflow:hidden">
       <div style="padding:12px 16px;background:#0E4B47;display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:13px;font-weight:700;color:#fff">🔔 Notifications</span>
         <button onclick="clearAdminBell()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Tout effacer</button>
@@ -1595,7 +1600,7 @@
 
 <!-- MODAL NOUVEAU PROSPECT -->
 <div class="tk-panel-overlay" id="prospect-modal-overlay" onclick="closeProspectModal()" style="display:none;opacity:0;background:rgba(0,0,0,.45)"></div>
-<div id="prospect-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:#fff;border-radius:20px;width:min(520px,92vw);box-shadow:0 24px 80px rgba(0,0,0,.2);overflow:hidden">
+<div id="prospect-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:#fff;border-radius:20px;width:min(520px,92vw);box-shadow:0 24px 80px rgba(14,75,71,.2);overflow:hidden">
   <div style="background:linear-gradient(135deg,#2d6a0f,#4a9c20);padding:24px 28px;color:#fff">
     <div style="font-size:18px;font-weight:800"><span data-icon="target"></span> Nouveau prospect</div>
     <div style="font-size:13px;opacity:.8;margin-top:4px">Crée un compte démo personnalisé &amp; sécurisé</div>
@@ -1655,7 +1660,7 @@
 </div>
 
 <!-- MODAL CREDENTIALS (après création) -->
-<div id="creds-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1001;background:#fff;border-radius:20px;width:min(440px,92vw);box-shadow:0 24px 80px rgba(0,0,0,.25);overflow:hidden">
+<div id="creds-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1001;background:#fff;border-radius:20px;width:min(440px,92vw);box-shadow:0 24px 80px rgba(14,75,71,.25);overflow:hidden">
   <div style="background:linear-gradient(135deg,#1a3a08,#2d6a0f);padding:22px 24px;color:#fff;text-align:center">
     <div style="font-size:28px;margin-bottom:8px"><span data-icon="party"></span></div>
     <div style="font-size:17px;font-weight:800">Compte démo créé !</div>
@@ -3225,7 +3230,7 @@ function showMdpModal(pwd, id) {
   m.id = 'mdp-modal';
   m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
   m.innerHTML = `
-    <div style="background:#fff;border-radius:16px;padding:32px 36px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.18);text-align:center">
+    <div style="background:#fff;border-radius:16px;padding:32px 36px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(14,75,71,.18);text-align:center">
       <div style="font-size:32px;margin-bottom:8px">🔑</div>
       <div style="font-size:17px;font-weight:700;color:#0F2A28;margin-bottom:6px">Nouveau mot de passe</div>
       <div style="font-size:12px;color:#4D6260;margin-bottom:20px">Communiquez-le à l'employé et fermez ensuite.</div>
@@ -5615,7 +5620,7 @@ async function amOpenTest(catKey) {
   const modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;';
   modal.innerHTML = `
-    <div style="background:#fff;border-radius:16px;padding:26px;width:440px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="background:#fff;border-radius:16px;padding:26px;width:440px;box-shadow:0 20px 60px rgba(14,75,71,.25)">
       <div style="font-size:15px;font-weight:700;color:#0F2A28;margin-bottom:6px">${meta.icon||'▶'} Tester "${meta.label || catKey}"</div>
       <div style="font-size:11px;color:#aaa;margin-bottom:16px">Le message sera envoyé immédiatement et apparaîtra dans la conv "Messages automatiques" du restaurant.</div>
       <label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Restaurant</label>

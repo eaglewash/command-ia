@@ -2,6 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-512.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0E4B47">
+  <meta name="description" content="Commande-IA — gestion de restaurant en temps réel : commandes, cuisine, stocks, réservations.">
 <title>Feedback Clients — Commande-IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -46,7 +51,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;min-height:100v
 .filter-pill{font-size:11px;font-weight:600;padding:5px 12px;border-radius:16px;border:1.5px solid #B8D0C8;background:#fff;color:#4D6260;cursor:pointer;font-family:'Inter',sans-serif;transition:all .12s}
 .filter-pill.active{background:#0E4B47;color:#B8D0C8;border-color:#0E4B47}
 .avis-card{background:#fff;border:1.5px solid #B8D0C8;border-radius:12px;padding:16px;margin-bottom:10px;transition:box-shadow .2s}
-.avis-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.avis-card:hover{box-shadow:0 4px 16px rgba(14,75,71,.06)}
 .avis-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
 .avis-avatar{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
 .avis-name{font-size:13px;font-weight:700;color:#0F2A28}
@@ -74,7 +79,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;min-height:100v
 /* Modal */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
 .modal-overlay.open{display:flex}
-.modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,.12);animation:mIn .2s}
+.modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(14,75,71,.12);animation:mIn .2s}
 @keyframes mIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
 .mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .mt{font-size:16px;font-weight:700;color:#0F2A28}
@@ -88,7 +93,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;min-height:100v
 .star-btn:hover{transform:scale(1.2)}
 .mf{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
 #toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
-.toast{background:#fff;border:1px solid #B8D0C8;border-radius:10px;padding:12px 16px;font-size:12px;font-weight:600;color:#333;box-shadow:0 6px 20px rgba(0,0,0,.1);animation:ti .25s ease}
+.toast{background:#fff;border:1px solid #B8D0C8;border-radius:10px;padding:12px 16px;font-size:12px;font-weight:600;color:#333;box-shadow:0 6px 20px rgba(14,75,71,.1);animation:ti .25s ease}
 @keyframes ti{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
   </style>
@@ -264,7 +269,7 @@ function showPendingDeletions() {
   // Simple overlay
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:600;display:flex;align-items:center;justify-content:center';
-  overlay.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:460px;max-width:95vw;max-height:80vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.15)">
+  overlay.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:460px;max-width:95vw;max-height:80vh;overflow-y:auto;box-shadow:0 24px 60px rgba(14,75,71,.15)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <span style="font-size:16px;font-weight:800;color:#0F2A28">Demandes de suppression (${requests.length})</span>
       <button onclick="this.closest('[style]').remove()" style="border:none;background:#f0f0f0;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:16px"><span data-icon="x"></span></button>

@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-512.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0E4B47">
+  <meta name="description" content="Commande-IA — gestion de restaurant en temps réel : commandes, cuisine, stocks, réservations.">
   <title>Commande-IA</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0E4B47">
@@ -45,7 +50,7 @@
       display: none; position: absolute; top: 52px; left: 0;
       width: 280px; background: #fff;
       border: 1.5px solid #B8D0C8; border-radius: 14px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 999; overflow: hidden;
+      box-shadow: 0 8px 24px rgba(14,75,71,0.12); z-index: 999; overflow: hidden;
       animation: menuIn 0.15s ease; max-height: calc(100vh - 70px);
     }
     @keyframes menuIn { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform: translateY(0); } }
@@ -357,7 +362,7 @@
     .arch-view-toggle { display: flex; gap: 2px; background: #CFE0D9; padding: 3px; border-radius: 9px; margin-left: auto; }
     .arch-view-btn { padding: 6px 12px; border-radius: 6px; border: none; background: transparent; cursor: pointer; font-size: 12px; font-weight: 600; color: #4D6260; font-family: 'Inter', sans-serif; transition: all 0.15s; display: flex; align-items: center; gap: 5px; }
     .arch-view-btn:hover { color: #0E4B47; }
-    .arch-view-btn.active { background: #fff; color: #0E4B47; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .arch-view-btn.active { background: #fff; color: #0E4B47; box-shadow: 0 1px 4px rgba(14,75,71,0.08); }
 
     /* Content */
     .arch-content { flex: 1; overflow-y: auto; padding: 24px 28px; }
@@ -426,7 +431,7 @@
 
     /* Archive detail modal */
     .arch-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 10000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.15s; backdrop-filter: blur(3px); }
-    .arch-modal { background: #fff; border-radius: 22px; width: 480px; max-height: 85vh; overflow-y: auto; box-shadow: 0 32px 80px rgba(0,0,0,0.2); animation: modalIn 0.25s cubic-bezier(0.22,1,0.36,1); }
+    .arch-modal { background: #fff; border-radius: 22px; width: 480px; max-height: 85vh; overflow-y: auto; box-shadow: 0 32px 80px rgba(14,75,71,0.2); animation: modalIn 0.25s cubic-bezier(0.22,1,0.36,1); }
     .arch-modal-top { padding: 24px 26px 16px; background: linear-gradient(135deg, #0E4B47, #0A3D3A); border-radius: 22px 22px 0 0; color: #fff; }
     .arch-modal-id { font-size: 11px; font-weight: 700; color: #B8D0C8; margin-bottom: 4px; }
     .arch-modal-name { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
@@ -473,7 +478,7 @@
     .toast-notification {
       position: fixed; top: 80px; right: 24px; z-index: 9998;
       background: #0E4B47; color: #fff; padding: 14px 20px;
-      border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      border-radius: 14px; box-shadow: 0 8px 32px rgba(14,75,71,0.2);
       display: flex; align-items: center; gap: 12px;
       animation: toastIn 0.4s cubic-bezier(0.22,1,0.36,1), toastOut 0.3s 3.5s forwards;
       max-width: 340px;
@@ -497,7 +502,7 @@
     .bc-panel {
       display: none; position: fixed; top: 78px; right: 20px; width: 360px;
       background: #fff; border: 1.5px solid #B8D0C8; border-radius: 16px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9990; overflow: hidden;
+      box-shadow: 0 12px 40px rgba(14,75,71,0.15); z-index: 9990; overflow: hidden;
       animation: menuIn 0.18s ease;
     }
     .bc-panel.open { display: block; }
@@ -527,7 +532,7 @@
     .bc-toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
       z-index: 9999; background: #fff; border: 1.5px solid #B8D0C8;
-      border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      border-radius: 14px; box-shadow: 0 8px 32px rgba(14,75,71,0.15);
       padding: 14px 20px; display: flex; align-items: center; gap: 12px;
       min-width: 320px; max-width: 480px;
       animation: bcToastIn 0.4s cubic-bezier(0.22,1,0.36,1), toastOut 0.3s 5s forwards;
@@ -556,7 +561,7 @@
     @keyframes fadeIn { from{opacity:0;} }
     .modal-box {
       background: #fff; border-radius: 18px; padding: 24px; width: 340px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      box-shadow: 0 20px 60px rgba(14,75,71,0.2);
       animation: modalIn 0.25s cubic-bezier(0.22,1,0.36,1);
     }
     @keyframes modalIn { from { opacity:0; transform: scale(0.92) translateY(10px); } }
@@ -855,7 +860,7 @@
 </div>
 
 <!-- INSTALL BTN -->
-<div id="install-btn" onclick="installerApp()" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0E4B47;color:#fff;padding:12px 24px;border-radius:24px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:999;">
+<div id="install-btn" onclick="installerApp()" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0E4B47;color:#fff;padding:12px 24px;border-radius:24px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(14,75,71,0.2);z-index:999;">
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M5 8l3 3 3-3M2 13h12" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
   Installer l'application
 </div>
@@ -1237,7 +1242,7 @@ function showMsgToast(title, text, color) {
   el.className = 'msg-toast-notif';
   el.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
     background:#fff;border-radius:14px;padding:14px 18px;
-    box-shadow:0 8px 32px rgba(0,0,0,.18);
+    box-shadow:0 8px 32px rgba(14,75,71,.18);
     display:flex;align-items:flex-start;gap:12px;
     z-index:99999;max-width:360px;width:90%;
     border-left:4px solid ${color};
