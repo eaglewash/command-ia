@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: #EEF5F2; min-height: 100vh; color: #0F2A28; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    body { font-family: 'Inter', system-ui, sans-serif; background:#EEF5F2;background-image:radial-gradient(560px circle at top right, rgba(123,187,181,.16), transparent 60%),linear-gradient(rgba(14,75,71,.03) 1px, transparent 1px),linear-gradient(90deg, rgba(14,75,71,.03) 1px, transparent 1px);background-size:auto,44px 44px,44px 44px;background-attachment:fixed;background-repeat:no-repeat,repeat,repeat; min-height: 100vh; color: #0F2A28; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
     /* ── TOPBAR ── */
     .topbar { background: #0E4B47; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 56px; flex-shrink: 0; }
@@ -141,15 +141,15 @@
     .from-restaurant .msg-content, .from-system .msg-content {
       background: #fff; color: #0F2A28;
       border-bottom-left-radius: 5px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.07);
+      box-shadow:0 1px 3px rgba(14,75,71,.07);
     }
     /* Bulle envoyée (admin) */
     .from-admin .msg-content {
       background: #0E4B47; color: #d8f0e4;
       border-bottom-right-radius: 5px;
     }
-    .msg-content.restock { background: #FFF8E8; color: #5a3a00; box-shadow: 0 1px 3px rgba(0,0,0,.07); }
-    .msg-content.system  { background: #EEF2FF; color: #1a3a8a; box-shadow: 0 1px 3px rgba(0,0,0,.07); }
+    .msg-content.restock { background: #FFF8E8; color: #5a3a00; box-shadow:0 1px 3px rgba(14,75,71,.07); }
+    .msg-content.system  { background: #EEF2FF; color: #1a3a8a; box-shadow:0 1px 3px rgba(14,75,71,.07); }
 
     .msg-meta {
       font-size: 10px; color: #b0c8c4; margin-top: 3px;
@@ -184,7 +184,7 @@
       display: flex; gap: 8px; align-items: flex-end;
       background: #fff; border-radius: 14px;
       padding: 8px 8px 8px 14px;
-      box-shadow: 0 2px 12px rgba(14,75,71,.10);
+      box-shadow:0 2px 12px rgba(14,75,71,.10);
     }
     .chat-textarea {
       flex: 1; background: transparent; border: none;
@@ -231,7 +231,7 @@
     .bc-bell-btn:hover { background: rgba(255,255,255,0.2); }
     .bc-bell-badge { position: absolute; top: -4px; right: -4px; width: 16px; height: 16px; background: #e05555; border-radius: 50%; font-size: 9px; font-weight: 700; color: #fff; display: none; align-items: center; justify-content: center; border: 2px solid #0E4B47; }
     .bc-bell-badge.show { display: flex; }
-    .bc-panel { display: none; position: fixed; top: 66px; right: 16px; width: 340px; background: #fff; border: 1.5px solid #B8D0C8; border-radius: 14px; box-shadow: 0 12px 36px rgba(0,0,0,0.14); z-index: 9990; overflow: hidden; }
+    .bc-panel { display: none; position: fixed; top: 66px; right: 16px; width: 340px; background: #fff; border: 1.5px solid #B8D0C8; border-radius: 14px; box-shadow:0 12px 36px rgba(14,75,71,0.14); z-index: 9990; overflow: hidden; }
     .bc-panel.open { display: block; }
     .bc-panel-head { padding: 12px 16px; background: #0E4B47; display: flex; align-items: center; justify-content: space-between; }
     .bc-panel-title { font-size: 13px; font-weight: 700; color: #fff; }

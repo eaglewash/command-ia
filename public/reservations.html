@@ -6,7 +6,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;min-height:100vh;color:#111}
+body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;background-image:radial-gradient(560px circle at top right, rgba(123,187,181,.16), transparent 60%),linear-gradient(rgba(14,75,71,.03) 1px, transparent 1px),linear-gradient(90deg, rgba(14,75,71,.03) 1px, transparent 1px);background-size:auto,44px 44px,44px 44px;background-attachment:fixed;background-repeat:no-repeat,repeat,repeat;min-height:100vh;color:#111}
 
 /* ── TOPBAR (identical to dashboard) ───────────────────────────────── */
 .topbar{background:#0E4B47;display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:72px;position:sticky;top:0;z-index:200;gap:16px}
@@ -134,7 +134,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;min-height:100v
 /* ── MODALS ─────────────────────────────────────────────────────────── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
 .overlay.open{display:flex}
-.modal{background:#fff;border-radius:18px;padding:28px;width:100%;max-width:540px;max-height:92vh;overflow-y:auto;box-shadow:0 28px 70px rgba(0,0,0,.15);animation:mIn .2s}
+.modal{background:#fff;border-radius:18px;padding:28px;width:100%;max-width:540px;max-height:92vh;overflow-y:auto;box-shadow:0 28px 70px rgba(14,75,71,.15);animation:mIn .2s}
 @keyframes mIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
 .mhead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;gap:12px}
 .mhead-left{display:flex;flex-direction:column;gap:2px}
@@ -188,7 +188,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#EEF5F2;min-height:100v
 
 /* ── TOAST ──────────────────────────────────────────────────────────── */
 #toasts{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
-.toast{background:#fff;border:1px solid #B8D0C8;border-radius:10px;padding:12px 16px;font-size:12px;font-weight:600;color:#333;box-shadow:0 6px 20px rgba(0,0,0,.1);animation:toastIn .25s ease;display:flex;align-items:center;gap:8px}
+.toast{background:#fff;border:1px solid #B8D0C8;border-radius:10px;padding:12px 16px;font-size:12px;font-weight:600;color:#333;box-shadow:0 6px 20px rgba(14,75,71,.1);animation:toastIn .25s ease;display:flex;align-items:center;gap:8px}
 @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
   </style>

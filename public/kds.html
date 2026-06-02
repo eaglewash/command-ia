@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: #EEF5F2; min-height: 100vh; color: #0E4B47; overflow-x: hidden; }
+    body { font-family: 'Inter', system-ui, sans-serif; background:#EEF5F2;background-image:radial-gradient(560px circle at top right, rgba(123,187,181,.16), transparent 60%),linear-gradient(rgba(14,75,71,.03) 1px, transparent 1px),linear-gradient(90deg, rgba(14,75,71,.03) 1px, transparent 1px);background-size:auto,44px 44px,44px 44px;background-attachment:fixed;background-repeat:no-repeat,repeat,repeat; min-height: 100vh; color: #0E4B47; overflow-x: hidden; }
 
     /* ── HEADER ── */
     .kds-header {
@@ -97,9 +97,9 @@
       color: #7a7a6a; text-transform: uppercase;
     }
     .col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .col-dot.new   { background: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.2); }
-    .col-dot.enc   { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,.2); }
-    .col-dot.pret  { background: #7BBBB5; box-shadow: 0 0 0 2px rgba(123,187,181,.2); }
+    .col-dot.new   { background: #ef4444; box-shadow:0 0 0 2px rgba(239,68,68,.2); }
+    .col-dot.enc   { background: #f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,.2); }
+    .col-dot.pret  { background: #7BBBB5; box-shadow:0 0 0 2px rgba(123,187,181,.2); }
     .col-dot.done  { background: #9ca3af; }
     .col-count { font-size: 14px; font-weight: 700; color: #0F2A28; }
 
@@ -122,15 +122,15 @@
       transition: box-shadow .15s, transform .15s;
       position: relative;
     }
-    .cmd-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.08); transform: translateY(-1px); }
+    .cmd-card:hover { box-shadow:0 4px 14px rgba(14,75,71,0.08); transform: translateY(-1px); }
     .cmd-card.urgent { border-color: #ef4444; border-width: 1.5px; }
-    .cmd-card.selected { box-shadow: 0 0 0 2px #0E4B47 !important; }
+    .cmd-card.selected { box-shadow:0 0 0 2px #0E4B47 !important; }
     .cmd-card.card-new-anim { animation: cardIn .35s cubic-bezier(.22,1,.36,1) both; }
     @keyframes cardIn { from { opacity:0; transform: translateY(16px) scale(.97); } to { opacity:1; transform:none; } }
 
     /* Envoyées dimmed */
     .col-envoyees .cmd-card { opacity: 0.42; cursor: default; pointer-events: none; }
-    .col-envoyees .cmd-card:hover { transform: none; box-shadow: none; }
+    .col-envoyees .cmd-card:hover { transform: none; box-shadow:none; }
 
     .card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; gap: 6px; }
     .card-table { font-size: 17px; font-weight: 700; color: #0E4B47; line-height: 1.1; }
@@ -222,7 +222,7 @@
     .arch-content { flex: 1; overflow-y: auto; padding: 20px 24px; }
     .arch-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap: 12px; }
     .arch-card { background: #fff; border: 1px solid #e2e4de; border-radius: 12px; padding: 14px; cursor: pointer; transition: all .2s; animation: cardIn .3s ease both; }
-    .arch-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .arch-card:hover { box-shadow:0 6px 18px rgba(14,75,71,0.08); transform: translateY(-2px); }
     .arch-card.done { border-left: 3px solid #7BBBB5; }
     .arch-card.cancelled { border-left: 3px solid #ef4444; }
     .arch-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
@@ -243,7 +243,7 @@
     /* ── MODAL ── */
     .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); animation: fadeIn .15s; }
     @keyframes fadeIn { from{opacity:0;} }
-    .modal-box { background: #fff; border-radius: 16px; padding: 22px; width: 360px; max-width: 94vw; box-shadow: 0 20px 60px rgba(0,0,0,0.18); animation: modalIn .22s cubic-bezier(.22,1,.36,1); }
+    .modal-box { background: #fff; border-radius: 16px; padding: 22px; width: 360px; max-width: 94vw; box-shadow:0 20px 60px rgba(14,75,71,0.18); animation: modalIn .22s cubic-bezier(.22,1,.36,1); }
     @keyframes modalIn { from { opacity:0; transform: scale(.93) translateY(10px); } }
     .modal-title { font-size: 15px; font-weight: 700; color: #0E4B47; margin-bottom: 3px; }
     .modal-sub { font-size: 12px; color: #9a9a8a; margin-bottom: 14px; }

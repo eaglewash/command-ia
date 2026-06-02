@@ -7,8 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#EEF5F2;color:#1a2e1a;min-height:100vh}
-.topbar{background:#0E4B47;padding:0 18px;min-height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);flex-wrap:wrap;gap:8px}
+body{font-family:'Inter',sans-serif;background:#EEF5F2;background-image:radial-gradient(560px circle at top right, rgba(123,187,181,.16), transparent 60%),linear-gradient(rgba(14,75,71,.03) 1px, transparent 1px),linear-gradient(90deg, rgba(14,75,71,.03) 1px, transparent 1px);background-size:auto,44px 44px,44px 44px;background-attachment:fixed;background-repeat:no-repeat,repeat,repeat;color:#1a2e1a;min-height:100vh}
+.topbar{background:#0E4B47;padding:0 18px;min-height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(14,75,71,.3);flex-wrap:wrap;gap:8px}
 .tl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 0}
 .logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:1.1rem}
 .logo-icon{width:32px;height:32px;background:#0E4B47;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -208,7 +208,7 @@ input.topbar-input::placeholder{color:rgba(255,255,255,.5)}
 .shift-list-item .remove{margin-left:auto;background:none;border:none;color:#dc2626;cursor:pointer;font-size:1rem;padding:0 4px}
 
 /* Context menu */
-.ctx-menu{position:fixed;background:#fff;border:1.5px solid #B8D0C8;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:4px;z-index:1500;min-width:180px;font-size:.82rem}
+.ctx-menu{position:fixed;background:#fff;border:1.5px solid #B8D0C8;border-radius:10px;box-shadow:0 10px 30px rgba(14,75,71,.15);padding:4px;z-index:1500;min-width:180px;font-size:.82rem}
 .ctx-item{padding:8px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px;color:#1a2e1a;font-weight:500}
 .ctx-item:hover{background:#f5f9f2}
 .ctx-item.danger{color:#dc2626}
@@ -1380,7 +1380,7 @@ function openEmployeeProfile(empId) {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s;padding:16px';
   overlay.onclick = ev => { if (ev.target === overlay) overlay.remove(); };
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:18px;width:400px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:slideUp .2s">
+    <div style="background:#fff;border-radius:18px;width:400px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(14,75,71,.2);animation:slideUp .2s">
       <div style="background:linear-gradient(135deg,#0E4B47,#0A3D3A);padding:20px 22px;display:flex;align-items:center;gap:14px">
         <div style="width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;color:#fff">
           ${(e.nom||'?')[0].toUpperCase()}
