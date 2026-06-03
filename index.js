@@ -45,6 +45,31 @@ setInterval(() => {
   for (const [k, v] of _rateBuckets) { if (now - v.first > 3600000) _rateBuckets.delete(k); }
 }, 3600000);
 
+// Limiteur partagé entre instances via Upstash Redis (REST, sans dépendance npm).
+// Si les variables UPSTASH_REDIS_REST_URL/TOKEN sont absentes, on retombe sur le
+// limiteur mémoire ci-dessus (protection par instance, suffisante en dev/mono-instance).
+// Renvoie true si la requête est autorisée.
+async function rateLimitShared(key, max, windowMs) {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return rateLimit(key, max, windowMs);
+  try {
+    const rk = 'rl:' + key;
+    // INCR puis, si premier hit, pose un TTL. Pipeline REST Upstash.
+    const r = await fetch(`${url}/pipeline`, {
+      method: 'POST',
+      headers: { 'authorization': `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify([['INCR', rk], ['PEXPIRE', rk, String(windowMs), 'NX']])
+    });
+    const out = await r.json();
+    const count = Array.isArray(out) ? Number(out[0]?.result) : NaN;
+    if (!Number.isFinite(count)) return rateLimit(key, max, windowMs); // repli si réponse inattendue
+    return count <= max;
+  } catch (_) {
+    return rateLimit(key, max, windowMs); // repli mémoire si Redis indisponible
+  }
+}
+
 // ─── NODEMAILER ──────────────────────────────────────────────────────────────
 const nodemailer = require('nodemailer');
 function getMailer() {
@@ -72,6 +97,14 @@ const io = new Server(server, {
 
 // ─── SESSIONS AUTH (JWT stateless — compatible Vercel serverless) ─────────────
 const SESSION_TTL = 8 * 60 * 60; // 8 heures en secondes
+// JWT_SECRET DOIT être fixe et partagé entre toutes les instances. Sur Vercel,
+// chaque instance serverless est un process distinct : sans valeur stable, un
+// secret aléatoire serait régénéré à chaque cold-start → tous les tokens émis
+// par une autre instance deviennent invalides (utilisateurs déconnectés au
+// hasard). On exige donc la variable d'env en production.
+if (!process.env.JWT_SECRET && (process.env.VERCEL || process.env.NODE_ENV === 'production')) {
+  console.error('⛔ JWT_SECRET manquant en production : les sessions ne survivront pas entre instances. Définissez la variable d\'environnement JWT_SECRET.');
+}
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 function base64url(str) {
@@ -883,7 +916,7 @@ app.post('/auth/login', async (req, res) => {
 
   // ── Anti brute-force : 10 tentatives / 15 min par IP+email ──
   const rlKey = 'login:' + (req.ip || 'x') + ':' + String(email).toLowerCase();
-  if (!rateLimit(rlKey, 10, 15 * 60 * 1000)) {
+  if (!(await rateLimitShared(rlKey, 10, 15 * 60 * 1000))) {
     return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans quelques minutes.' });
   }
 
@@ -4159,12 +4192,12 @@ app.put('/security/:userId', async (req, res) => {
   await saveSec(req.params.userId, updated);
   res.json({ success: true });
 });
-app.post('/security/:userId/verify-totp', (req, res) => {
+app.post('/security/:userId/verify-totp', async (req, res) => {
   const { secret, code } = req.body;
   if (!secret || !code) return res.json({ valid: false, error: 'secret et code requis' });
   // Anti brute-force : 10 essais / 5 min par IP+utilisateur
   const rlKey = 'totp:' + (req.ip || 'x') + ':' + req.params.userId;
-  if (!rateLimit(rlKey, 10, 5 * 60 * 1000)) return res.status(429).json({ valid: false, error: 'Trop de tentatives' });
+  if (!(await rateLimitShared(rlKey, 10, 5 * 60 * 1000))) return res.status(429).json({ valid: false, error: 'Trop de tentatives' });
   const counter = Math.floor(Date.now() / 30000);
   for (let delta = -1; delta <= 1; delta++) {
     if (totpCode(secret, counter + delta) === code) {
