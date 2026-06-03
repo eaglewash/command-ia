@@ -245,6 +245,10 @@ const DB_PERMISSIONS  = '3f24aad6f9d443779a311e162bf47c6c';
 const DB_COMMANDES    = '65427c7fa8e34d42a77feeb81d17e893';
 const DB_BROADCASTS   = '4abeb8865a174f259c34c8c3520efa38';
 const DB_TICKETS      = '42deea5774974b6c90b3ee30292ddd21';
+// DB clé-valeur pour les listes globales (leads/demos/apikeys). Réutilise une
+// base au schéma KV (« Restaurant ID » titre + « Data » rich_text). DB_PERMISSIONS
+// convient (faible trafic, déjà KV). Surclassable via env DB_GLOBAL.
+const DB_GLOBAL       = (process.env.DB_GLOBAL || '3f24aad6f9d443779a311e162bf47c6c').trim();
 
 const notionHeaders = {
   'Authorization': `Bearer ${NOTION_TOKEN}`,
@@ -293,6 +297,43 @@ async function notionKVSet(dbId, key, value) {
     }
   } catch(e) { console.error(`notionKVSet(${dbId},${key}):`, e.message); }
 }
+
+// ─── STOCKAGE GLOBAL (listes non liées à un restaurant) ───
+// Persiste dans Notion (DB_REPORTS, clés réservées) avec cache mémoire +
+// write-through. Garde des signatures SYNCHRONES pour ne pas changer les
+// appelants. Sur Vercel le système de fichiers est en lecture seule : Notion
+// devient la source de vérité, le fichier local sert de graine en dev.
+const _globalCache = {}; // { name: array }
+const _globalDirty = {}; // { name: true } si une écriture a eu lieu localement
+function kvGlobalKey(name) { return '__global_' + name; }
+async function hydrateGlobal(name) {
+  try {
+    const v = await notionKVGet(DB_GLOBAL, kvGlobalKey(name));
+    // ne pas écraser une écriture survenue avant la fin de l'hydratation
+    if (Array.isArray(v) && !_globalDirty[name]) _globalCache[name] = v;
+  } catch (_) {}
+  return _globalCache[name];
+}
+function readGlobalSync(name, fileFallback) {
+  if (Array.isArray(_globalCache[name])) return _globalCache[name];
+  // graine depuis le fichier local (dernier snapshot commité / dev)
+  if (typeof fileFallback === 'function') {
+    const seed = fileFallback();
+    if (Array.isArray(seed)) { _globalCache[name] = seed; return seed; }
+  }
+  return [];
+}
+function writeGlobal(name, list, fileWriter) {
+  _globalCache[name] = list;
+  _globalDirty[name] = true;
+  if (typeof fileWriter === 'function') {
+    try { fileWriter(list); } catch (_) { /* fs read-only sur Vercel */ }
+  }
+  // write-through Notion (fire-and-forget, source de vérité en prod)
+  notionKVSet(DB_GLOBAL, kvGlobalKey(name), list).catch(() => {});
+}
+// Pré-chargement au démarrage (et à chaque cold start serverless)
+['leads', 'demos', 'apikeys'].forEach(n => { hydrateGlobal(n); });
 // ─────────────────────────────────────────────────────
 
 // ─── PERSISTENCE ARCHIVES (par restaurant) ───────────
@@ -3426,15 +3467,16 @@ app.delete('/tickets/:id', async (req, res) => {
 // FORMULAIRE DE CONTACT — leads.json + email Resend
 // ═══════════════════════════════════════════════════════
 const LEADS_FILE = path.join(__dirname, 'leads.json');
-function readLeads() {
+function readLeadsFile() {
   try { return JSON.parse(fs.readFileSync(LEADS_FILE, 'utf8')); } catch { return []; }
 }
+function readLeads() {
+  return readGlobalSync('leads', readLeadsFile);
+}
 function saveLead(lead) {
-  try {
-  const leads = readLeads();
+  const leads = readLeads().slice();
   leads.unshift(lead);
-  fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2));
-  } catch (_) { /* filesystem read-only sur Vercel — ignoré */ }
+  writeGlobal('leads', leads, l => fs.writeFileSync(LEADS_FILE, JSON.stringify(l, null, 2)));
 }
 
 app.post('/contact', async (req, res) => {
@@ -3540,11 +3582,14 @@ app.post('/contact', async (req, res) => {
 // COMPTES DÉMO PROSPECTS
 // ═══════════════════════════════════════════════════════
 const DEMOS_FILE = path.join(__dirname, 'demos.json');
-function readDemos() {
+function readDemosFile() {
   try { return JSON.parse(fs.readFileSync(DEMOS_FILE, 'utf8')); } catch { return []; }
 }
+function readDemos() {
+  return readGlobalSync('demos', readDemosFile);
+}
 function saveDemos(list) {
-  fs.writeFileSync(DEMOS_FILE, JSON.stringify(list, null, 2));
+  writeGlobal('demos', list, l => fs.writeFileSync(DEMOS_FILE, JSON.stringify(l, null, 2)));
 }
 function slugify(str) {
   return str.toLowerCase()
@@ -4242,14 +4287,16 @@ app.put('/multilangues/:restaurantId', (req, res) => {
 
 // ─── API KEYS (clés développeur) ────────────────────────────────────────────
 const API_KEYS_FILE = path.join(__dirname, 'api-keys.json');
-function loadApiKeys() {
+function loadApiKeysFile() {
   try { if (fs.existsSync(API_KEYS_FILE)) return JSON.parse(fs.readFileSync(API_KEYS_FILE, 'utf8')) || []; }
   catch (e) {}
   return [];
 }
+function loadApiKeys() {
+  return readGlobalSync('apikeys', loadApiKeysFile);
+}
 function saveApiKeys(keys) {
-  try { fs.writeFileSync(API_KEYS_FILE, JSON.stringify(keys, null, 2)); }
-  catch (e) { console.log('Erreur sauvegarde api-keys :', e.message); }
+  writeGlobal('apikeys', keys, k => fs.writeFileSync(API_KEYS_FILE, JSON.stringify(k, null, 2)));
 }
 app.get('/admin/api-keys', (req, res) => {
   // Ne renvoie pas le secret complet : masque à partir du 6e caractère
