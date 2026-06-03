@@ -249,6 +249,12 @@ const DB_TICKETS      = '42deea5774974b6c90b3ee30292ddd21';
 // base au schéma KV (« Restaurant ID » titre + « Data » rich_text). DB_PERMISSIONS
 // convient (faible trafic, déjà KV). Surclassable via env DB_GLOBAL.
 const DB_GLOBAL       = (process.env.DB_GLOBAL || '3f24aad6f9d443779a311e162bf47c6c').trim();
+// Stores par-restaurant migrés de /tmp (éphémère sur Vercel) vers Notion KV.
+// Par défaut tous rangés dans DB_GLOBAL avec des clés namespacées ; surclassables.
+const DB_CRM        = (process.env.DB_CRM        || DB_GLOBAL).trim();
+const DB_FEEDBACK   = (process.env.DB_FEEDBACK   || DB_GLOBAL).trim();
+const DB_SECURITY   = (process.env.DB_SECURITY   || DB_GLOBAL).trim();
+const DB_MULTILANG  = (process.env.DB_MULTILANG  || DB_GLOBAL).trim();
 
 const notionHeaders = {
   'Authorization': `Bearer ${NOTION_TOKEN}`,
@@ -3737,25 +3743,28 @@ function crmFile(restaurantId) {
   const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
   return path.join(CRM_DIR, `crm_${safe}.json`);
 }
-function loadCRM(restaurantId) {
+async function loadCRM(restaurantId) {
+  const v = await notionKVGet(DB_CRM, 'crm_' + restaurantId);
+  if (v && Array.isArray(v.clients)) return v;
   try {
     const f = crmFile(restaurantId);
     if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f, 'utf8')) || { clients: [] };
   } catch(e) {}
   return { clients: [] };
 }
-function saveCRM(restaurantId, data) {
+async function saveCRM(restaurantId, data) {
   try { fs.writeFileSync(crmFile(restaurantId), JSON.stringify(data, null, 2)); }
-  catch(e) { console.log('Erreur sauvegarde CRM:', e.message); }
+  catch(e) { /* fs read-only sur Vercel */ }
+  await notionKVSet(DB_CRM, 'crm_' + restaurantId, data);
 }
 
-app.get('/crm/:restaurantId', (req, res) => {
-  res.json(loadCRM(req.params.restaurantId));
+app.get('/crm/:restaurantId', async (req, res) => {
+  res.json(await loadCRM(req.params.restaurantId));
 });
-app.put('/crm/:restaurantId', (req, res) => {
+app.put('/crm/:restaurantId', async (req, res) => {
   const data = req.body;
   if (!Array.isArray(data.clients)) return res.status(400).json({ error: 'clients requis' });
-  saveCRM(req.params.restaurantId, { clients: data.clients, updatedAt: data.updatedAt, updatedBy: data.updatedBy });
+  await saveCRM(req.params.restaurantId, { clients: data.clients, updatedAt: data.updatedAt, updatedBy: data.updatedBy });
   // Broadcast via socket.io
   io.to(`restaurant:${req.params.restaurantId}`).emit('crm-broadcast', {
     restaurantId: req.params.restaurantId,
@@ -4049,25 +4058,28 @@ function feedbackFile(restaurantId) {
   const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
   return path.join(FEEDBACK_DIR, `feedback_${safe}.json`);
 }
-function loadFeedback(restaurantId) {
+async function loadFeedback(restaurantId) {
+  const v = await notionKVGet(DB_FEEDBACK, 'feedback_' + restaurantId);
+  if (v && Array.isArray(v.avis)) return v;
   try {
     const f = feedbackFile(restaurantId);
     if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f, 'utf8')) || { avis: [] };
   } catch(e) {}
   return { avis: [] };
 }
-function saveFeedback(restaurantId, data) {
+async function saveFeedback(restaurantId, data) {
   try { fs.writeFileSync(feedbackFile(restaurantId), JSON.stringify(data, null, 2)); }
-  catch(e) { console.log('Erreur sauvegarde feedback:', e.message); }
+  catch(e) { /* fs read-only sur Vercel */ }
+  await notionKVSet(DB_FEEDBACK, 'feedback_' + restaurantId, data);
 }
 
-app.get('/feedback/:restaurantId', (req, res) => {
-  res.json(loadFeedback(req.params.restaurantId));
+app.get('/feedback/:restaurantId', async (req, res) => {
+  res.json(await loadFeedback(req.params.restaurantId));
 });
-app.put('/feedback/:restaurantId', (req, res) => {
+app.put('/feedback/:restaurantId', async (req, res) => {
   const data = req.body;
   if (!Array.isArray(data.avis)) return res.status(400).json({ error: 'avis requis' });
-  saveFeedback(req.params.restaurantId, { avis: data.avis, updatedAt: data.updatedAt, updatedBy: data.updatedBy });
+  await saveFeedback(req.params.restaurantId, { avis: data.avis, updatedAt: data.updatedAt, updatedBy: data.updatedBy });
   io.to(`restaurant:${req.params.restaurantId}`).emit('feedback-broadcast', {
     restaurantId: req.params.restaurantId,
     avis: data.avis,
@@ -4089,16 +4101,19 @@ function secFile(userId) {
   const safe = (userId || 'unknown').replace(/[^a-zA-Z0-9_@.-]/g, '_');
   return path.join(SECURITY_DIR, `sec_${safe}.json`);
 }
-function loadSec(userId) {
+async function loadSec(userId) {
+  const v = await notionKVGet(DB_SECURITY, 'sec_' + userId);
+  if (v && typeof v === 'object') return v;
   try {
     const f = secFile(userId);
     if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f, 'utf8')) || {};
   } catch(e) {}
   return {};
 }
-function saveSec(userId, data) {
+async function saveSec(userId, data) {
   try { fs.writeFileSync(secFile(userId), JSON.stringify(data, null, 2)); }
-  catch(e) { console.log('Erreur sauvegarde securite:', e.message); }
+  catch(e) { /* fs read-only sur Vercel */ }
+  await notionKVSet(DB_SECURITY, 'sec_' + userId, data);
 }
 
 // TOTP base32 decode + HMAC-SHA1
@@ -4135,13 +4150,13 @@ app.use('/security/:userId', (req, res, next) => {
   return res.status(403).json({ error: 'Accès refusé à ces données de sécurité' });
 });
 
-app.get('/security/:userId', (req, res) => {
-  res.json(loadSec(req.params.userId));
+app.get('/security/:userId', async (req, res) => {
+  res.json(await loadSec(req.params.userId));
 });
-app.put('/security/:userId', (req, res) => {
-  const existing = loadSec(req.params.userId);
+app.put('/security/:userId', async (req, res) => {
+  const existing = await loadSec(req.params.userId);
   const updated = { ...existing, ...req.body, updatedAt: new Date().toISOString() };
-  saveSec(req.params.userId, updated);
+  await saveSec(req.params.userId, updated);
   res.json({ success: true });
 });
 app.post('/security/:userId/verify-totp', (req, res) => {
@@ -4158,16 +4173,16 @@ app.post('/security/:userId/verify-totp', (req, res) => {
   }
   res.json({ valid: false });
 });
-app.post('/security/:userId/change-password', (req, res) => {
+app.post('/security/:userId/change-password', async (req, res) => {
   // In a real app this would hash & compare against a DB.
   // Here we just persist the hashed flag so the page can acknowledge it.
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Champs requis' });
   // minimal strength check (12+ chars)
   if (newPassword.length < 12) return res.status(400).json({ error: 'Mot de passe trop court (12 min)' });
-  const existing = loadSec(req.params.userId);
+  const existing = await loadSec(req.params.userId);
   const hash = crypto.createHash('sha256').update(newPassword).digest('hex');
-  saveSec(req.params.userId, { ...existing, pwHash: hash, pwChangedAt: new Date().toISOString() });
+  await saveSec(req.params.userId, { ...existing, pwHash: hash, pwChangedAt: new Date().toISOString() });
   res.json({ success: true });
 });
 
@@ -4271,16 +4286,20 @@ function multilangFile(restaurantId) {
   const safe = (restaurantId || 'global').replace(/[^a-zA-Z0-9_-]/g, '_');
   return path.join(MULTILANG_DIR, `multilangues_${safe}.json`);
 }
-app.get('/multilangues/:restaurantId', (req, res) => {
+app.get('/multilangues/:restaurantId', async (req, res) => {
   try {
+    const v = await notionKVGet(DB_MULTILANG, 'multilang_' + req.params.restaurantId);
+    if (v && typeof v === 'object') return res.json(v);
     const f = multilangFile(req.params.restaurantId);
     if (fs.existsSync(f)) return res.json(JSON.parse(fs.readFileSync(f, 'utf8')));
     res.json({ languages: [], translations: {} });
   } catch (e) { res.status(500).json({ error: 'Erreur chargement langues : ' + e.message }); }
 });
-app.put('/multilangues/:restaurantId', (req, res) => {
+app.put('/multilangues/:restaurantId', async (req, res) => {
   try {
-    fs.writeFileSync(multilangFile(req.params.restaurantId), JSON.stringify(req.body || {}, null, 2));
+    try { fs.writeFileSync(multilangFile(req.params.restaurantId), JSON.stringify(req.body || {}, null, 2)); }
+    catch (_) { /* fs read-only sur Vercel */ }
+    await notionKVSet(DB_MULTILANG, 'multilang_' + req.params.restaurantId, req.body || {});
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: 'Erreur sauvegarde langues : ' + e.message }); }
 });
@@ -4478,9 +4497,30 @@ async function saveHiddenPages(list) {
 const UPLOADS_PLATS_DIR = process.env.VERCEL ? path.join('/tmp', 'uploads', 'plats') : path.join(__dirname, 'public', 'uploads', 'plats');
 if (!fs.existsSync(UPLOADS_PLATS_DIR)) fs.mkdirSync(UPLOADS_PLATS_DIR, { recursive: true });
 
+// Upload vers Vercel Blob (API REST, sans dépendance npm). Renvoie l'URL publique
+// persistante. Nécessite la variable d'env BLOB_READ_WRITE_TOKEN (créée
+// automatiquement quand un store Blob est attaché au projet Vercel).
+async function putToVercelBlob(filename, buffer, contentType) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) return null;
+  const r = await fetch(`https://blob.vercel-storage.com/${encodeURIComponent('plats/' + filename)}`, {
+    method: 'PUT',
+    headers: {
+      'authorization': `Bearer ${token}`,
+      'x-api-version': '7',
+      'x-content-type': contentType,
+      'x-add-random-suffix': '0'
+    },
+    body: buffer
+  });
+  const data = await r.json();
+  if (!r.ok || !data.url) throw new Error(data.error?.message || 'Échec upload Blob');
+  return data.url;
+}
+
 app.post('/upload/plat-photo',
   express.raw({ type: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], limit: '8mb' }),
-  (req, res) => {
+  async (req, res) => {
     const sess = getSession(req);
     if (!sess) return res.status(401).json({ error: 'Non authentifié' });
     if (!req.body || !req.body.length) return res.status(400).json({ error: 'Aucune image reçue' });
@@ -4488,6 +4528,10 @@ app.post('/upload/plat-photo',
     const ext = ct.includes('png') ? '.png' : ct.includes('webp') ? '.webp' : ct.includes('gif') ? '.gif' : '.jpg';
     const filename = `plat-${Date.now()}-${Math.random().toString(36).slice(2,8)}${ext}`;
     try {
+      // En prod (Vercel) : Vercel Blob — stockage persistant + CDN.
+      const blobUrl = await putToVercelBlob(filename, req.body, ct || 'image/jpeg');
+      if (blobUrl) return res.json({ success: true, url: blobUrl });
+      // Repli (dev local ou Blob non configuré) : disque.
       fs.writeFileSync(path.join(UPLOADS_PLATS_DIR, filename), req.body);
       res.json({ success: true, url: `/uploads/plats/${filename}` });
     } catch (e) {
