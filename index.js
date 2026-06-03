@@ -111,9 +111,9 @@ function base64url(str) {
   return Buffer.from(str).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
-function createSession(userId, email, role) {
+function createSession(userId, email, role, extra) {
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = base64url(JSON.stringify({ userId, email, role, exp: Math.floor(Date.now() / 1000) + SESSION_TTL }));
+  const payload = base64url(JSON.stringify({ userId, email, role, ...(extra || {}), exp: Math.floor(Date.now() / 1000) + SESSION_TTL }));
   const sig = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${payload}`).digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   return `${header}.${payload}.${sig}`;
 }
@@ -174,6 +174,26 @@ app.use((req, res, next) => {
   next();
 });
 app.get('/', (req, res) => res.redirect('/login.html'));
+
+// ─── RESTRICTION COMPTES DÉMO (PROSPECTS) ────────────────────────────────────
+// Un compte démo (@essai.demo) ne doit accéder qu'au site vitrine, jamais au
+// dashboard opérationnel. La redirection côté login est cosmétique : ici on
+// bloque côté serveur l'accès direct par URL à toute page .html autre que le
+// site landing et la connexion.
+const DEMO_ALLOWED_PAGES = new Set(['/landing.html', '/login.html']);
+app.use((req, res, next) => {
+  if (req.method === 'GET') {
+    const p = (req.path || '').toLowerCase();
+    if (p === '/' || p.endsWith('.html')) {
+      const sess = getSession(req);
+      if (sess && sess.demo && !DEMO_ALLOWED_PAGES.has(p)) {
+        return res.redirect('/landing.html');
+      }
+    }
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: false,
   lastModified: false,
@@ -1016,7 +1036,7 @@ app.post('/auth/login', async (req, res) => {
     demo.loginCount = (demo.loginCount || 0) + 1;
     if (demo.statut === 'créé') demo.statut = 'connecté';
     try { saveDemos(demos); } catch (_) { /* filesystem read-only sur Vercel — ignoré */ }
-    const token = createSession(demo.id, demo.demoEmail, 'Manager');
+    const token = createSession(demo.id, demo.demoEmail, 'Manager', { demo: true });
     res.setHeader('Set-Cookie', `cia_session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${SESSION_TTL}${COOKIE_SECURE ? '; Secure' : ''}`);
     return res.json({
       success: true,
