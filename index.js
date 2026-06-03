@@ -288,6 +288,7 @@ const DB_CRM        = (process.env.DB_CRM        || DB_GLOBAL).trim();
 const DB_FEEDBACK   = (process.env.DB_FEEDBACK   || DB_GLOBAL).trim();
 const DB_SECURITY   = (process.env.DB_SECURITY   || DB_GLOBAL).trim();
 const DB_MULTILANG  = (process.env.DB_MULTILANG  || DB_GLOBAL).trim();
+const DB_ARCHIVES   = (process.env.DB_ARCHIVES   || DB_GLOBAL).trim();
 
 const notionHeaders = {
   'Authorization': `Bearer ${NOTION_TOKEN}`,
@@ -417,9 +418,60 @@ function loadArchivesForRestaurant(restaurantId) {
   } catch(e) { console.log('Erreur lecture archives:', e.message); }
   return [];
 }
+// archives en mémoire : indexé par restaurantId pour le temps réel
+// (déclaré ici car saveArchivesForRestaurant l'utilise et est appelé dès la migration)
+const archivesMemory = {}; // { restaurantId: [...] }
+const _archivesHydrated = {}; // { restaurantId: true } une fois lu depuis Notion
 function saveArchivesForRestaurant(restaurantId, data) {
-  try { fs.writeFileSync(archiveFile(restaurantId), JSON.stringify(data, null, 2)); }
-  catch(e) { console.log('Erreur sauvegarde archives:', e.message); }
+  const rid = restaurantId || 'global';
+  // Cache mémoire (référence partagée avec archivesMemory)
+  archivesMemory[rid] = data;
+  // Repli fichier (dev / snapshot)
+  try { fs.writeFileSync(archiveFile(rid), JSON.stringify(data, null, 2)); }
+  catch(e) { /* fs read-only sur Vercel */ }
+  // Write-through Notion (source de vérité en prod, fire-and-forget)
+  notionKVSet(DB_ARCHIVES, 'archives_' + rid, data).catch(() => {});
+  // Au-delà du seuil, déleste les plus anciennes vers des partitions mensuelles
+  // froides → l'entrée « chaude » reste bornée (limite de taille Notion).
+  if ((data || []).length > ARCHIVES_HOT_MAX) offloadOldArchives(rid).catch(() => {});
+}
+
+// Délestage : garde les ARCHIVES_HOT_MAX archives les plus récentes dans
+// l'entrée chaude, range les plus anciennes dans des partitions « archives_<rid>_<YYYY-MM> »
+// et tient à jour un index des mois disponibles.
+const ARCHIVES_HOT_MAX = 800;
+function monthKey(dateStr) { return (dateStr || todayStr()).slice(0, 7); } // YYYY-MM
+let _offloadBusy = {};
+async function offloadOldArchives(rid) {
+  if (_offloadBusy[rid]) return;
+  _offloadBusy[rid] = true;
+  try {
+    const list = archivesMemory[rid] || [];
+    if (list.length <= ARCHIVES_HOT_MAX) return;
+    const sorted = [...list].sort((a, b) => (b.archivedDate || '').localeCompare(a.archivedDate || ''));
+    const hot = sorted.slice(0, ARCHIVES_HOT_MAX);
+    const cold = sorted.slice(ARCHIVES_HOT_MAX);
+    const byMonth = {};
+    cold.forEach(a => { const m = monthKey(a.archivedDate); (byMonth[m] = byMonth[m] || []).push(a); });
+    const months = (await notionKVGet(DB_ARCHIVES, 'archives_' + rid + '_months')) || [];
+    for (const [m, entries] of Object.entries(byMonth)) {
+      const existing = (await notionKVGet(DB_ARCHIVES, 'archives_' + rid + '_' + m)) || [];
+      const seen = new Set(existing.map(a => a.id));
+      const merged = existing.concat(entries.filter(a => !seen.has(a.id)));
+      await notionKVSet(DB_ARCHIVES, 'archives_' + rid + '_' + m, merged);
+      if (!months.includes(m)) months.push(m);
+    }
+    await notionKVSet(DB_ARCHIVES, 'archives_' + rid + '_months', months.sort().reverse());
+    // L'entrée chaude ne garde que les récentes
+    archivesMemory[rid] = hot;
+    try { fs.writeFileSync(archiveFile(rid), JSON.stringify(hot, null, 2)); } catch (_) {}
+    await notionKVSet(DB_ARCHIVES, 'archives_' + rid, hot);
+  } catch (_) {} finally { _offloadBusy[rid] = false; }
+}
+
+// Charge une partition froide (mois) depuis Notion
+async function loadColdArchives(rid, month) {
+  return (await notionKVGet(DB_ARCHIVES, 'archives_' + rid + '_' + month)) || [];
 }
 
 // Migration: si ancien archives.json existe, le distribuer par restaurant
@@ -446,13 +498,28 @@ migrateOldArchives();
 
 function todayStr() { return new Date().toISOString().split('T')[0]; }
 
-// archives en mémoire : indexé par restaurantId pour le temps réel
-const archivesMemory = {}; // { restaurantId: [...] }
+// Hydrate le cache depuis Notion (async). Garde getMemoryArchives synchrone :
+// le premier appel renvoie la graine fichier, puis le cache est rempli depuis
+// Notion (source de vérité en prod) pour les appels suivants.
+async function hydrateArchives(rid) {
+  if (_archivesHydrated[rid]) return;
+  _archivesHydrated[rid] = true;
+  try {
+    const v = await notionKVGet(DB_ARCHIVES, 'archives_' + rid);
+    if (Array.isArray(v)) {
+      // fusion : on ne perd pas une archive écrite localement avant l'hydratation
+      const seen = new Set((archivesMemory[rid] || []).map(a => a.id));
+      const merged = (archivesMemory[rid] || []).concat(v.filter(a => !seen.has(a.id)));
+      archivesMemory[rid] = merged;
+    }
+  } catch (_) {}
+}
 function getMemoryArchives(restaurantId) {
   const rid = restaurantId || 'global';
   if (!archivesMemory[rid]) {
     archivesMemory[rid] = loadArchivesForRestaurant(rid);
   }
+  hydrateArchives(rid); // remplit le cache depuis Notion en arrière-plan
   return archivesMemory[rid];
 }
 
@@ -609,19 +676,37 @@ app.get('/commandes', async (req, res) => {
   res.json(commandes);
 });
 
-app.get('/archives', (req, res) => {
+app.get('/archives', async (req, res) => {
   const { date, restaurantId } = req.query;
+  const rid = restaurantId || 'global';
   const data = getMemoryArchives(restaurantId);
   const today = todayStr();
   const filterDate = date || today;
-  res.json(data.filter(a => (a.archivedDate || today) === filterDate));
+  let hits = data.filter(a => (a.archivedDate || today) === filterDate);
+  // Si rien en chaud, la date est peut-être dans une partition froide (mois ancien)
+  if (!hits.length) {
+    try {
+      const cold = await loadColdArchives(rid, monthKey(filterDate));
+      hits = cold.filter(a => (a.archivedDate || '') === filterDate);
+    } catch (_) {}
+  }
+  res.json(hits);
 });
 
-app.get('/archives/dates', (req, res) => {
+app.get('/archives/dates', async (req, res) => {
   const { restaurantId } = req.query;
+  const rid = restaurantId || 'global';
   const data = getMemoryArchives(restaurantId);
-  const dates = [...new Set(data.map(a => a.archivedDate).filter(Boolean))].sort().reverse();
-  res.json(dates);
+  const dateSet = new Set(data.map(a => a.archivedDate).filter(Boolean));
+  // Ajoute les dates des partitions froides (mois délestés)
+  try {
+    const months = (await notionKVGet(DB_ARCHIVES, 'archives_' + rid + '_months')) || [];
+    for (const m of months) {
+      const cold = await loadColdArchives(rid, m);
+      cold.forEach(a => { if (a.archivedDate) dateSet.add(a.archivedDate); });
+    }
+  } catch (_) {}
+  res.json([...dateSet].sort().reverse());
 });
 
 app.post('/commandes', async (req, res) => {
