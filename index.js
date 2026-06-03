@@ -194,6 +194,35 @@ app.use((req, res, next) => {
   next();
 });
 
+// ─── ISOLATION DES DONNÉES PAR RESTAURANT ────────────────────────────────────
+// Toutes les API métier exigent une session valide. Un compte démo n'y a jamais
+// accès. Un compte non-Admin ne peut lire/écrire QUE les données de son propre
+// restaurant (anti-IDOR) : le restaurantId demandé (params/body/query) doit
+// correspondre à celui de sa session. L'Admin voit tout.
+function restaurantGuard(req, res, next) {
+  const sess = getSession(req);
+  if (!sess) return res.status(401).json({ error: 'Non authentifié' });
+  if (sess.demo) return res.status(403).json({ error: 'Accès non autorisé en mode démo' });
+  req.session = sess;
+  if (sess.role === 'Admin') return next(); // l'Admin accède à tous les restaurants
+  const reqRid = (req.params && req.params.restaurantId)
+    || (req.body && req.body.restaurantId)
+    || (req.query && req.query.restaurantId);
+  if (reqRid == null || reqRid === '') {
+    // Pas de restaurantId fourni : on agit sur un ID de ressource opaque
+    // (ex. DELETE /stocks/:id sur un UUID Notion non devinable). On laisse
+    // passer l'utilisateur authentifié ; les routes « liste globale » sans rid
+    // se protègent elles-mêmes (cf. GET /commandes).
+    return next();
+  }
+  if (String(reqRid) !== String(sess.restaurantId || '')) {
+    return res.status(403).json({ error: 'Accès refusé aux données d\'un autre restaurant' });
+  }
+  next();
+}
+['/commandes', '/archives', '/crm', '/feedback', '/reservations', '/stocks', '/planning', '/multilangues', '/messages']
+  .forEach(prefix => app.use(prefix, restaurantGuard));
+
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: false,
   lastModified: false,
@@ -689,7 +718,12 @@ function generatePassword() {
 // ─── COMMANDES ───────────────────────────────────────
 
 app.get('/commandes', async (req, res) => {
-  const { restaurantId } = req.query;
+  let { restaurantId } = req.query;
+  // Sans restaurantId : seul l'Admin voit toutes les commandes ; un compte
+  // restreint est ramené à son propre restaurant.
+  if (!restaurantId && req.session && req.session.role !== 'Admin') {
+    restaurantId = req.session.restaurantId || '__none__';
+  }
   const commandes = restaurantId
     ? await loadCommandesActives(restaurantId)
     : await loadAllCommandesActives();
@@ -1083,7 +1117,8 @@ app.post('/auth/login', async (req, res) => {
     // Normaliser les anciens libellés vers le système actuel
     const ROLE_NORM = { 'Hôte': 'Serveur', 'Cuisine': 'Cuisinier', 'Gérant': 'Manager' };
     const finalRole = ROLE_NORM[roleFromNotion] || roleFromNotion || 'Serveur';
-    const token = createSession(page.id, email, finalRole);
+    const userRestaurantId = props['Restaurant ID']?.rich_text?.[0]?.plain_text || '';
+    const token = createSession(page.id, email, finalRole, { restaurantId: userRestaurantId });
     res.setHeader('Set-Cookie', `cia_session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${SESSION_TTL}${COOKIE_SECURE ? '; Secure' : ''}`);
     res.json({
       success: true,
